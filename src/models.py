@@ -63,6 +63,10 @@ class RangerState:
 class GameState:
     ranger: RangerState
     entities: List[Entity]
+    round_number: int = 1
+    # Path deck for Phase 1 draws
+    path_deck: List[Entity] = field(default_factory=list)
+    path_discard: List[Entity] = field(default_factory=list)
 
 
 # Action system: derived from state; executed by engine.
@@ -78,8 +82,9 @@ class ActionTarget:
 class Action:
     id: str  # stable identifier for the action option
     name: str  # human-readable label
-    aspect: str  # required energy type
-    approach: str  # legal approach icons to commit
+    aspect: str  # required energy type (if is_test)
+    approach: str  # legal approach icons to commit (if is_test)
+    is_test: bool = True
     # If the action requires a target, provide candidate targets based on state
     target_provider: Optional[Callable[[GameState], List[ActionTarget]]] = None
     # Computes difficulty for the chosen target (or state)
@@ -96,4 +101,3 @@ class Action:
 class CommitDecision:
     # Indices into the ranger.hand to commit for icons
     hand_indices: List[int] = field(default_factory=list)
-

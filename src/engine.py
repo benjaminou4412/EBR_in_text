@@ -41,7 +41,11 @@ class GameEngine:
             del ranger.hand[i]
 
     def perform_action(self, action: Action, decision: CommitDecision, target_id: Optional[str]) -> ChallengeOutcome:
-        # Spend energy requirement
+        # Non-test actions (e.g., Rest) skip challenge + energy
+        if not action.is_test:
+            action.on_success(self.state, 0, target_id)
+            return ChallengeOutcome(modifier=0, symbol="", effort=0, success=True)
+
         r = self.state.ranger
         if r.energy.get(action.aspect, 0) < 1:
             raise RuntimeError(f"Insufficient energy for {action.aspect}")
@@ -69,3 +73,16 @@ class GameEngine:
         self.discard_committed(r, committed)
         return ChallengeOutcome(modifier=mod, symbol=symbol, effort=effort, success=success)
 
+    # Round/Phase helpers
+    def phase1_draw_paths(self, count: int = 1):
+        for _ in range(count):
+            if not self.state.path_deck:
+                break
+            card = self.state.path_deck.pop(0)
+            self.state.entities.append(card)
+
+    def phase4_refresh(self):
+        # Ready exhausted entities
+        for e in self.state.entities:
+            e.exhausted = False
+        # Future: weather refresh hooks

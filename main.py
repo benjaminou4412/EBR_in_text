@@ -1,10 +1,11 @@
 import json
 import os
 from typing import List, Dict, Tuple
-from src.models import Card, ApproachIcons, Entity, RangerState, GameState
+from src.models import Card, ApproachIcons, Entity, RangerState, GameState, Action
 from src.engine import GameEngine
 from src.registry import provide_common_tests, provide_card_tests
 from src.view import render_state, choose_action, choose_target, choose_commit
+from src.decks import build_woods_path_deck
 
 
 def load_json(path: str):
@@ -156,34 +157,77 @@ def build_demo_state(base_dir: str) -> GameState:
     )
 
     ranger = RangerState(name="Demo Ranger", hand=hand, energy={"AWA": 3, "FIT": 2, "SPI": 2, "FOC": 1})
-    state = GameState(ranger=ranger, entities=[feature, bramble, doe, weather])
+    # Build a simple path deck from woods, excluding the ones already in play
+    exclude = {feature.id, bramble.id, doe.id}
+    deck = build_woods_path_deck(base_dir, exclude_ids=exclude)
+    state = GameState(ranger=ranger, entities=[feature, bramble, doe, weather], round_number=1, path_deck=deck)
     return state
 
 
 def menu_and_run(engine: GameEngine) -> None:
     while True:
+        # Phase 1: Draw path cards
         clear_screen()
+        print(f"Round {engine.state.round_number} — Phase 1: Draw Paths")
+        engine.phase1_draw_paths(count=1)
         show_state(engine.state)
+        input("Enter to proceed to Phase 2...")
 
-        # derived actions from state
-        actions = provide_card_tests(engine.state) + provide_common_tests(engine.state)
-        act = choose_action(actions)
-        if not act:
-            break
-        target_id = choose_target(engine.state, act)
-        decision = choose_commit(act, len(engine.state.ranger.hand))
+        # Phase 2: Actions until Rest
+        while True:
+            clear_screen()
+            print(f"Round {engine.state.round_number} — Phase 2: Actions")
+            show_state(engine.state)
 
-        try:
-            outcome = engine.perform_action(act, decision, target_id)
-        except RuntimeError as e:
-            print(str(e))
-            input("Enter to continue...")
-            continue
+            # derive actions
+            actions = provide_card_tests(engine.state) + provide_common_tests(engine.state)
+            # add system Rest action
+            actions.append(Action(
+                id="system-rest",
+                name="Rest (end actions)",
+                aspect="",
+                approach="",
+                is_test=False,
+                on_success=lambda s, _e, _t: None,
+            ))
+            act = choose_action(actions)
+            if not act:
+                # treat as cancel to end the run
+                return
 
-        print("")
-        print(f"Committed {act.approach} icons effort base + modifier -> {outcome.effort}")
-        print(f"Challenge draw: {outcome.modifier:+d}, symbol [{outcome.symbol.upper()}], success={outcome.success}")
-        input("Enter to continue...")
+            if act.id == "system-rest":
+                break
+
+            target_id = choose_target(engine.state, act)
+            decision = choose_commit(act, len(engine.state.ranger.hand)) if act.is_test else None
+
+            try:
+                outcome = engine.perform_action(act, decision or __import__('src.models', fromlist=['CommitDecision']).CommitDecision([]), target_id)
+            except RuntimeError as e:
+                print(str(e))
+                input("Enter to continue...")
+                continue
+
+            if act.is_test:
+                print("")
+                print(f"Committed {act.approach} icons: effort (icons + modifier) -> {outcome.effort}")
+                print(f"Challenge draw: {outcome.modifier:+d}, symbol [{outcome.symbol.upper()}], success={outcome.success}")
+                input("Enter to continue...")
+
+        # Phase 3: Travel (skipped)
+        clear_screen()
+        print(f"Round {engine.state.round_number} — Phase 3: Travel (skipped)")
+        show_state(engine.state)
+        input("Enter to proceed to Phase 4...")
+
+        # Phase 4: Refresh
+        clear_screen()
+        print(f"Round {engine.state.round_number} — Phase 4: Refresh")
+        engine.phase4_refresh()
+        show_state(engine.state)
+        input("Enter to start next round...")
+
+        engine.state.round_number += 1
 
 
 def main():
