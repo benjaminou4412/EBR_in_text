@@ -1,5 +1,6 @@
 import unittest
-from main import GameState, RangerState, Entity, GameEngine
+from src.models import GameState, RangerState, Entity
+from src.engine import GameEngine
 
 
 def fixed_draw(mod, sym):
@@ -12,7 +13,7 @@ class EngineTests(unittest.TestCase):
         thicket = Entity(id="woods-011-overgrown-thicket", title="Overgrown Thicket", entity_type="Feature", presence=1, progress_threshold=2)
         ranger = RangerState(name="Ranger", hand=[], energy={"AWA": 3, "FIT": 2, "SPI": 2, "FOC": 1})
         # Create two pseudo cards with Exploration+1 each
-        from main import Card, ApproachIcons
+        from src.models import Card, ApproachIcons
         ranger.hand = [
             Card(id="c1", title="E+1", card_type="moment", approach=ApproachIcons({"Exploration": 1})),
             Card(id="c2", title="E+1", card_type="moment", approach=ApproachIcons({"Exploration": 1})),
@@ -24,19 +25,17 @@ class EngineTests(unittest.TestCase):
         def fake_prompt(_r, _a):
             return [1, 2]
 
-        from main import prompt_commit as real_prompt
-        from main import prompt_commit as mod_prompt
-        import main as mainmod
-        mainmod.prompt_commit = fake_prompt
-        try:
-            eng.perform_test(
-                aspect="AWA",
-                approach="Exploration",
-                difficulty=1,
-                on_success=lambda effort: thicket.add_progress(effort),
-            )
-        finally:
-            mainmod.prompt_commit = real_prompt
+        # Perform action using the engine API directly
+        from src.models import Action
+        act = Action(
+            id="t1",
+            name="thicket",
+            aspect="AWA",
+            approach="Exploration",
+            difficulty_fn=lambda _s, _t: 1,
+            on_success=lambda s, eff, _t: thicket.add_progress(eff),
+        )
+        eng.perform_action(act, decision=__import__('src.models', fromlist=['CommitDecision']).CommitDecision([0, 1]), target_id=None)
 
         self.assertEqual(state.ranger.energy["AWA"], 2)
         self.assertEqual(thicket.progress, 2)
@@ -45,24 +44,22 @@ class EngineTests(unittest.TestCase):
     def test_traverse_feature(self):
         feat = Entity(id="feat1", title="Feature A", entity_type="Feature", presence=1, progress_threshold=3)
         ranger = RangerState(name="Ranger", hand=[], energy={"AWA": 3, "FIT": 2, "SPI": 2, "FOC": 1})
-        from main import Card, ApproachIcons
+        from src.models import Card, ApproachIcons
         ranger.hand = [Card(id="e1", title="E+1", card_type="moment", approach=ApproachIcons({"Exploration": 1}))]
         state = GameState(ranger=ranger, entities=[feat])
         eng = GameEngine(state, challenge_drawer=fixed_draw(0, 'crest'))
 
-        import main as mainmod
-        real_prompt = mainmod.prompt_commit
-        mainmod.prompt_commit = lambda _r, _a: [1]
-        try:
-            eng.perform_test(
-                aspect="FIT",
-                approach="Exploration",
-                difficulty=max(1, feat.presence),
-                on_success=lambda effort: feat.add_progress(effort),
-                on_fail=lambda: setattr(state.ranger, "injury", state.ranger.injury + 1),
-            )
-        finally:
-            mainmod.prompt_commit = real_prompt
+        from src.models import Action
+        act = Action(
+            id="t2",
+            name="traverse",
+            aspect="FIT",
+            approach="Exploration",
+            difficulty_fn=lambda _s, _t: max(1, feat.presence),
+            on_success=lambda s, eff, _t: feat.add_progress(eff),
+            on_fail=lambda s, _t: setattr(state.ranger, "injury", state.ranger.injury + 1),
+        )
+        eng.perform_action(act, decision=__import__('src.models', fromlist=['CommitDecision']).CommitDecision([0]), target_id=None)
 
         self.assertEqual(state.ranger.energy["FIT"], 1)
         self.assertEqual(feat.progress, 1)
@@ -71,4 +68,3 @@ class EngineTests(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
-
