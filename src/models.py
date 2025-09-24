@@ -1,6 +1,6 @@
 from __future__ import annotations
 from dataclasses import dataclass, field
-from typing import Dict, List, Optional, Callable, Any
+from typing import Dict, List, Optional, Callable, Any, Annotated
 
 
 # Core data structures: pure state and card data
@@ -18,7 +18,7 @@ class Card:
     id: str
     title: str
     card_type: str
-    rules_texts: List[str] = field(default_factory=list)
+    rules_texts: list[str] = field(default_factory=list)
     approach: ApproachIcons = field(default_factory=ApproachIcons)
 
 
