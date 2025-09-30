@@ -1,14 +1,13 @@
-﻿from __future__ import annotations
+from __future__ import annotations
 from dataclasses import dataclass, field
-from typing import Dict, List, Optional, Callable, Any, Annotated, cast
+from typing import Dict, List, Optional, Callable, Any, Annotated
 
 
 # Core data structures: pure state and card data
 
-
 @dataclass
 class ApproachIcons:
-    counts: Dict[str, int] = field(default_factory=lambda: cast(Dict[str, int], {}))
+    counts: Dict[str, int] = field(default_factory=dict)
 
     def get(self, approach: str) -> int:
         return int(self.counts.get(approach, 0) or 0)
@@ -19,7 +18,7 @@ class Card:
     id: str
     title: str
     card_type: str
-    rules_texts: list[str] = field(default_factory=lambda: cast(list[str], []))
+    rules_texts: List[str] = field(default_factory=list)
     approach: ApproachIcons = field(default_factory=ApproachIcons)
 
 
@@ -55,7 +54,7 @@ class Entity:
 @dataclass
 class RangerState:
     name: str
-    hand: List[Card] = field(default_factory=lambda: cast(List[Card], []))
+    hand: List[Card] = field(default_factory=list)
     energy: Dict[str, int] = field(default_factory=lambda: {"AWA": 0, "FIT": 0, "SPI": 0, "FOC": 0})
     injury: int = 0
 
@@ -66,12 +65,11 @@ class GameState:
     entities: List[Entity]
     round_number: int = 1
     # Path deck for Phase 1 draws
-    path_deck: List[Entity] = field(default_factory=lambda: cast(List[Entity], []))
-    path_discard: List[Entity] = field(default_factory=lambda: cast(List[Entity], []))
+    path_deck: List[Entity] = field(default_factory=list)
+    path_discard: List[Entity] = field(default_factory=list)
 
 
 # Action system: derived from state; executed by engine.
-
 
 @dataclass
 class ActionTarget:
@@ -102,4 +100,4 @@ class Action:
 @dataclass
 class CommitDecision:
     # Indices into the ranger.hand to commit for icons
-    hand_indices: List[int] = field(default_factory=lambda: cast(List[int], []))
+    hand_indices: List[int] = field(default_factory=list)
