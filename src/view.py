@@ -61,20 +61,34 @@ def choose_target(state: GameState, action: Action) -> Optional[str]:
 
 
 def choose_commit(action: Action, hand_size: int) -> CommitDecision:
+    # Energy commitment
+    energy = 1  # default
+    raw_energy = input(f"Commit [{action.aspect}] energy (default 1): ").strip()
+    if raw_energy:
+        try:
+            energy = int(raw_energy)
+            if energy < 1:
+                print(f"Invalid energy amount, using default (1)")
+                energy = 1
+        except ValueError:
+            print(f"Invalid input '{raw_energy}', using default (1)")
+            energy = 1
+    
+    # Card commitment
     raw = input(f"Commit cards for [{action.approach}] (comma-separated indices, blank=none): ").strip()
-    if not raw:
-        return CommitDecision([])
-    try:
-        picks = [int(x) - 1 for x in raw.split(",") if x.strip()]
-        picks = [p for p in picks if 0 <= p < hand_size]
-        # dedupe preserve order
-        seen = set()
-        ordered = []
-        for p in picks:
-            if p not in seen:
-                ordered.append(p)
-                seen.add(p)
-        return CommitDecision(ordered)
-    except Exception:
-        return CommitDecision([])
+    hand_indices = []
+    if raw:
+        try:
+            picks = [int(x) - 1 for x in raw.split(",") if x.strip()]
+            picks = [p for p in picks if 0 <= p < hand_size]
+            # dedupe preserve order
+            seen = set()
+            for p in picks:
+                if p not in seen:
+                    hand_indices.append(p)
+                    seen.add(p)
+        except ValueError:
+            print("Invalid card indices, committing no cards")
+    
+    return CommitDecision(hand_indices=hand_indices, energy=energy)
 

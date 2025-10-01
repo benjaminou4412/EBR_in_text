@@ -99,5 +99,7 @@ class Action:
 
 @dataclass
 class CommitDecision:
+    # Amount of energy committed
+    energy: int = 1
     # Indices into the ranger.hand to commit for icons
     hand_indices: List[int] = field(default_factory=list)

@@ -14,6 +14,7 @@ A living checklist distilled from our discussion. Grouped by area and roughly pr
 - [ ] Add `definition_to_entity(defn)` helper to create in‑play `Entity` from `CardDefinition`
 
 ## Engine
+- [ ] Extend test handling to take into account committing multiple energy. 
 - [ ] Extend `CommitDecision` to support committing in‑play entities (exhaust/spend tokens)
 - [ ] Update commit/discard flow:
   - [ ] Hand commits → push to `ranger_discard`

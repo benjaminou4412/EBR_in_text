@@ -35,7 +35,10 @@ class EngineTests(unittest.TestCase):
             difficulty_fn=lambda _s, _t: 1,
             on_success=lambda s, eff, _t: thicket.add_progress(eff),
         )
-        eng.perform_action(act, decision=__import__('src.models', fromlist=['CommitDecision']).CommitDecision([0, 1]), target_id=None)
+        eng.perform_action(
+            act, 
+            decision=__import__('src.models', fromlist=['CommitDecision']).CommitDecision(energy = 1,hand_indices = [0, 1]), 
+            target_id=None)
 
         self.assertEqual(state.ranger.energy["AWA"], 2)
         self.assertEqual(thicket.progress, 3)
@@ -59,7 +62,10 @@ class EngineTests(unittest.TestCase):
             difficulty_fn=lambda _s, _t: 1,
             on_success=lambda s, eff, _t: thicket.add_progress(eff),
         )
-        eng.perform_action(act, decision=__import__('src.models', fromlist=['CommitDecision']).CommitDecision([]), target_id=None)
+        eng.perform_action(
+            act, 
+            decision=__import__('src.models', fromlist=['CommitDecision']).CommitDecision(energy = 1, hand_indices = []), 
+            target_id=None)
 
         self.assertEqual(state.ranger.energy["AWA"], 2)
         self.assertEqual(thicket.progress, 1)
@@ -83,7 +89,10 @@ class EngineTests(unittest.TestCase):
             on_success=lambda s, eff, _t: feat.add_progress(eff),
             on_fail=lambda s, _t: setattr(state.ranger, "injury", state.ranger.injury + 1),
         )
-        eng.perform_action(act, decision=__import__('src.models', fromlist=['CommitDecision']).CommitDecision([0]), target_id=None)
+        eng.perform_action(
+            act, 
+            decision=__import__('src.models', fromlist=['CommitDecision']).CommitDecision(energy = 1, hand_indices = [0]), 
+            target_id=None)
 
         self.assertEqual(state.ranger.energy["FIT"], 1)
         self.assertEqual(feat.progress, 2)
