@@ -1,5 +1,6 @@
 import json
 import os
+from typing import Any
 from src.models import Card, ApproachIcons, Entity, RangerState, GameState, Action
 from src.engine import GameEngine
 from src.registry import provide_common_tests, provide_card_tests
@@ -7,24 +8,24 @@ from src.view import render_state, choose_action, choose_target, choose_commit
 from src.decks import build_woods_path_deck
 
 
-def load_json(path: str):
+def load_json(path: str) -> Any:
     with open(path, "r", encoding="utf-8") as f:
         return json.load(f)
 
 
-def to_card(raw: dict) -> Card:
+def to_card(raw: dict[str, Any]) -> Card: 
     approach_counts: dict[str, int] = {}
-    for a in raw.get("approach_icons", []) or []:
-        approach = a.get("approach")
-        count = a.get("count", 0)
+    for a in raw.get("approach_icons", []) or []: # type: ignore
+        approach = a.get("approach") # type: ignore
+        count = a.get("count", 0) # type: ignore
         if approach:
-            approach_counts[approach] = approach_counts.get(approach, 0) + int(count)
+            approach_counts[approach] = approach_counts.get(approach, 0) + int(count) # type: ignore
 
     rules_texts: list[str] = []
-    for r in raw.get("rules", []) or []:
-        txt = r.get("text")
+    for r in raw.get("rules", []) or []: # type: ignore
+        txt = r.get("text") # type: ignore
         if txt:
-            rules_texts.append(txt)
+            rules_texts.append(txt) # type: ignore
 
     return Card(
         id=raw.get("id", ""),
@@ -92,19 +93,19 @@ def pick_demo_cards(base_dir: str) -> tuple[Entity, list[Card]]:
     return feature, hand_cards
 
 
-def clear_screen():
+def clear_screen() -> None:
     # Basic clear that works on Windows terminals
     os.system("cls" if os.name == "nt" else "clear")
 
 
-def show_state(state: GameState):
+def show_state(state: GameState) -> None:
     # Backward-compat wrapper to the view module
     render_state(state)
 
 
-def register_symbol_effects(eng: GameEngine):
+def register_symbol_effects(eng: GameEngine) -> None:
     # Overgrown Thicket: Mountain discards 1 progress
-    def mountain_thicket(state: GameState):
+    def mountain_thicket(state: GameState) -> None:
         e = next(x for x in state.entities if x.id == "woods-011-overgrown-thicket")
         if e.progress > 0:
             e.progress = max(0, e.progress - 1)
@@ -145,13 +146,13 @@ def build_demo_state(base_dir: str) -> GameState:
 
     # Add Midday Sun (Weather)
     weather_cards = load_json(os.path.join(base_dir, "reference JSON", "weather.json"))
-    midsun_raw = next(x for x in weather_cards if x.get("id") == "weather-002-midday-sun")
+    midsun_raw : dict[str, Any] = next(x for x in weather_cards if x.get("id") == "weather-002-midday-sun")
     weather = Entity(
         id=midsun_raw["id"],
         title=midsun_raw["title"],
         entity_type="Weather",
         presence=0,
-        clouds=int((midsun_raw.get("enters_play_with", {}) or {}).get("amount", 0)),
+        clouds=int((midsun_raw.get("enters_play_with", {}) or {}).get("amount", 0)), #type: ignore
         area="global",
     )
 
@@ -229,7 +230,7 @@ def menu_and_run(engine: GameEngine) -> None:
         engine.state.round_number += 1
 
 
-def main():
+def main() -> None:
     base_dir = os.getcwd()
     state = build_demo_state(base_dir)
     engine = GameEngine(state)
