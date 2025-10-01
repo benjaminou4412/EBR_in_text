@@ -49,11 +49,12 @@ class GameEngine:
         r = self.state.ranger
         if r.energy.get(action.aspect, 0) < 1:
             raise RuntimeError(f"Insufficient energy for {action.aspect}")
-        r.energy[action.aspect] -= 1
+        energy_committed = 1 # hardcoded for now, but in the future we need to account for committing multiple energy
+        r.energy[action.aspect] -= energy_committed
 
         base_icons, committed = self.commit_icons(r, action.approach, decision)
         mod, symbol = self.draw_challenge()
-        effort = max(0, base_icons + mod)
+        effort = max(0, energy_committed + base_icons + mod)
         difficulty = action.difficulty_fn(self.state, target_id)
         success = effort >= difficulty
 

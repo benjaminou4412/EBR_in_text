@@ -38,7 +38,31 @@ class EngineTests(unittest.TestCase):
         eng.perform_action(act, decision=__import__('src.models', fromlist=['CommitDecision']).CommitDecision([0, 1]), target_id=None)
 
         self.assertEqual(state.ranger.energy["AWA"], 2)
-        self.assertEqual(thicket.progress, 2)
+        self.assertEqual(thicket.progress, 3)
+        self.assertEqual(len(state.ranger.hand), 0)
+    
+    def test_single_energy(self):
+        # Setup state: one feature (thicket), ranger with no cards in hand
+        thicket = Entity(id="woods-011-overgrown-thicket", title="Overgrown Thicket", entity_type="Feature", presence=1, progress_threshold=2)
+        ranger = RangerState(name="Ranger", hand=[], energy={"AWA": 3, "FIT": 2, "SPI": 2, "FOC": 1})
+        # Create two pseudo cards with Exploration+1 each
+        state = GameState(ranger=ranger, entities=[thicket])
+        eng = GameEngine(state, challenge_drawer=fixed_draw(0, 'sun'))
+
+        # Perform action using the engine API directly
+        from src.models import Action
+        act = Action(
+            id="t1",
+            name="thicket",
+            aspect="AWA",
+            approach="Exploration",
+            difficulty_fn=lambda _s, _t: 1,
+            on_success=lambda s, eff, _t: thicket.add_progress(eff),
+        )
+        eng.perform_action(act, decision=__import__('src.models', fromlist=['CommitDecision']).CommitDecision([]), target_id=None)
+
+        self.assertEqual(state.ranger.energy["AWA"], 2)
+        self.assertEqual(thicket.progress, 1)
         self.assertEqual(len(state.ranger.hand), 0)
 
     def test_traverse_feature(self):
@@ -62,7 +86,7 @@ class EngineTests(unittest.TestCase):
         eng.perform_action(act, decision=__import__('src.models', fromlist=['CommitDecision']).CommitDecision([0]), target_id=None)
 
         self.assertEqual(state.ranger.energy["FIT"], 1)
-        self.assertEqual(feat.progress, 1)
+        self.assertEqual(feat.progress, 2)
         self.assertEqual(state.ranger.injury, 0)
 
 
