@@ -1,6 +1,6 @@
 from __future__ import annotations
 from typing import List, Optional
-from .models import GameState, Action, ActionTarget, CommitDecision
+from .models import GameState, Action, CommitDecision
 
 
 def render_state(state: GameState) -> None:
@@ -76,13 +76,13 @@ def choose_commit(action: Action, hand_size: int) -> CommitDecision:
     
     # Card commitment
     raw = input(f"Commit cards for [{action.approach}] (comma-separated indices, blank=none): ").strip()
-    hand_indices = []
+    hand_indices : List[int] = []
     if raw:
         try:
             picks = [int(x) - 1 for x in raw.split(",") if x.strip()]
             picks = [p for p in picks if 0 <= p < hand_size]
             # dedupe preserve order
-            seen = set()
+            seen : set[int]= set()
             for p in picks:
                 if p not in seen:
                     hand_indices.append(p)

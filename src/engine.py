@@ -18,14 +18,14 @@ class GameEngine:
         self.state = state
         self.draw_challenge = challenge_drawer
         # challenge symbol effects dispatch (entity-id + symbol -> callable)
-        self.symbol_handlers = {}
+        self.symbol_handlers: dict[Tuple[str, str], Callable[[GameState], None]] = {}
 
     def register_symbol_handler(self, key: Tuple[str, str], fn: Callable[[GameState], None]):
         self.symbol_handlers[key] = fn
 
     def commit_icons(self, ranger: RangerState, approach: str, decision: CommitDecision) -> Tuple[int, list[int]]:
         total = decision.energy
-        valid_indices = []
+        valid_indices : list[int] = []
         for idx in decision.hand_indices:
             if not (0 <= idx < len(ranger.hand)):
                 continue

@@ -3,7 +3,7 @@ from src.models import GameState, RangerState, Entity
 from src.engine import GameEngine
 
 
-def fixed_draw(mod, sym):
+def fixed_draw(mod : int, sym: str):
     return lambda: (mod, sym)
 
 
@@ -21,9 +21,6 @@ class EngineTests(unittest.TestCase):
         state = GameState(ranger=ranger, entities=[thicket])
         eng = GameEngine(state, challenge_drawer=fixed_draw(0, 'sun'))
 
-        # Monkeypatch prompt_commit to auto-pick 1,2
-        def fake_prompt(_r, _a):
-            return [1, 2]
 
         # Perform action using the engine API directly
         from src.models import Action
