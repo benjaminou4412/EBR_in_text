@@ -1,0 +1,108 @@
+-central concept is that all operations will take the form of an "action" operating on a "state". examples:
+	-state: prowling_wolhund.ready = true; action: avoid test success; result state: prowling_wolhund.ready = false
+	-state: campaign log = []; action: ignore kal; result: campaign log = ["Impressed Calypsa"]
+	-state: infusion_canteen.sips = 3; action: use infusion canteen; result state: infusion_canteen.sips = 2
+-in general, actions should be as atomic as possible; modify a single part of state at a time, and then compose atomic operations to form more complex ones
+	-common complex operations will include tests, challenge effects, clears, travels, etc.
+-the parent "reduce" function that takes a state and an action and returns the modified state will need to take into account various things
+	-since the entire game state will be fed in, the "action" will need to carry some kind of meta-info that specifies what exactly it's modifying
+		so an action might consist of a "target" and a "payload". working off the above examples:
+			-target: prowling wolhund; payload = exhaust
+			-target: campaign log; payload = "Impressed calypsa"
+			-target: infusion canteen; payload = use a sip
+-to handle various types of timing, every "reduce" will walk through several timing steps:
+	1) "before...would..." timing is the highest priority, and indicates a replacement effect that will alter the "core" game-state change
+	2) "before..." timing is next
+	3) "when...would..." timing is the next highest priority, and the last one that should cause replacement effects
+	4) "when..." timing is next, and often causes modifications (not replacements) to the "core" effect
+	5) the effect itself is now applied
+	6) "after..." timing is last
+-timing steps will be combined with canonical event types to handle various types of effects and interactions. For example:
+	-TAKE_FATIGUE:
+		-"when...would..." timing for:
+			-Camoweave Cloak
+			-Thoroughly Prepared
+	-PERFORM_TEST:
+		-special "when" timing during step 2 (commit effort), that keys off many cards that offer bonus effort
+			-Masterwork
+			-Boundary Sensor
+			-Field Journal
+			-Breathe Into It
+			-Ferinodex
+			-Intention Translator
+		-special "when" timing during step 1 (interaction fatigue), used for:
+			-Energized Hiking Greaves
+			-Local Fare
+			-Undaunted Seeker
+			-A Leaf in the Breeze
+			-Root Snare
+		-special "after you perform" window after the very end of the test for:
+			-Novice Lens
+			-Scepter of Harmony
+	-TEST_SUCCEED:
+		-"after" timing for:
+			-Walk With Me
+			-Dayhowler
+			-A Stone in the River
+			-Follow in Footsteps
+			-Staff of the Wanderer
+			-various personality cards
+	-COMMIT_CARD:
+		-"before" timing for Versatile
+	-PLAY_CARD:
+		-combined with "after" timing (gating on moment-type play) to implement Ironwool Boots
+		-
+	-UNATTACH:
+		-combined with "when" timing to implement Universal Power Cells
+	-USE_TOKEN:
+		-combined with "after" timing to implement Favorite Gear
+	-REST:
+		-combined with "when" timing for:
+			-One Eye Open
+			-Novice Lens
+	-SUFFER_INJURY:
+		-combined with "when...would..." timing for:
+			-Paratrepsis Whistle
+			-Safeguard
+	-ADD_HARM:
+		-combined with "when...would..." timing for:
+			-Paratrepsis Whistle
+			-Safeguard
+		-combined with "when" timing for Puffercrawler Spores
+		-combined with "after" timing for Tea Kit and Sifter
+	-ADD_PROGRESS:
+		-combined with "when..." timing for:
+			-Trail Markers
+	-CLEAR:
+		-special "when" timing during step 2 for:
+			-A Dear Friend
+		-special "after" timing during step 4 for:
+			-Memorill Sketchpad
+	-CHALLENGE_EFFECT:
+		-combined with "before...would..." timing for Calming Presence
+		-combined with "when...would..." timing for Nidocyte Sentinel
+		-combined with "after" timing for:
+			-Tracked
+			-Harmonize
+	-SCOUT:
+		-combined with "when..." timing for Phonoscopic Headset
+	-TRAVEL:
+		-special "when" timing during step 2 to modify valid location choices
+	-READY:
+		-"when...would..." timing for Carbonforged Cable
+	-CHALLENGE_DECK_SHUFFLE:
+		-"after" timing for Stave of the Sun
+	-DRAW_CHALLENGE_CARD:
+		-"before" timing for Rod of the Clouds
+		-"when" timing for What Should Never Be
+		-"after" timing for Throng of Life
+-listener/event framework: Whenever one of these cards "becomes active", it establishes a listener entry in a registery that waits for a particular type of action to come through the reducer
+	-"becomes active" can mean different things for different cardtypes; response moments are generally active in hand, listening for their play condition, whereas gear doesn't become active until played
+	-Part of the reduce() function will be walking through every single timing step, and at each step scanning the registry for matching listeners
+		-for example, when camoweave cloak is played, it will establish a listener for TAKE_FATIGUE events at WHEN_WOULD timing.
+		-then, the next time reduce(state, TAKE_FATIGUE) is run, eventually reduce() will step into checking for WHEN_WOULD timing
+		-at that moment, it will find camoweave cloak in the registry, see that both the type and the timing match, and call a function resolve camoweave cloak 
+
+
+
+
