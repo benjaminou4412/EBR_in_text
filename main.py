@@ -1,6 +1,5 @@
 import json
 import os
-from typing import List, Dict, Tuple
 from src.models import Card, ApproachIcons, Entity, RangerState, GameState, Action
 from src.engine import GameEngine
 from src.registry import provide_common_tests, provide_card_tests
@@ -14,14 +13,14 @@ def load_json(path: str):
 
 
 def to_card(raw: dict) -> Card:
-    approach_counts: Dict[str, int] = {}
+    approach_counts: dict[str, int] = {}
     for a in raw.get("approach_icons", []) or []:
         approach = a.get("approach")
         count = a.get("count", 0)
         if approach:
             approach_counts[approach] = approach_counts.get(approach, 0) + int(count)
 
-    rules_texts: List[str] = []
+    rules_texts: list[str] = []
     for r in raw.get("rules", []) or []:
         txt = r.get("text")
         if txt:
@@ -36,7 +35,7 @@ def to_card(raw: dict) -> Card:
     )
 
 
-def pick_demo_cards(base_dir: str) -> Tuple[Entity, List[Card]]:
+def pick_demo_cards(base_dir: str) -> tuple[Entity, list[Card]]:
     # Load Overgrown Thicket feature
     woods = load_json(os.path.join(base_dir, "reference JSON", "Path Sets", "Terrain sets", "woods.json"))
     overgrown_raw = next(x for x in woods if x.get("id") == "woods-011-overgrown-thicket")
@@ -68,7 +67,7 @@ def pick_demo_cards(base_dir: str) -> Tuple[Entity, List[Card]]:
         "explorer-03-a-leaf-in-the-breeze",
         "explorer-13-breathe-into-it",  # conflict + connection icons
     }
-    hand_cards: List[Card] = []
+    hand_cards: list[Card] = []
     for raw in explorer_cards:
         if raw.get("id") in wanted_ids:
             hand_cards.append(to_card(raw))

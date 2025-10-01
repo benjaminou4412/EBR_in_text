@@ -1,5 +1,5 @@
 from __future__ import annotations
-from typing import List, Optional
+from typing import Optional
 from .models import GameState, Action, CommitDecision
 
 
@@ -25,7 +25,7 @@ def render_state(state: GameState) -> None:
     print("")
 
 
-def choose_action(actions: List[Action]) -> Optional[Action]:
+def choose_action(actions: list[Action]) -> Optional[Action]:
     if not actions:
         print("No actions available.")
         return None
@@ -76,7 +76,7 @@ def choose_commit(action: Action, hand_size: int) -> CommitDecision:
     
     # Card commitment
     raw = input(f"Commit cards for [{action.approach}] (comma-separated indices, blank=none): ").strip()
-    hand_indices : List[int] = []
+    hand_indices : list[int] = []
     if raw:
         try:
             picks = [int(x) - 1 for x in raw.split(",") if x.strip()]

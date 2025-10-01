@@ -1,13 +1,13 @@
 from __future__ import annotations
 from dataclasses import dataclass, field
-from typing import Dict, List, Optional, Callable,cast
+from typing import Optional, Callable, cast
 
 
 # Core data structures: pure state and card data
 
 @dataclass
 class ApproachIcons:
-    counts: Dict[str, int] = field(default_factory=lambda: cast(Dict[str, int], {}))
+    counts: dict[str, int] = field(default_factory=lambda: cast(dict[str, int], {}))
 
     def get(self, approach: str) -> int:
         return int(self.counts.get(approach, 0) or 0)
@@ -18,7 +18,7 @@ class Card:
     id: str
     title: str
     card_type: str
-    rules_texts: List[str] = field(default_factory=lambda: cast(List[str], []))
+    rules_texts: list[str] = field(default_factory=lambda: cast(list[str], []))
     approach: ApproachIcons = field(default_factory=ApproachIcons)
 
 
@@ -54,19 +54,19 @@ class Entity:
 @dataclass
 class RangerState:
     name: str
-    hand: List[Card] = field(default_factory=lambda: cast(List[Card], []))
-    energy: Dict[str, int] = field(default_factory=lambda: {"AWA": 0, "FIT": 0, "SPI": 0, "FOC": 0})
+    hand: list[Card] = field(default_factory=lambda: cast(list[Card], []))
+    energy: dict[str, int] = field(default_factory=lambda: {"AWA": 0, "FIT": 0, "SPI": 0, "FOC": 0})
     injury: int = 0
 
 
 @dataclass
 class GameState:
     ranger: RangerState
-    entities: List[Entity]
+    entities: list[Entity]
     round_number: int = 1
     # Path deck for Phase 1 draws
-    path_deck: List[Entity] = field(default_factory=lambda: cast(List[Entity], []))
-    path_discard: List[Entity] = field(default_factory=lambda: cast(List[Entity], []))
+    path_deck: list[Entity] = field(default_factory=lambda: cast(list[Entity], []))
+    path_discard: list[Entity] = field(default_factory=lambda: cast(list[Entity], []))
 
 
 # Action system: derived from state; executed by engine.
@@ -86,7 +86,7 @@ class Action:
     approach: str  # legal approach icons to commit (if is_test)
     is_test: bool = True
     # If the action requires a target, provide candidate targets based on state
-    target_provider: Optional[Callable[[GameState], List[ActionTarget]]] = None
+    target_provider: Optional[Callable[[GameState], list[ActionTarget]]] = None
     # Computes difficulty for the chosen target (or state)
     difficulty_fn: Callable[[GameState, Optional[str]], int] = lambda _s, _t: 1
     # Effects
@@ -102,4 +102,4 @@ class CommitDecision:
     # Amount of energy committed
     energy: int = 1
     # Indices into the ranger.hand to commit for icons
-    hand_indices: List[int] = field(default_factory=lambda: cast(List[int], []))
+    hand_indices: list[int] = field(default_factory=lambda: cast(list[int], []))

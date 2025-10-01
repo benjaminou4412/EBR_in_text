@@ -1,6 +1,6 @@
 from __future__ import annotations
 from dataclasses import dataclass
-from typing import Callable, Optional, Tuple
+from typing import Callable, Optional
 from .models import GameState, Action, CommitDecision, RangerState, Card
 from .challenge import draw_challenge
 
@@ -14,16 +14,16 @@ class ChallengeOutcome:
 
 
 class GameEngine:
-    def __init__(self, state: GameState, challenge_drawer: Callable[[], Tuple[int, str]] = draw_challenge):
+    def __init__(self, state: GameState, challenge_drawer: Callable[[], tuple[int, str]] = draw_challenge):
         self.state = state
         self.draw_challenge = challenge_drawer
         # challenge symbol effects dispatch (entity-id + symbol -> callable)
-        self.symbol_handlers: dict[Tuple[str, str], Callable[[GameState], None]] = {}
+        self.symbol_handlers: dict[tuple[str, str], Callable[[GameState], None]] = {}
 
-    def register_symbol_handler(self, key: Tuple[str, str], fn: Callable[[GameState], None]):
+    def register_symbol_handler(self, key: tuple[str, str], fn: Callable[[GameState], None]):
         self.symbol_handlers[key] = fn
 
-    def commit_icons(self, ranger: RangerState, approach: str, decision: CommitDecision) -> Tuple[int, list[int]]:
+    def commit_icons(self, ranger: RangerState, approach: str, decision: CommitDecision) -> tuple[int, list[int]]:
         total = decision.energy
         valid_indices : list[int] = []
         for idx in decision.hand_indices:

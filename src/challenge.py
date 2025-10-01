@@ -1,8 +1,7 @@
 import random
-from typing import Tuple
 
 
-def draw_challenge() -> Tuple[int, str]:
+def draw_challenge() -> tuple[int, str]:
     # Distribution: +1 x6, 0 x10, -1 x7, -2 x1
     modifiers = [
         *([+1] * 6),

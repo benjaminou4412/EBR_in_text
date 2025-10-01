@@ -1,18 +1,17 @@
 from __future__ import annotations
-from typing import List
 from .models import GameState, Action, ActionTarget
 
 
-def _targets_by_type(state: GameState, entity_type: str) -> List[ActionTarget]:
-    out: List[ActionTarget] = []
+def _targets_by_type(state: GameState, entity_type: str) -> list[ActionTarget]:
+    out: list[ActionTarget] = []
     for e in state.entities:
         if e.entity_type == entity_type:
             out.append(ActionTarget(id=e.id, title=e.title))
     return out
 
 
-def provide_common_tests(state: GameState) -> List[Action]:
-    actions: List[Action] = []
+def provide_common_tests(state: GameState) -> list[Action]:
+    actions: list[Action] = []
 
     # Traverse: FIT + [Exploration], target Feature, diff X=presence
     actions.append(
@@ -78,8 +77,8 @@ def provide_common_tests(state: GameState) -> List[Action]:
     return actions
 
 
-def provide_card_tests(state: GameState) -> List[Action]:
-    actions: List[Action] = []
+def provide_card_tests(state: GameState) -> list[Action]:
+    actions: list[Action] = []
     # Overgrown Thicket (AWA + Exploration): add progress equal to effort
     for e in state.entities:
         if e.id == "woods-011-overgrown-thicket":
