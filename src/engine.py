@@ -1,7 +1,7 @@
 from __future__ import annotations
 from dataclasses import dataclass
 from typing import Callable, Optional
-from .models import GameState, Action, CommitDecision, RangerState, Card
+from .models import GameState, Action, CommitDecision, RangerState, Card, Entity
 from .challenge import draw_challenge
 
 
@@ -63,15 +63,33 @@ class GameEngine:
             if action.on_fail:
                 action.on_fail(self.state, target_id)
 
+        self.check_and_process_clears()
         # Handle symbol effects (registered externally)
         for e in self.state.entities:
             handler = self.symbol_handlers.get((e.id, symbol))
             if handler:
                 handler(self.state)
-
+        self.check_and_process_clears()
         # Discard committed cards last
         self.discard_committed(r, committed)
         return ChallengeOutcome(modifier=mod, symbol=symbol, effort=effort, success=success)
+    
+    def check_and_process_clears(self) -> None:
+        to_clear : list[Entity]= []
+        remaining : list[Entity] = []
+        
+        for entity in self.state.entities:
+            clear_type = entity.clear_if_threshold()
+            if clear_type == "progress":
+                #todo: check for clear-by-progress entry
+                to_clear.append(entity)
+            elif clear_type == "harm":
+                #todo: check for clear-by-harm entry
+                to_clear.append(entity)
+            else:
+                remaining.append(entity)
+        self.state.entities = remaining
+        self.state.path_discard.extend(to_clear)
 
     # Round/Phase helpers
     def phase1_draw_paths(self, count: int = 1):
