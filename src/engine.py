@@ -1,7 +1,7 @@
 from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Callable, Optional, cast
-from .models import GameState, Action, CommitDecision, RangerState, Card, Entity
+from .models import GameState, Action, CommitDecision, RangerState, Card, Entity, Symbol, Aspect
 from .challenge import draw_challenge
 
 
@@ -10,20 +10,20 @@ class ChallengeOutcome:
     base_effort: int
     modifier: int
     difficulty: int
-    symbol: str
+    symbol: Symbol
     resulting_effort: int
     success: bool
     cleared: list[Entity] = field(default_factory=lambda: cast(list[Entity], [])) 
 
 
 class GameEngine:
-    def __init__(self, state: GameState, challenge_drawer: Callable[[], tuple[int, str]] = draw_challenge):
+    def __init__(self, state: GameState, challenge_drawer: Callable[[], tuple[int, Symbol]] = draw_challenge):
         self.state = state
         self.draw_challenge = challenge_drawer
         # challenge symbol effects dispatch (entity-id + symbol -> callable)
-        self.symbol_handlers: dict[tuple[str, str], Callable[[GameState], None]] = {}
+        self.symbol_handlers: dict[tuple[str, Symbol], Callable[[GameState], None]] = {}
 
-    def register_symbol_handler(self, key: tuple[str, str], fn: Callable[[GameState], None]):
+    def register_symbol_handler(self, key: tuple[str, Symbol], fn: Callable[[GameState], None]):
         self.symbol_handlers[key] = fn
 
     def commit_icons(self, ranger: RangerState, approach: str, decision: CommitDecision) -> tuple[int, list[int]]:
@@ -47,7 +47,7 @@ class GameEngine:
         # Non-test actions (e.g., Rest) skip challenge + energy
         if not action.is_test:
             action.on_success(self.state, 0, target_id)
-            return ChallengeOutcome(difficulty=0, base_effort=0, modifier=0, symbol="", resulting_effort=0, success=True, cleared=[])
+            return ChallengeOutcome(difficulty=0, base_effort=0, modifier=0, symbol=Symbol.SUN, resulting_effort=0, success=True)
 
         r = self.state.ranger
         if r.energy.get(action.aspect, 0) < decision.energy:

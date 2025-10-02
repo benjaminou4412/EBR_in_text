@@ -1,7 +1,7 @@
 import json
 import os
 from typing import Any
-from src.models import Card, ApproachIcons, Entity, RangerState, GameState, Action
+from src.models import Card, ApproachIcons, Entity, RangerState, GameState, Action, Aspect, Symbol
 from src.engine import GameEngine
 from src.registry import provide_common_tests, provide_card_tests
 from src.view import render_state, choose_action, choose_target, choose_commit
@@ -113,7 +113,7 @@ def register_symbol_effects(eng: GameEngine) -> None:
         else:
             print(f"Challenge: Mountain on {e.title} (no progress to discard).")
 
-    eng.register_symbol_handler(("woods-011-overgrown-thicket", "mountain"), mountain_thicket)
+    eng.register_symbol_handler(("woods-011-overgrown-thicket", Symbol.MOUNTAIN), mountain_thicket)
 
 
 def build_demo_state(base_dir: str) -> GameState:
@@ -156,7 +156,7 @@ def build_demo_state(base_dir: str) -> GameState:
         area="global",
     )
 
-    ranger = RangerState(name="Demo Ranger", hand=hand, energy={"AWA": 3, "FIT": 2, "SPI": 2, "FOC": 1})
+    ranger = RangerState(name="Demo Ranger", hand=hand, energy={Aspect.AWA: 3, Aspect.FIT: 2, Aspect.SPI: 2, Aspect.FOC: 1})
     # Build a simple path deck from woods, excluding the ones already in play
     exclude = {feature.id, bramble.id, doe.id}
     deck = build_woods_path_deck(base_dir, exclude_ids=exclude)

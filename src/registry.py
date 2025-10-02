@@ -1,5 +1,5 @@
 from __future__ import annotations
-from .models import GameState, Action, ActionTarget
+from .models import GameState, Action, ActionTarget, Aspect
 
 
 def _targets_by_type(state: GameState, entity_type: str) -> list[ActionTarget]:
@@ -18,7 +18,7 @@ def provide_common_tests(state: GameState) -> list[Action]:
         Action(
             id="common-traverse",
             name="Traverse (FIT + Exploration) [X=presence]",
-            aspect="FIT",
+            aspect=Aspect.FIT,
             approach="Exploration",
             target_provider=lambda s: _targets_by_type(s, "Feature"),
             difficulty_fn=lambda s, tid: max(1, next(e.presence for e in s.entities if e.id == tid)),
@@ -34,7 +34,7 @@ def provide_common_tests(state: GameState) -> list[Action]:
         Action(
             id="common-connect",
             name="Connect (SPI + Connection) [X=presence]",
-            aspect="SPI",
+            aspect=Aspect.SPI,
             approach="Connection",
             target_provider=lambda s: _targets_by_type(s, "Being"),
             difficulty_fn=lambda s, tid: max(1, next(e.presence for e in s.entities if e.id == tid)),
@@ -49,7 +49,7 @@ def provide_common_tests(state: GameState) -> list[Action]:
         Action(
             id="common-avoid",
             name="Avoid (AWA + Conflict) [X=presence]",
-            aspect="AWA",
+            aspect=Aspect.AWA,
             approach="Conflict",
             target_provider=lambda s: _targets_by_type(s, "Being"),
             difficulty_fn=lambda s, tid: max(1, next(e.presence for e in s.entities if e.id == tid)),
@@ -64,7 +64,7 @@ def provide_common_tests(state: GameState) -> list[Action]:
         Action(
             id="common-remember",
             name="Remember (FOC + Reason) [1]",
-            aspect="FOC",
+            aspect=Aspect.FOC,
             approach="Reason",
             target_provider=None,
             difficulty_fn=lambda _s, _t: 1,
@@ -86,7 +86,7 @@ def provide_card_tests(state: GameState) -> list[Action]:
                 Action(
                     id=f"test-{e.id}",
                     name=f"{e.title} (AWA + Exploration)",
-                    aspect="AWA",
+                    aspect=Aspect.AWA,
                     approach="Exploration",
                     target_provider=None,
                     difficulty_fn=lambda _s, _t: 1,
@@ -101,7 +101,7 @@ def provide_card_tests(state: GameState) -> list[Action]:
                 Action(
                     id=f"test-{e.id}",
                     name=f"{e.title} (AWA + Reason) [2]",
-                    aspect="AWA",
+                    aspect=Aspect.AWA,
                     approach="Reason",
                     target_provider=None,
                     difficulty_fn=lambda _s, _t: 2,
@@ -117,7 +117,7 @@ def provide_card_tests(state: GameState) -> list[Action]:
                 Action(
                     id=f"test-{e.id}",
                     name=f"{e.title} (SPI + Conflict) [X=presence]",
-                    aspect="SPI",
+                    aspect=Aspect.SPI,
                     approach="Conflict",
                     target_provider=None,
                     difficulty_fn=lambda _s, _t, pres=e.presence: max(1, pres),
@@ -132,7 +132,7 @@ def provide_card_tests(state: GameState) -> list[Action]:
                 Action(
                     id=f"test-{e.id}",
                     name=f"{e.title} (FOC + Reason)",
-                    aspect="FOC",
+                    aspect=Aspect.FOC,
                     approach="Reason",
                     target_provider=None,
                     difficulty_fn=lambda _s, _t: 1,

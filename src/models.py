@@ -1,6 +1,24 @@
 from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Optional, Callable, cast
+from enum import Enum
+
+
+# Enums for fixed game constants
+
+class Aspect(str, Enum):
+    """Energy types in Earthborne Rangers."""
+    AWA = "AWA"
+    FIT = "FIT"
+    SPI = "SPI"
+    FOC = "FOC"
+
+
+class Symbol(str, Enum):
+    """Challenge deck symbols."""
+    SUN = "sun"
+    MOUNTAIN = "mountain"
+    CREST = "crest"
 
 
 # Core data structures: pure state and card data
@@ -55,7 +73,7 @@ class Entity:
 class RangerState:
     name: str
     hand: list[Card] = field(default_factory=lambda: cast(list[Card], []))
-    energy: dict[str, int] = field(default_factory=lambda: {"AWA": 0, "FIT": 0, "SPI": 0, "FOC": 0})
+    energy: dict[Aspect, int] = field(default_factory=lambda: {Aspect.AWA: 0, Aspect.FIT: 0, Aspect.SPI: 0, Aspect.FOC: 0})
     injury: int = 0
 
 
@@ -82,7 +100,7 @@ class ActionTarget:
 class Action:
     id: str  # stable identifier for the action option
     name: str  # human-readable label
-    aspect: str  # required energy type (if is_test)
+    aspect: Aspect | str  # required energy type (if is_test), str for non-test actions like Rest
     approach: str  # legal approach icons to commit (if is_test)
     is_test: bool = True
     # If the action requires a target, provide candidate targets based on state

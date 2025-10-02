@@ -1,12 +1,12 @@
 from __future__ import annotations
 from typing import Optional
-from .models import GameState, Action, CommitDecision
+from .models import GameState, Action, CommitDecision, Aspect
 
 
 def render_state(state: GameState) -> None:
     r = state.ranger
     print("=== Earthborne Rangers - Refactor Demo ===")
-    print(f"Ranger: {r.name} | Energy AWA {r.energy['AWA']} FIT {r.energy['FIT']} SPI {r.energy['SPI']} FOC {r.energy['FOC']} | Injury {r.injury}")
+    print(f"Ranger: {r.name} | Energy AWA {r.energy[Aspect.AWA]} FIT {r.energy[Aspect.FIT]} SPI {r.energy[Aspect.SPI]} FOC {r.energy[Aspect.FOC]} | Injury {r.injury}")
     print("Hand:")
     for i, c in enumerate(r.hand, start=1):
         icons = ", ".join(f"{k[:3]}+{v}" for k, v in c.approach.counts.items() if v)
