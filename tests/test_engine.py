@@ -95,6 +95,100 @@ class EngineTests(unittest.TestCase):
         self.assertEqual(feat.progress, 2)
         self.assertEqual(state.ranger.injury, 0)
 
+    def test_clear_on_progress_threshold(self):
+        # Setup: Feature with progress_threshold=2
+        feature = Entity(
+            id="test-feature",
+            title="Test Feature",
+            entity_type="Feature",
+            presence=1,
+            progress_threshold=2,
+        )
+        ranger = RangerState(name="Ranger", hand=[], energy={"AWA": 3, "FIT": 2, "SPI": 2, "FOC": 1})
+        state = GameState(ranger=ranger, entities=[feature])
+        eng = GameEngine(state, challenge_drawer=fixed_draw(0, 'sun'))
+
+        # Perform action that adds exactly enough progress to clear (1 energy + 1 icon = 2 effort)
+        from src.models import Action, Card, ApproachIcons, CommitDecision
+        ranger.hand = [Card(id="c1", title="E+1", card_type="moment", approach=ApproachIcons({"Exploration": 1}))]
+        act = Action(
+            id="test-action",
+            name="test",
+            aspect="AWA",
+            approach="Exploration",
+            difficulty_fn=lambda _s, _t: 1,
+            on_success=lambda s, eff, _t: feature.add_progress(eff),
+        )
+        eng.perform_action(act, decision=CommitDecision(energy=1, hand_indices=[0]), target_id=None)
+
+        # Assert: Feature should be removed from entities and moved to path_discard
+        self.assertEqual(len(state.entities), 0, "Feature should be removed from entities")
+        self.assertEqual(len(state.path_discard), 1, "Feature should be in path_discard")
+        self.assertEqual(state.path_discard[0].id, "test-feature", "Cleared feature should be the one we added progress to")
+
+    def test_clear_on_harm_threshold(self):
+        # Setup: Being with harm_threshold=2
+        being = Entity(
+            id="test-being",
+            title="Test Being",
+            entity_type="Being",
+            presence=1,
+            harm_threshold=2,
+        )
+        ranger = RangerState(name="Ranger", hand=[], energy={"AWA": 5, "FIT": 2, "SPI": 2, "FOC": 1})
+        from src.models import Card, ApproachIcons
+        # Add a card with +1 Conflict icon so we get 2 total effort (1 energy + 1 icon)
+        ranger.hand = [Card(id="c1", title="Conflict+1", card_type="moment", approach=ApproachIcons({"Conflict": 1}))]
+        state = GameState(ranger=ranger, entities=[being])
+        eng = GameEngine(state, challenge_drawer=fixed_draw(0, 'sun'))
+
+        # Perform action that adds exactly enough harm to clear (1 energy + 1 icon = 2 effort = 2 harm)
+        from src.models import Action, CommitDecision
+        act = Action(
+            id="test-harm",
+            name="test harm",
+            aspect="AWA",
+            approach="Conflict",
+            difficulty_fn=lambda _s, _t: 1,
+            on_success=lambda s, eff, _t: being.add_harm(eff),
+        )
+        eng.perform_action(act, decision=CommitDecision(energy=1, hand_indices=[0]), target_id=None)
+
+        # Assert: Being should be removed from entities and moved to path_discard
+        self.assertEqual(len(state.entities), 0, "Being should be removed from entities")
+        self.assertEqual(len(state.path_discard), 1, "Being should be in path_discard")
+        self.assertEqual(state.path_discard[0].id, "test-being", "Cleared being should be the one we added harm to")
+
+    def test_no_clear_below_threshold(self):
+        # Setup: Feature with progress_threshold=3
+        feature = Entity(
+            id="test-feature-2",
+            title="Test Feature 2",
+            entity_type="Feature",
+            presence=1,
+            progress_threshold=3,
+        )
+        ranger = RangerState(name="Ranger", hand=[], energy={"AWA": 3, "FIT": 2, "SPI": 2, "FOC": 1})
+        state = GameState(ranger=ranger, entities=[feature])
+        eng = GameEngine(state, challenge_drawer=fixed_draw(0, 'sun'))
+
+        # Add progress that doesn't reach threshold (only 1 effort)
+        from src.models import Action, CommitDecision
+        act = Action(
+            id="test-action",
+            name="test",
+            aspect="AWA",
+            approach="Exploration",
+            difficulty_fn=lambda _s, _t: 1,
+            on_success=lambda s, eff, _t: feature.add_progress(eff),
+        )
+        eng.perform_action(act, decision=CommitDecision(energy=1, hand_indices=[]), target_id=None)
+
+        # Assert: Feature should still be in entities (not cleared)
+        self.assertEqual(len(state.entities), 1, "Feature should still be in play")
+        self.assertEqual(len(state.path_discard), 0, "Nothing should be discarded")
+        self.assertEqual(feature.progress, 1, "Feature should have 1 progress")
+
 
 if __name__ == '__main__':
     unittest.main()
