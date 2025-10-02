@@ -210,8 +210,18 @@ def menu_and_run(engine: GameEngine) -> None:
 
             if act.is_test:
                 print("")
-                print(f"Committed {act.approach} icons: effort (icons + modifier) -> {outcome.effort}")
-                print(f"Challenge draw: {outcome.modifier:+d}, symbol [{outcome.symbol.upper()}], success={outcome.success}")
+                print(f"Total effort committed: {outcome.base_effort}")
+                print(f"Test difficulty: {outcome.difficulty}")
+                print(f"Challenge draw: {outcome.modifier:+d}, symbol [{outcome.symbol.upper()}]")
+                print(f"Resulting effort: {outcome.base_effort} + ({outcome.modifier:d}) = {outcome.resulting_effort}")
+                if outcome.success:
+                    print(f"{outcome.resulting_effort} >= {outcome.difficulty}")
+                    print(f"Test succeeded!")
+                else:
+                    print(f"{outcome.resulting_effort} < {outcome.difficulty}")
+                    print(f"Test failed!")
+                for cleared_card in outcome.cleared:
+                    print(f"{cleared_card.title} cleared!")
                 input("Enter to continue...")
 
         # Phase 3: Travel (skipped)
