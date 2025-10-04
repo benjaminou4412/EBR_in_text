@@ -1,6 +1,6 @@
 from __future__ import annotations
 from typing import Optional
-from .models import GameState, Action, CommitDecision, Aspect
+from .models import GameState, Action, CommitDecision, Aspect, Approach
 
 
 def render_state(state: GameState) -> None:

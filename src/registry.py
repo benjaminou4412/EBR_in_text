@@ -1,5 +1,5 @@
 from __future__ import annotations
-from .models import GameState, Action, ActionTarget, Aspect
+from .models import GameState, Action, ActionTarget, Aspect, Approach
 
 
 def _targets_by_type(state: GameState, entity_type: str) -> list[ActionTarget]:
@@ -19,7 +19,7 @@ def provide_common_tests(state: GameState) -> list[Action]:
             id="common-traverse",
             name="Traverse (FIT + Exploration) [X=presence]",
             aspect=Aspect.FIT,
-            approach="Exploration",
+            approach=Approach.EXPLORATION,
             target_provider=lambda s: _targets_by_type(s, "Feature"),
             difficulty_fn=lambda s, tid: max(1, next(e.presence for e in s.entities if e.id == tid)),
             on_success=lambda s, eff, tid: next(e for e in s.entities if e.id == tid).add_progress(eff),
@@ -35,7 +35,7 @@ def provide_common_tests(state: GameState) -> list[Action]:
             id="common-connect",
             name="Connect (SPI + Connection) [X=presence]",
             aspect=Aspect.SPI,
-            approach="Connection",
+            approach=Approach.CONNECTION,
             target_provider=lambda s: _targets_by_type(s, "Being"),
             difficulty_fn=lambda s, tid: max(1, next(e.presence for e in s.entities if e.id == tid)),
             on_success=lambda s, eff, tid: next(e for e in s.entities if e.id == tid).add_progress(eff),
@@ -50,7 +50,7 @@ def provide_common_tests(state: GameState) -> list[Action]:
             id="common-avoid",
             name="Avoid (AWA + Conflict) [X=presence]",
             aspect=Aspect.AWA,
-            approach="Conflict",
+            approach=Approach.CONFLICT,
             target_provider=lambda s: _targets_by_type(s, "Being"),
             difficulty_fn=lambda s, tid: max(1, next(e.presence for e in s.entities if e.id == tid)),
             on_success=lambda s, _eff, tid: setattr(next(e for e in s.entities if e.id == tid), "exhausted", True),
@@ -65,7 +65,7 @@ def provide_common_tests(state: GameState) -> list[Action]:
             id="common-remember",
             name="Remember (FOC + Reason) [1]",
             aspect=Aspect.FOC,
-            approach="Reason",
+            approach=Approach.REASON,
             target_provider=None,
             difficulty_fn=lambda _s, _t: 1,
             on_success=lambda s, eff, _t: None,  # No deck yet; placeholder
@@ -87,7 +87,7 @@ def provide_card_tests(state: GameState) -> list[Action]:
                     id=f"test-{e.id}",
                     name=f"{e.title} (AWA + Exploration)",
                     aspect=Aspect.AWA,
-                    approach="Exploration",
+                    approach=Approach.EXPLORATION,
                     target_provider=None,
                     difficulty_fn=lambda _s, _t: 1,
                     on_success=lambda s, eff, _t, eid=e.id: next(x for x in s.entities if x.id == eid).add_progress(eff),
@@ -102,7 +102,7 @@ def provide_card_tests(state: GameState) -> list[Action]:
                     id=f"test-{e.id}",
                     name=f"{e.title} (AWA + Reason) [2]",
                     aspect=Aspect.AWA,
-                    approach="Reason",
+                    approach=Approach.REASON,
                     target_provider=None,
                     difficulty_fn=lambda _s, _t: 2,
                     on_success=lambda s, _eff, _t, eid=e.id: next(x for x in s.entities if x.id == eid).add_harm(1),
@@ -118,7 +118,7 @@ def provide_card_tests(state: GameState) -> list[Action]:
                     id=f"test-{e.id}",
                     name=f"{e.title} (SPI + Conflict) [X=presence]",
                     aspect=Aspect.SPI,
-                    approach="Conflict",
+                    approach=Approach.CONFLICT,
                     target_provider=None,
                     difficulty_fn=lambda _s, _t, pres=e.presence: max(1, pres),
                     on_success=lambda s, _eff, _t, eid=e.id: setattr(next(x for x in s.entities if x.id == eid), "area", "along_the_way"),
@@ -133,7 +133,7 @@ def provide_card_tests(state: GameState) -> list[Action]:
                     id=f"test-{e.id}",
                     name=f"{e.title} (FOC + Reason)",
                     aspect=Aspect.FOC,
-                    approach="Reason",
+                    approach=Approach.REASON,
                     target_provider=None,
                     difficulty_fn=lambda _s, _t: 1,
                     on_success=lambda s, _eff, _t, eid=e.id: setattr(next(x for x in s.entities if x.id == eid), "clouds", next(x for x in s.entities if x.id == eid).clouds + 1),

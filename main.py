@@ -1,7 +1,7 @@
 import json
 import os
 from typing import Any
-from src.models import Card, ApproachIcons, Entity, RangerState, GameState, Action, Aspect, Symbol
+from src.models import Card, ApproachIcons, Entity, RangerState, GameState, Action, Aspect, Symbol, Approach
 from src.engine import GameEngine
 from src.registry import provide_common_tests, provide_card_tests
 from src.view import render_state, choose_action, choose_target, choose_commit
@@ -13,13 +13,19 @@ def load_json(path: str) -> Any:
         return json.load(f)
 
 
-def to_card(raw: dict[str, Any]) -> Card: 
-    approach_counts: dict[str, int] = {}
+def to_card(raw: dict[str, Any]) -> Card:
+    approach_counts: dict[Approach, int] = {}
     for a in raw.get("approach_icons", []) or []: # type: ignore
-        approach = a.get("approach") # type: ignore
+        approach_str = a.get("approach") # type: ignore
         count = a.get("count", 0) # type: ignore
-        if approach:
-            approach_counts[approach] = approach_counts.get(approach, 0) + int(count) # type: ignore
+        if approach_str:
+            # Map JSON string to Approach enum
+            try:
+                approach = Approach(approach_str)
+                approach_counts[approach] = approach_counts.get(approach, 0) + int(count) # type: ignore
+            except ValueError:
+                # Skip unknown approach types
+                pass
 
     rules_texts: list[str] = []
     for r in raw.get("rules", []) or []: # type: ignore
@@ -86,8 +92,8 @@ def pick_demo_cards(base_dir: str) -> tuple[Entity, list[Card]]:
     # Fallback: if something broke, create a dummy Exploration 1 card
     if not hand_cards:
         hand_cards = [
-            Card(id="demo-explore-1", title="Demo Explore +1", card_type="moment", approach=ApproachIcons({"Exploration": 1})),
-            Card(id="demo-explore-1b", title="Demo Explore +1b", card_type="moment", approach=ApproachIcons({"Exploration": 1})),
+            Card(id="demo-explore-1", title="Demo Explore +1", card_type="moment", approach=ApproachIcons({Approach.EXPLORATION: 1})),
+            Card(id="demo-explore-1b", title="Demo Explore +1b", card_type="moment", approach=ApproachIcons({Approach.EXPLORATION: 1})),
         ]
 
     return feature, hand_cards

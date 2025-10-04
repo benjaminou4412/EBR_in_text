@@ -21,13 +21,21 @@ class Symbol(str, Enum):
     CREST = "crest"
 
 
+class Approach(str, Enum):
+    """Approach types for tests."""
+    CONFLICT = "Conflict"
+    EXPLORATION = "Exploration"
+    REASON = "Reason"
+    CONNECTION = "Connection"
+
+
 # Core data structures: pure state and card data
 
 @dataclass
 class ApproachIcons:
-    counts: dict[str, int] = field(default_factory=lambda: cast(dict[str, int], {}))
+    counts: dict[Approach, int] = field(default_factory=lambda: cast(dict[Approach, int], {}))
 
-    def get(self, approach: str) -> int:
+    def get(self, approach: Approach) -> int:
         return int(self.counts.get(approach, 0) or 0)
 
 
@@ -101,7 +109,7 @@ class Action:
     id: str  # stable identifier for the action option
     name: str  # human-readable label
     aspect: Aspect | str  # required energy type (if is_test), str for non-test actions like Rest
-    approach: str  # legal approach icons to commit (if is_test)
+    approach: Approach | str  # legal approach icons to commit (if is_test), str for non-test actions
     is_test: bool = True
     # If the action requires a target, provide candidate targets based on state
     target_provider: Optional[Callable[[GameState], list[ActionTarget]]] = None

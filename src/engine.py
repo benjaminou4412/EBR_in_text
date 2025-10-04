@@ -1,7 +1,7 @@
 from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Callable, Optional, cast
-from .models import GameState, Action, CommitDecision, RangerState, Card, Entity, Symbol, Aspect
+from .models import GameState, Action, CommitDecision, RangerState, Card, Entity, Symbol, Aspect, Approach
 from .challenge import draw_challenge
 
 
@@ -26,7 +26,7 @@ class GameEngine:
     def register_symbol_handler(self, key: tuple[str, Symbol], fn: Callable[[GameState], None]):
         self.symbol_handlers[key] = fn
 
-    def commit_icons(self, ranger: RangerState, approach: str, decision: CommitDecision) -> tuple[int, list[int]]:
+    def commit_icons(self, ranger: RangerState, approach: Approach, decision: CommitDecision) -> tuple[int, list[int]]:
         total = decision.energy
         valid_indices : list[int] = []
         for idx in decision.hand_indices:
@@ -50,11 +50,14 @@ class GameEngine:
             return ChallengeOutcome(difficulty=0, base_effort=0, modifier=0, symbol=Symbol.SUN, resulting_effort=0, success=True)
 
         r = self.state.ranger
-        if r.energy.get(action.aspect, 0) < decision.energy:
-            raise RuntimeError(f"Insufficient energy for {action.aspect}")
-        r.energy[action.aspect] -= decision.energy
+        # At this point, action.aspect/approach are guaranteed to be enums (not str) since is_test=True
+        aspect = action.aspect if isinstance(action.aspect, Aspect) else Aspect.AWA  # type guard
+        approach = action.approach if isinstance(action.approach, Approach) else Approach.EXPLORATION  # type guard
+        if r.energy.get(aspect, 0) < decision.energy:
+            raise RuntimeError(f"Insufficient energy for {aspect}")
+        r.energy[aspect] -= decision.energy
 
-        base_effort, committed = self.commit_icons(r, action.approach, decision)
+        base_effort, committed = self.commit_icons(r, approach, decision)
         mod, symbol = self.draw_challenge()
         effort = max(0, base_effort + mod)
         difficulty = action.difficulty_fn(self.state, target_id)

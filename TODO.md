@@ -3,9 +3,10 @@
 A living checklist distilled from our discussion. Grouped by area and roughly prioritized.
 
 ## Types & Models
-- [ ] Add typed default factories for lists/dicts in dataclasses (silence IDE warnings)
-- [ ] Introduce enums:
-  - [ ] Aspect: `AWA`, `FIT`, `SPI`, `FOC`
+- [X] Add typed default factories for lists/dicts in dataclasses (silence IDE warnings)
+- [X] Introduce enums:
+  - [X] Aspect: `AWA`, `FIT`, `SPI`, `FOC`
+  - [X] Challenge: `Sun`, `Mountain`, `Crest`
   - [ ] Approach: `Conflict`, `Exploration`, `Reason`, `Connection`
   - [ ] Area: `Weather`, `Location`, `Missions`, `AlongTheWay`, `WithinReach`, `PlayerArea`
 - [ ] Add `DiscardPile` for ranger hand discards; consider converting `path_discard` later
@@ -69,17 +70,8 @@ A living checklist distilled from our discussion. Grouped by area and roughly pr
 - [ ] End‑to‑end deterministic tests with fixed challenge drawer and effect selector
 
 ## Tooling & Docs
-- [ ] Apply typed default factories across codebase
+- [X] Apply typed default factories across codebase
 - [ ] Optionally migrate `energy` to `Dict[Aspect, int]` after enums
 - [ ] Add short docstrings to core dataclasses and engine methods
 - [ ] Optionally tune Pylance diagnostics once typed factories are in place
-
-## Suggested Sequence (incremental)
-1) Typed factories + enums (Aspect/Approach/Area)
-2) DiscardPile + push committed cards there
-3) Behavior registry skeleton; migrate Overgrown Thicket
-4) Challenge effects resolver + view ordering; migrate a couple effects
-5) “Play” actions path (CardDefinition → Entity) for one simple permanent
-6) Path/Challenge deck improvements and Travel Phase basics
-7) Flesh out behaviors and tests card‑by‑card
 

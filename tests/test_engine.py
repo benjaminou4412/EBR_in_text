@@ -1,5 +1,5 @@
 import unittest
-from src.models import GameState, RangerState, Entity, Aspect, Symbol
+from src.models import GameState, RangerState, Entity, Aspect, Symbol, Approach
 from src.engine import GameEngine
 
 
@@ -15,8 +15,8 @@ class EngineTests(unittest.TestCase):
         # Create two pseudo cards with Exploration+1 each
         from src.models import Card, ApproachIcons
         ranger.hand = [
-            Card(id="c1", title="E+1", card_type="moment", approach=ApproachIcons({"Exploration": 1})),
-            Card(id="c2", title="E+1", card_type="moment", approach=ApproachIcons({"Exploration": 1})),
+            Card(id="c1", title="E+1", card_type="moment", approach=ApproachIcons({Approach.EXPLORATION: 1})),
+            Card(id="c2", title="E+1", card_type="moment", approach=ApproachIcons({Approach.EXPLORATION: 1})),
         ]
         state = GameState(ranger=ranger, entities=[thicket])
         eng = GameEngine(state, challenge_drawer=fixed_draw(0, Symbol.SUN))
@@ -28,7 +28,7 @@ class EngineTests(unittest.TestCase):
             id="t1",
             name="thicket",
             aspect=Aspect.AWA,
-            approach="Exploration",
+            approach=Approach.EXPLORATION,
             difficulty_fn=lambda _s, _t: 1,
             on_success=lambda s, eff, _t: thicket.add_progress(eff),
         )
@@ -55,7 +55,7 @@ class EngineTests(unittest.TestCase):
             id="t1",
             name="thicket",
             aspect=Aspect.AWA,
-            approach="Exploration",
+            approach=Approach.EXPLORATION,
             difficulty_fn=lambda _s, _t: 1,
             on_success=lambda s, eff, _t: thicket.add_progress(eff),
         )
@@ -72,7 +72,7 @@ class EngineTests(unittest.TestCase):
         feat = Entity(id="feat1", title="Feature A", entity_type="Feature", presence=1, progress_threshold=3)
         ranger = RangerState(name="Ranger", hand=[], energy={Aspect.AWA: 3, Aspect.FIT: 2, Aspect.SPI: 2, Aspect.FOC: 1})
         from src.models import Card, ApproachIcons
-        ranger.hand = [Card(id="e1", title="E+1", card_type="moment", approach=ApproachIcons({"Exploration": 1}))]
+        ranger.hand = [Card(id="e1", title="E+1", card_type="moment", approach=ApproachIcons({Approach.EXPLORATION: 1}))]
         state = GameState(ranger=ranger, entities=[feat])
         eng = GameEngine(state, challenge_drawer=fixed_draw(0, Symbol.CREST))
 
@@ -81,7 +81,7 @@ class EngineTests(unittest.TestCase):
             id="t2",
             name="traverse",
             aspect=Aspect.FIT,
-            approach="Exploration",
+            approach=Approach.EXPLORATION,
             difficulty_fn=lambda _s, _t: max(1, feat.presence),
             on_success=lambda s, eff, _t: feat.add_progress(eff),
             on_fail=lambda s, _t: setattr(state.ranger, "injury", state.ranger.injury + 1),
@@ -115,7 +115,7 @@ class EngineTests(unittest.TestCase):
             id="test-action",
             name="test",
             aspect=Aspect.AWA,
-            approach="Exploration",
+            approach=Approach.EXPLORATION,
             difficulty_fn=lambda _s, _t: 1,
             on_success=lambda s, eff, _t: feature.add_progress(eff),
         )
@@ -135,10 +135,10 @@ class EngineTests(unittest.TestCase):
             presence=1,
             harm_threshold=2,
         )
-        ranger = RangerState(name="Ranger", hand=[], energy={"AWA": 5, "FIT": 2, "SPI": 2, "FOC": 1})
+        ranger = RangerState(name="Ranger", hand=[], energy={Aspect.AWA: 5, Aspect.FIT: 2, Aspect.SPI: 2, Aspect.FOC: 1})
         from src.models import Card, ApproachIcons
         # Add a card with +1 Conflict icon so we get 2 total effort (1 energy + 1 icon)
-        ranger.hand = [Card(id="c1", title="Conflict+1", card_type="moment", approach=ApproachIcons({"Conflict": 1}))]
+        ranger.hand = [Card(id="c1", title="Conflict+1", card_type="moment", approach=ApproachIcons({Approach.CONFLICT: 1}))]
         state = GameState(ranger=ranger, entities=[being])
         eng = GameEngine(state, challenge_drawer=fixed_draw(0, Symbol.SUN))
 
@@ -148,7 +148,7 @@ class EngineTests(unittest.TestCase):
             id="test-harm",
             name="test harm",
             aspect=Aspect.AWA,
-            approach="Conflict",
+            approach=Approach.CONFLICT,
             difficulty_fn=lambda _s, _t: 1,
             on_success=lambda s, eff, _t: being.add_harm(eff),
         )
@@ -178,7 +178,7 @@ class EngineTests(unittest.TestCase):
             id="test-action",
             name="test",
             aspect=Aspect.AWA,
-            approach="Exploration",
+            approach=Approach.EXPLORATION,
             difficulty_fn=lambda _s, _t: 1,
             on_success=lambda s, eff, _t: feature.add_progress(eff),
         )
