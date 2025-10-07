@@ -1,7 +1,7 @@
 from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Callable, Optional, cast
-from .models import GameState, Action, CommitDecision, RangerState, Card, Entity, Symbol, Aspect, Approach
+from .models import GameState, Action, CommitDecision, RangerState, Card, RangerCard, PathCard, Symbol, Aspect, Approach, Zone
 from .challenge import draw_challenge
 
 
@@ -13,7 +13,7 @@ class ChallengeOutcome:
     symbol: Symbol
     resulting_effort: int
     success: bool
-    cleared: list[Entity] = field(default_factory=lambda: cast(list[Entity], [])) 
+    cleared: list[Card] = field(default_factory=lambda: cast(list[Card], [])) 
 
 
 class GameEngine:
@@ -32,10 +32,10 @@ class GameEngine:
         for idx in decision.hand_indices:
             if not (0 <= idx < len(ranger.hand)):
                 continue
-            c: Card = ranger.hand[idx]
-            val = c.approach.get(approach)
-            if val:
-                total += val
+            c: RangerCard = ranger.hand[idx]
+            num_icons = c.approach_icons.get(approach, 0)
+            if num_icons:
+                total += num_icons
                 valid_indices.append(idx)
         return total, valid_indices
 
@@ -69,13 +69,25 @@ class GameEngine:
             if action.on_fail:
                 action.on_fail(self.state, target_id)
 
-        cleared : list[Entity]= []
+        cleared : list[Card]= []
         cleared.extend(self.check_and_process_clears())
+
         # Handle symbol effects (registered externally)
-        for e in self.state.entities:
-            handler = self.symbol_handlers.get((e.id, symbol))
-            if handler:
-                handler(self.state)
+
+        challenge_zones : list[Zone] = [
+            Zone.SURROUNDINGS,     # Weather, Location, Mission
+            Zone.ALONG_THE_WAY,    # TODO: player chooses order
+            Zone.WITHIN_REACH,     # TODO: player chooses order
+            Zone.PLAYER_AREA,      # TODO: player chooses order
+        ]
+
+        for zone in challenge_zones:
+            for card in self.state.zones[zone]:
+                if not card.exhausted:
+                    handler = self.symbol_handlers.get((card.id, symbol))
+                    if handler:
+                        handler(self.state)
+
         cleared.extend(self.check_and_process_clears())
         # Discard committed cards last
         self.discard_committed(r, committed)
@@ -88,23 +100,27 @@ class GameEngine:
             cleared=cleared
         )
     
-    #check all in-play entities' clear thresholds and moves them to discard when thresholds are met
+    #check all in-play cards' clear thresholds and moves them to discard when thresholds are met
     #return list of cleared entities to display
-    def check_and_process_clears(self) -> list[Entity]:
-        to_clear : list[Entity]= []
-        remaining : list[Entity] = []
+    def check_and_process_clears(self) -> list[PathCard]:
+        to_clear : list[PathCard]= []
         
-        for entity in self.state.entities:
-            clear_type = entity.clear_if_threshold()
-            if clear_type == "progress":
-                #todo: check for clear-by-progress entry
-                to_clear.append(entity)
-            elif clear_type == "harm":
-                #todo: check for clear-by-harm entry
-                to_clear.append(entity)
-            else:
-                remaining.append(entity)
-        self.state.entities = remaining
+        for zone in self.state.zones:
+            remaining : list[Card] = []
+            for card in self.state.zones[zone]:
+                if isinstance(card, PathCard):
+                    clear_type = card.clear_if_threshold()
+                    if clear_type == "progress":
+                        #todo: check for clear-by-progress entry
+                        to_clear.append(card)
+                    elif clear_type == "harm":
+                        #todo: check for clear-by-harm entry
+                        to_clear.append(card)
+                    else:
+                        remaining.append(card)
+                else:
+                    remaining.append(card)
+            self.state.zones[zone] = remaining
         self.state.path_discard.extend(to_clear)
         return to_clear
 
@@ -114,10 +130,12 @@ class GameEngine:
             if not self.state.path_deck:
                 break
             card = self.state.path_deck.pop(0)
-            self.state.entities.append(card)
+            self.state.zones[card.area].append(card)
+
 
     def phase4_refresh(self):
         # Ready exhausted entities
-        for e in self.state.entities:
-            e.exhausted = False
-        # Future: weather refresh hooks
+        for zone in self.state.zones:
+            for card in self.state.zones[zone]:
+                card.exhausted = False
+        # Future: refresh ability hooks

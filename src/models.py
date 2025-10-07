@@ -40,13 +40,19 @@ class Zone(str, Enum):
 
 @dataclass
 class Card:
+    #immutable card identity
     title: str
     id: str
-    traits: list[str] = field(default_factory=lambda: cast(list[str], []))
-
     card_set: str = ""
-    abilities_text: list[str] = field(default_factory=lambda: cast(list[str], []))
-    starting_tokens: dict[str, int] = field(default_factory=lambda: cast(dict[str, int], {}))
+
+    #sometimes mutable
+    traits: list[str] = field(default_factory=lambda: cast(list[str], [])) #from cards like Trails Markers
+    abilities_text: list[str] = field(default_factory=lambda: cast(list[str], [])) #will be mutable in expansion content (mycileal)
+    starting_tokens: dict[str, int] = field(default_factory=lambda: cast(dict[str, int], {})) #theoretically mutable    
+
+    #highly mutable state variables
+    exhausted: bool = False
+    
     
     def get_types(self, location: str | None = None) -> set[type]:
         """Override for context-dependent typing"""
@@ -54,19 +60,25 @@ class Card:
 
 @dataclass
 class RangerCard(Card):
-    energy_cost: dict[Aspect, int] = field(default_factory=lambda: cast(dict[Aspect, int], {}))
+    #immutable card identity
     aspect: Aspect | None = None
+
+    #sometimes mutable 
+    energy_cost: dict[Aspect, int] = field(default_factory=lambda: cast(dict[Aspect, int], {}))
     approach_icons: dict[Approach, int] = field(default_factory=lambda: cast(dict[Approach, int], {}))
 
 @dataclass
 class PathCard(Card):
-    area: str = "" # "Within Reach" or "Along the Way"
+    #sometimes mutable
+    area: Zone = Zone.WITHIN_REACH # "Within Reach" or "Along the Way"
     harm_threshold: int | None = None
     progress_threshold: int | None = None
     harm_nulled : bool = False
     progress_nulled : bool = False
     presence: int = 0
     challenge_effects_text: dict[Symbol, str] = field(default_factory=lambda: cast(dict[Symbol, str], {}))
+
+    #highly mutable state variables
     progress: int = 0
     harm: int = 0
     
@@ -76,7 +88,6 @@ class PathCard(Card):
     on_harm_clear_log: str | None = None
 
     # state modification
-
     def add_progress(self, amount: int) -> None:
         if not self.progress_nulled:
             self.progress = max(0, self.progress + max(0, amount))
@@ -120,14 +131,9 @@ class FeatureCard(PathCard):
     pass  # Distinguished primarily by type checks
 
 @dataclass
-class RangerBeingCard(RangerCard):
+class RangerBeingCard(RangerCard, BeingCard):
     """Ranger Being - has ranger fields + path card fields"""
-    # Path-like fields
-    area: str = "Within Reach"  # or "Along the Way"
-    harm_threshold: int | None = None
-    progress_threshold: int | None = None
-    presence: int = 0
-    
+    #may be needed for instances where location-basec card type matters
     def get_types(self, location: str | None = None) -> set[type]:
         if location == "hand":
             return {RangerCard}
@@ -135,13 +141,9 @@ class RangerBeingCard(RangerCard):
             return {RangerCard, BeingCard}
 
 @dataclass
-class RangerFeatureCard(RangerCard):
+class RangerFeatureCard(RangerCard, FeatureCard):
     """Ranger Feature - similar structure to Ranger Being"""
-    area: str = "Within Reach"
-    harm_threshold: int | None = None
-    progress_threshold: int | None = None
-    presence: int = 0
-    
+    #may be needed for instances where location-basec card type matters
     def get_types(self, location: str | None = None) -> set[type]:
         if location == "hand":
             return {RangerCard}
@@ -163,35 +165,6 @@ class LocationCard(Card):
 class MissionCard(Card):
     # TODO: mission-specific fields
     pass
-
-
-@dataclass
-class LegacyEntity:
-    id: str
-    title: str
-    entity_type: str  # Feature | Being | Weather | Location | Mission
-    presence: int = 1
-    progress_threshold: int = -1
-    harm_threshold: int = -1
-    area: str = "within_reach"  # within_reach | along_the_way | player_area | global
-    exhausted: bool = False
-    progress: int = 0
-    harm: int = 0
-    # Weather tokens (simple demo: clouds)
-    clouds: int = 0
-
-    def add_progress(self, amount: int) -> None:
-        self.progress = max(0, self.progress + max(0, amount))
-
-    def add_harm(self, amount: int) -> None:
-        self.harm = max(0, self.harm + max(0, amount))
-
-    def clear_if_threshold(self) -> Optional[str]:
-        if self.progress_threshold != -1 and self.progress >= self.progress_threshold:
-            return "progress"
-        if self.harm_threshold != -1 and self.harm >= self.harm_threshold:
-            return "harm"
-        return None
     
 
 
@@ -199,7 +172,7 @@ class LegacyEntity:
 @dataclass
 class RangerState:
     name: str
-    hand: list[Card] = field(default_factory=lambda: cast(list[Card], []))
+    hand: list[RangerCard] = field(default_factory=lambda: cast(list[RangerCard], []))
     energy: dict[Aspect, int] = field(default_factory=lambda: {Aspect.AWA: 0, Aspect.FIT: 0, Aspect.SPI: 0, Aspect.FOC: 0})
     injury: int = 0
 
