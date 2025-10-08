@@ -69,15 +69,16 @@ class CardCreationTests(unittest.TestCase):
 
 class CardLoadingTests(unittest.TestCase):
     def test_load_walk_with_me(self):
-        """Test loading Walk With Me from JSON - will fail until JSON loading implemented"""
+        """Test loading Walk With Me from JSON"""
         wwm = WalkWithMe()
 
-        # These should all come from JSON once implemented
+        # These should all come from JSON
         self.assertEqual(wwm.title, "Walk With Me")
         self.assertIn("walk-with-me", wwm.id.lower())
-        self.assertEqual(wwm.aspect, Aspect.FIT)
-        self.assertEqual(wwm.energy_cost.get(Aspect.FIT), 1)
-        # Note: card_set will depend on your JSON structure
+        self.assertEqual(wwm.aspect, Aspect.SPI)
+        self.assertEqual(wwm.energy_cost.get(Aspect.SPI), 1)
+        self.assertEqual(wwm.card_set, "Explorer")
+        self.assertIn("Experience", wwm.traits)
 
 
 if __name__ == '__main__':

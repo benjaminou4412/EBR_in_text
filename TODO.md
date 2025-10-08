@@ -7,12 +7,19 @@ A living checklist distilled from our discussion. Grouped by area and roughly pr
 - [X] Introduce enums:
   - [X] Aspect: `AWA`, `FIT`, `SPI`, `FOC`
   - [X] Challenge: `Sun`, `Mountain`, `Crest`
-  - [ ] Approach: `Conflict`, `Exploration`, `Reason`, `Connection`
-  - [ ] Area: `Weather`, `Location`, `Missions`, `AlongTheWay`, `WithinReach`, `PlayerArea`
+  - [X] Approach: `Conflict`, `Exploration`, `Reason`, `Connection`
+  - [X] Area: `Weather`, `Location`, `Missions`, `AlongTheWay`, `WithinReach`, `PlayerArea`
 - [ ] Add `DiscardPile` for ranger hand discards; consider converting `path_discard` later
-- [ ] Add generic `tokens: Dict[str,int]` on `Entity` (charges, morsels, etc.)
 - [ ] Add `CardDefinition` (immutable print data) for hand cards that become permanents
-- [ ] Add `definition_to_entity(defn)` helper to create in‑play `Entity` from `CardDefinition`
+- [ ] Migrate codebase from `Entities` to proper `Card`-based classes and subclasses
+  - [X] Rewrite models.py to use new Card-based classes
+  - [X] Rewrite tests to use new Card-based classes
+  - [ ] Rewrite engine.py to use new Card-based classes
+  - [ ] Rewrite registry.py to use new Card-based classes
+  - [ ] Rewrite view.py to use new Card-based classes
+  - [ ] Rewrite main.py to use new Card-based classes
+- [ ] Introduce properly card loading from JSON
+  - [ ] Deprecate decks.py and move JSON loading to src/cards
 
 ## Engine
 - [X] Extend test handling to take into account committing multiple energy. 
@@ -22,7 +29,7 @@ A living checklist distilled from our discussion. Grouped by area and roughly pr
   - [ ] In‑play commits → exhaust entity and/or spend tokens
 - [ ] Replace simple `symbol_handlers` with ordered challenge effects resolver:
   - [ ] Produce `ChallengeEffect` objects via registry for a drawn symbol
-  - [ ] Group by `Area` and resolve order: Weather → Location → Missions → AlongTheWay → WithinReach → PlayerArea
+  - [X] Group by `Area` and resolve order: Weather → Location → Missions → AlongTheWay → WithinReach → PlayerArea
   - [ ] Within an area, let active player pick resolution order (view callback)
   - [ ] Prevent re‑trigger when a card moves into an already‑resolved area during the same test
 - [ ] Expose deterministic hooks for tests (injectable chooser for effect ordering)
