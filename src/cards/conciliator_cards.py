@@ -2,13 +2,13 @@
 Conciliator card implementations
 """
 from ..models import AttachmentCard, GameState
-from ..json_loader import load_ranger_card_fields
+from ..json_loader import load_ranger_card_fields #type:ignore
 
 
 class ADearFriend(AttachmentCard):
     def __init__(self):
         # Load all common RangerCard fields from JSON
-        super().__init__(**load_ranger_card_fields("A Dear Friend", "Conciliator"))
+        super().__init__(**load_ranger_card_fields("A Dear Friend", "Conciliator")) #type:ignore
 
     def can_play(self, state: GameState) -> bool:
         """

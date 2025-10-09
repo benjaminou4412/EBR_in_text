@@ -2,13 +2,13 @@
 Explorer card implementations
 """
 from ..models import MomentCard, GameState
-from ..json_loader import load_ranger_card_fields
+from ..json_loader import load_ranger_card_fields #type:ignore
 
 
 class WalkWithMe(MomentCard):
     def __init__(self):
         # Load all common RangerCard fields from JSON
-        super().__init__(**load_ranger_card_fields("Walk With Me", "Explorer"))
+        super().__init__(**load_ranger_card_fields("Walk With Me", "Explorer")) #type:ignore
 
     def can_play(self, state: GameState) -> bool:
         """
