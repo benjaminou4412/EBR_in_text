@@ -1,6 +1,6 @@
 from __future__ import annotations
 from typing import Optional
-from .models import GameState, Action, CommitDecision, Aspect, Approach
+from .models import GameState, Action, CommitDecision, Aspect, FeatureCard, BeingCard, WeatherCard
 
 
 def render_state(state: GameState) -> None:
@@ -9,19 +9,19 @@ def render_state(state: GameState) -> None:
     print(f"Ranger: {r.name} | Energy AWA {r.energy[Aspect.AWA]} FIT {r.energy[Aspect.FIT]} SPI {r.energy[Aspect.SPI]} FOC {r.energy[Aspect.FOC]} | Injury {r.injury}")
     print("Hand:")
     for i, c in enumerate(r.hand, start=1):
-        icons = ", ".join(f"{k[:3]}+{v}" for k, v in c.approach_icons.counts.items() if v)
+        icons = ", ".join(f"{k}+{v}" for k, v in c.approach_icons if v)
         if not icons:
             icons = "-"
         print(f" {i}. {c.title} [{icons}]")
 
     print("\nIn Play:")
-    for e in state.entities:
-        if e.entity_type == "Feature":
-            print(f" - Feature: {e.title} prog {e.progress}/{e.progress_threshold} pres {e.presence} area {e.area}")
-        elif e.entity_type == "Being":
-            print(f" - Being: {e.title} prog {e.progress}/{e.progress_threshold} harm {e.harm}/{e.harm_threshold} pres {e.presence} {'(exhausted)' if e.exhausted else ''}")
-        elif e.entity_type == "Weather":
-            print(f" - Weather: {e.title} clouds {e.clouds}")
+    for card in state.all_cards_in_play():
+        if isinstance(card, FeatureCard):
+            print(f" - Feature: {card.title} prog {card.progress}/{card.progress_threshold} pres {card.presence} area {card.area}")
+        elif isinstance(card, BeingCard):
+            print(f" - Being: {card.title} prog {card.progress}/{card.progress_threshold} harm {card.harm}/{card.harm_threshold} pres {card.presence} {'(exhausted)' if card.exhausted else ''}")
+        elif isinstance(card, WeatherCard):
+            print(f" - Weather: {card.title}")
     print("")
 
 
