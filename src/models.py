@@ -218,7 +218,7 @@ class GameState:
         """Get all features currently in play"""
         return self.cards_by_type(FeatureCard)
 
-    def get_card_by_id(self, card_id: str) -> Card | None:
+    def get_card_by_id(self, card_id: str | None) -> Card | None:
         """Get a specific card by its instance ID"""
         return next((c for c in self.all_cards_in_play() if c.id == card_id), None)
 

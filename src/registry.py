@@ -1,5 +1,5 @@
 from __future__ import annotations
-from .models import GameState, Action, ActionTarget, Aspect, Approach, FeatureCard, Card, BeingCard, FeatureCard
+from .models import GameState, Action, ActionTarget, Aspect, Approach, BeingCard, FeatureCard, Zone
 
 
 def _targets_by_type(state: GameState, card_type: type) -> list[ActionTarget]:
@@ -22,8 +22,8 @@ def provide_common_tests(state: GameState) -> list[Action]:
             aspect=Aspect.FIT,
             approach=Approach.EXPLORATION,
             target_provider=lambda s: _targets_by_type(s, FeatureCard),
-            difficulty_fn=lambda s, tid: max(1, next(c.presence for c in s.features_in_play if c.id == tid)),
-            on_success=lambda s, eff, tid: next(c for c in s.features_in_play if c.id == tid).add_progress(eff),
+            difficulty_fn=lambda s, tid: max(1, getattr(s.get_card_by_id(tid), 'presence', 1)),
+            on_success=lambda s, eff, tid: s.get_card_by_id(tid).add_progress(eff) if isinstance(s.get_card_by_id(tid), FeatureCard) else None,
             on_fail=lambda s, _tid: setattr(s.ranger, "injury", s.ranger.injury + 1),
             source_id="common",
             source_title="Common Test",
@@ -37,9 +37,9 @@ def provide_common_tests(state: GameState) -> list[Action]:
             name="Connect (SPI + Connection) [X=presence]",
             aspect=Aspect.SPI,
             approach=Approach.CONNECTION,
-            target_provider=lambda s: _targets_by_type(s, "Being"),
-            difficulty_fn=lambda s, tid: max(1, next(e.presence for e in s.entities if e.id == tid)),
-            on_success=lambda s, eff, tid: next(e for e in s.entities if e.id == tid).add_progress(eff),
+            target_provider=lambda s: _targets_by_type(s, BeingCard),
+            difficulty_fn=lambda s, tid: max(1, getattr(s.get_card_by_id(tid), 'presence', 1)),
+            on_success=lambda s, eff, tid: s.get_card_by_id(tid).add_progress(eff) if isinstance(s.get_card_by_id(tid), BeingCard) else None,
             source_id="common",
             source_title="Common Test",
         )
@@ -52,9 +52,9 @@ def provide_common_tests(state: GameState) -> list[Action]:
             name="Avoid (AWA + Conflict) [X=presence]",
             aspect=Aspect.AWA,
             approach=Approach.CONFLICT,
-            target_provider=lambda s: _targets_by_type(s, "Being"),
-            difficulty_fn=lambda s, tid: max(1, next(e.presence for e in s.entities if e.id == tid)),
-            on_success=lambda s, _eff, tid: setattr(next(e for e in s.entities if e.id == tid), "exhausted", True),
+            target_provider=lambda s: _targets_by_type(s, BeingCard),
+            difficulty_fn=lambda s, tid: max(1, getattr(s.get_card_by_id(tid), 'presence', 1)),
+            on_success=lambda s, _eff, tid: setattr(s.get_card_by_id(tid), 'exhausted', True),
             source_id="common",
             source_title="Common Test",
         )
@@ -81,65 +81,50 @@ def provide_common_tests(state: GameState) -> list[Action]:
 def provide_card_tests(state: GameState) -> list[Action]:
     actions: list[Action] = []
     # Overgrown Thicket (AWA + Exploration): add progress equal to effort
-    for e in state.entities:
-        if e.id == "woods-011-overgrown-thicket":
+    for card in state.all_cards_in_play():
+        if card.title == "Overgrown Thicket":
             actions.append(
                 Action(
-                    id=f"test-{e.id}",
-                    name=f"{e.title} (AWA + Exploration)",
+                    id=f"test-{card.id}",
+                    name=f"{card.title} (AWA + Exploration)",
                     aspect=Aspect.AWA,
                     approach=Approach.EXPLORATION,
                     target_provider=None,
                     difficulty_fn=lambda _s, _t: 1,
-                    on_success=lambda s, eff, _t, eid=e.id: next(x for x in s.entities if x.id == eid).add_progress(eff),
-                    source_id=e.id,
-                    source_title=e.title,
+                    on_success=lambda s, eff, _t, eid=card.id: (c.add_progress(eff) if (c := s.get_card_by_id(eid)) and hasattr(c, 'add_progress') else None),
+                    source_id=card.id,
+                    source_title=card.title,
                 )
             )
 
-        if e.id == "woods-009-sunberry-bramble":
+        if card.title == "Sunberry Bramble":
             actions.append(
                 Action(
-                    id=f"test-{e.id}",
-                    name=f"{e.title} (AWA + Reason) [2]",
+                    id=f"test-{card.id}",
+                    name=f"{card.title} (AWA + Reason) [2]",
                     aspect=Aspect.AWA,
                     approach=Approach.REASON,
                     target_provider=None,
                     difficulty_fn=lambda _s, _t: 2,
-                    on_success=lambda s, _eff, _t, eid=e.id: next(x for x in s.entities if x.id == eid).add_harm(1),
+                    on_success=lambda s, _eff, _t, eid=card.id: (c.add_harm(1) if (c := s.get_card_by_id(eid)) and hasattr(c, 'add_harm') else None),
                     on_fail=lambda s, _t: None,  # Fatigue not modeled
-                    source_id=e.id,
-                    source_title=e.title,
+                    source_id=card.id,
+                    source_title=card.title,
                 )
             )
 
-        if e.id == "woods-007-sitka-doe":
+        if card.title == "Sitka Doe":
             actions.append(
                 Action(
-                    id=f"test-{e.id}",
-                    name=f"{e.title} (SPI + Conflict) [X=presence]",
+                    id=f"test-{card.id}",
+                    name=f"{card.title} (SPI + Conflict) [X=presence]",
                     aspect=Aspect.SPI,
                     approach=Approach.CONFLICT,
                     target_provider=None,
-                    difficulty_fn=lambda _s, _t, pres=e.presence: max(1, pres),
-                    on_success=lambda s, _eff, _t, eid=e.id: setattr(next(x for x in s.entities if x.id == eid), "area", "along_the_way"),
-                    source_id=e.id,
-                    source_title=e.title,
-                )
-            )
-
-        if e.id == "weather-002-midday-sun":
-            actions.append(
-                Action(
-                    id=f"test-{e.id}",
-                    name=f"{e.title} (FOC + Reason)",
-                    aspect=Aspect.FOC,
-                    approach=Approach.REASON,
-                    target_provider=None,
                     difficulty_fn=lambda _s, _t: 1,
-                    on_success=lambda s, _eff, _t, eid=e.id: setattr(next(x for x in s.entities if x.id == eid), "clouds", next(x for x in s.entities if x.id == eid).clouds + 1),
-                    source_id=e.id,
-                    source_title=e.title,
+                    on_success=lambda s, _eff, _t, eid=card.id: (setattr(c, "area", Zone.ALONG_THE_WAY) if (c := s.get_card_by_id(eid)) else None),
+                    source_id=card.id,
+                    source_title=card.title,
                 )
             )
 
