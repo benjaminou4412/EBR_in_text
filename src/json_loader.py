@@ -169,8 +169,7 @@ def load_ranger_card_fields(title: str, card_set: str) -> dict:
     """
     data = load_card_json_by_title(title, card_set)  # type: ignore
 
-    # Parse all common fields
-    card_id = str(data.get("id", ""))
+    # Parse all common fields (no id - will be auto-generated)
     parsed_card_set = str(data.get("set", ""))
     energy_cost = parse_energy_cost(data)
     approach_icons = parse_approach_icons(data)
@@ -186,7 +185,6 @@ def load_ranger_card_fields(title: str, card_set: str) -> dict:
             abilities.append(text)
 
     return {
-        "id": card_id,
         "title": title,
         "card_set": parsed_card_set,
         "traits": traits,
@@ -271,8 +269,7 @@ def load_path_card_fields(title: str, card_set: str) -> dict:
     """
     data = load_card_json_by_title(title, card_set)  # type: ignore
 
-    # Parse all common fields
-    card_id = str(data.get("id", ""))
+    # Parse all common fields (no id - will be auto-generated)
     parsed_card_set = str(data.get("card_set", card_set))  # Use card_set param as fallback
     traits = parse_traits(data)
     presence = int(data.get("presence", 1))
@@ -295,7 +292,6 @@ def load_path_card_fields(title: str, card_set: str) -> dict:
             abilities.append(text)
 
     return {
-        "id": card_id,
         "title": title,
         "card_set": parsed_card_set,
         "traits": traits,

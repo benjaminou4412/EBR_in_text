@@ -69,8 +69,11 @@ class CardLoadingTests(unittest.TestCase):
         """Test loading Walk With Me from JSON"""
         wwm = WalkWithMe()
 
+        # Test ID format: title-uuid (readable and unique)
+        self.assertTrue(wwm.id.startswith("walk-with-me-"))
+        self.assertEqual(len(wwm.id), len("walk-with-me-") + 4)  # title + 4-char UUID
+
         # These should all come from JSON
-        self.assertEqual(wwm.id, "explorer-12-walk-with-me")
         self.assertEqual(wwm.title, "Walk With Me")
         self.assertIsInstance(wwm, MomentCard)
         self.assertEqual(wwm.card_set, "Explorer")
@@ -79,19 +82,21 @@ class CardLoadingTests(unittest.TestCase):
         self.assertEqual(wwm.requirement, 1)
         self.assertEqual(wwm.energy_cost.get(Aspect.SPI), 1)
         self.assertEqual(wwm.flavor_text, "Through practice and intention, you've learned to show others the vastness of possibility before them. There are no limits save the ones we place on ourselves.")
-        
 
     def test_a_dear_friend(self):
         """Test loading A Dear Friend from JSON"""
         adf = ADearFriend()
 
+        # Test ID format: title-uuid (readable and unique)
+        self.assertTrue(adf.id.startswith("a-dear-friend-"))
+        self.assertEqual(len(adf.id), len("a-dear-friend-") + 4)  # title + 4-char UUID
+
         # These should all come from JSON
-        self.assertEqual(adf.id, "conciliator-14-a-dear-friend")
         self.assertEqual(adf.title, "A Dear Friend")
         self.assertIsInstance(adf, AttachmentCard)
         self.assertEqual(adf.card_set, "Conciliator")
         self.assertIn("Experience", adf.traits)
-        self.assertIn("Expert", adf.traits)   
+        self.assertIn("Expert", adf.traits)
         self.assertEqual(adf.aspect, Aspect.SPI)
         self.assertEqual(adf.requirement, 3)
         self.assertEqual(adf.energy_cost.get(Aspect.SPI), 1)

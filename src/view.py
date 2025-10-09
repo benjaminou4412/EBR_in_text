@@ -5,11 +5,11 @@ from .models import GameState, Action, CommitDecision, Aspect, Approach
 
 def render_state(state: GameState) -> None:
     r = state.ranger
-    print("=== Earthborne Rangers - Refactor Demo ===")
+    print("=== Earthborne Rangers - Demo ===")
     print(f"Ranger: {r.name} | Energy AWA {r.energy[Aspect.AWA]} FIT {r.energy[Aspect.FIT]} SPI {r.energy[Aspect.SPI]} FOC {r.energy[Aspect.FOC]} | Injury {r.injury}")
     print("Hand:")
     for i, c in enumerate(r.hand, start=1):
-        icons = ", ".join(f"{k[:3]}+{v}" for k, v in c.approach.counts.items() if v)
+        icons = ", ".join(f"{k[:3]}+{v}" for k, v in c.approach_icons.counts.items() if v)
         if not icons:
             icons = "-"
         print(f" {i}. {c.title} [{icons}]")

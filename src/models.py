@@ -1,8 +1,10 @@
 from __future__ import annotations
 from dataclasses import dataclass, field
-from typing import Optional, Callable, cast
+from typing import Optional, Callable, cast, TypeVar
 from enum import Enum
 
+# TypeVar for generic card queries (defined after Card is declared below)
+T = TypeVar('T', bound='Card')
 
 # Enums for fixed game constants
 
@@ -42,19 +44,26 @@ class Zone(str, Enum):
 class Card:
     #immutable card identity
     title: str
-    id: str
+    id: str = ""  # Will be auto-generated in __post_init__ if empty
     card_set: str = ""
     flavor_text: str = ""
 
     #sometimes mutable
     traits: list[str] = field(default_factory=lambda: cast(list[str], [])) #from cards like Trails Markers
     abilities_text: list[str] = field(default_factory=lambda: cast(list[str], [])) #will be mutable in expansion content (mycileal)
-    starting_tokens: dict[str, int] = field(default_factory=lambda: cast(dict[str, int], {})) #theoretically mutable    
+    starting_tokens: dict[str, int] = field(default_factory=lambda: cast(dict[str, int], {})) #theoretically mutable
 
     #highly mutable state variables
     exhausted: bool = False
-    
-    
+
+    def __post_init__(self):
+        """Generate readable instance ID if not provided"""
+        if not self.id:
+            import uuid
+            safe_title = self.title.lower().replace(" ", "-").replace("'", "")
+            short_uuid = str(uuid.uuid4())[:4]
+            self.id = f"{safe_title}-{short_uuid}"
+
     def get_types(self, location: str | None = None) -> set[type]:
         """Override for context-dependent typing"""
         return {type(self)}
@@ -192,6 +201,26 @@ class GameState:
     # Path deck for Phase 1 draws
     path_deck: list[PathCard] = field(default_factory=lambda: cast(list[PathCard], []))
     path_discard: list[PathCard] = field(default_factory=lambda: cast(list[PathCard], []))
+
+    def all_cards_in_play(self) -> list[Card]:
+        """Get all cards across all zones"""
+        return [card for cards in self.zones.values() for card in cards]
+    
+    def cards_by_type(self, card_type: type[T]) -> list[T]:
+        """Get all cards of a specific type"""
+        return [card for card in self.all_cards_in_play() if isinstance(card, card_type)]
+    
+    def beings_in_play(self) -> list[BeingCard]:
+        """Get all beings currently in play"""
+        return self.cards_by_type(BeingCard)
+    
+    def features_in_play(self) -> list[FeatureCard]:
+        """Get all features currently in play"""
+        return self.cards_by_type(FeatureCard)
+
+    def get_card_by_id(self, card_id: str) -> Card | None:
+        """Get a specific card by its instance ID"""
+        return next((c for c in self.all_cards_in_play() if c.id == card_id), None)
 
 
 # Action system: derived from state; executed by engine.

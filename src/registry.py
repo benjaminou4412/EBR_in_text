@@ -1,28 +1,29 @@
 from __future__ import annotations
-from .models import GameState, Action, ActionTarget, Aspect, Approach
+from .models import GameState, Action, ActionTarget, Aspect, Approach, FeatureCard, Card, BeingCard, FeatureCard
 
 
-def _targets_by_type(state: GameState, entity_type: str) -> list[ActionTarget]:
+def _targets_by_type(state: GameState, card_type: type) -> list[ActionTarget]:
     out: list[ActionTarget] = []
-    for e in state.entities:
-        if e.entity_type == entity_type:
-            out.append(ActionTarget(id=e.id, title=e.title))
+    for zone in state.zones.values():
+        for card in zone:
+            if isinstance(card, card_type):
+                out.append(ActionTarget(id=card.id, title=card.title))
     return out
-
 
 def provide_common_tests(state: GameState) -> list[Action]:
     actions: list[Action] = []
 
-    # Traverse: FIT + [Exploration], target Feature, diff X=presence
+    #todo: actually have it target locations, not just features
+    # Traverse: FIT + [Exploration], target Feature or Location, diff X=presence
     actions.append(
         Action(
             id="common-traverse",
             name="Traverse (FIT + Exploration) [X=presence]",
             aspect=Aspect.FIT,
             approach=Approach.EXPLORATION,
-            target_provider=lambda s: _targets_by_type(s, "Feature"),
-            difficulty_fn=lambda s, tid: max(1, next(e.presence for e in s.entities if e.id == tid)),
-            on_success=lambda s, eff, tid: next(e for e in s.entities if e.id == tid).add_progress(eff),
+            target_provider=lambda s: _targets_by_type(s, FeatureCard),
+            difficulty_fn=lambda s, tid: max(1, next(c.presence for c in s.features_in_play if c.id == tid)),
+            on_success=lambda s, eff, tid: next(c for c in s.features_in_play if c.id == tid).add_progress(eff),
             on_fail=lambda s, _tid: setattr(s.ranger, "injury", s.ranger.injury + 1),
             source_id="common",
             source_title="Common Test",

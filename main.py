@@ -1,7 +1,7 @@
 import json
 import os
 from typing import Any
-from src.models import Card, ApproachIcons, Entity, RangerState, GameState, Action, Aspect, Symbol, Approach
+from src.models import Card, RangerState, GameState, Action, Aspect, Symbol, Approach
 from src.engine import GameEngine
 from src.registry import provide_common_tests, provide_card_tests
 from src.view import render_state, choose_action, choose_target, choose_commit
