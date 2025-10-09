@@ -5,15 +5,13 @@ Utility functions for loading card data from JSON files
 import json
 from pathlib import Path
 from typing import Optional
+from .models import Aspect
+from .models import Approach
 
-
-# Map card types to their JSON files
+# Map card set to their JSON files
 CARD_JSON_FILES = {
-    "moment": "reference JSON/Ranger Cards/explorer_cards.json",
-    "gear": "reference JSON/Ranger Cards/explorer_cards.json",
-    "attribute": "reference JSON/Ranger Cards/explorer_cards.json",
-    "feature": "reference JSON/Path Sets/valley.json",
-    "being": "reference JSON/Path Sets/valley.json",
+    "explorer": "reference JSON/Ranger Cards/explorer_cards.json",
+    "valley": "reference JSON/Path Sets/valley.json"
     # Add more as needed
 }
 
@@ -24,13 +22,13 @@ def get_project_root() -> Path:
     return Path(__file__).parent.parent
 
 
-def load_card_json_by_title(title: str, card_type: str) -> dict:
+def load_card_json_by_title(title: str, card_set: str) -> dict:
     """
     Load a card's JSON data by its title and type.
 
     Args:
         title: The card's title (e.g., "Walk With Me")
-        card_type: The card type (e.g., "moment", "gear", "feature")
+        set: The card's origin set (e.g., "Explorer", "Valley")
 
     Returns:
         Dictionary containing the card's JSON data
@@ -38,9 +36,9 @@ def load_card_json_by_title(title: str, card_type: str) -> dict:
     Raises:
         ValueError: If card not found or file doesn't exist
     """
-    json_file = CARD_JSON_FILES.get(card_type.lower())
+    json_file = CARD_JSON_FILES.get(card_set.lower())
     if not json_file:
-        raise ValueError(f"Unknown card type: {card_type}")
+        raise ValueError(f"Unknown card set: {card_set}")
 
     json_path = get_project_root() / json_file
     if not json_path.exists():
@@ -63,14 +61,14 @@ def load_card_json_by_title(title: str, card_type: str) -> dict:
     raise ValueError(f"Card '{title}' not found in {json_file}")
 
 
-def parse_energy_cost(card_data: dict) -> dict:
+def parse_energy_cost(card_data: dict) -> dict[Aspect, int]:
     """
     Parse energy cost from JSON format to internal dict format.
 
     JSON format: {"amount": 1, "aspect": "SPI"}
     Internal format: {Aspect.SPI: 1}
     """
-    from .models import Aspect
+    
 
     energy_cost_data = card_data.get("energy_cost")
     if not energy_cost_data:
@@ -89,14 +87,14 @@ def parse_energy_cost(card_data: dict) -> dict:
     return {}
 
 
-def parse_approach_icons(card_data: dict) -> dict:
+def parse_approach_icons(card_data: dict) -> dict[Approach, int]:
     """
     Parse approach icons from JSON format to internal dict format.
 
     JSON format: [{"approach": "Connection", "count": 1}]
     Internal format: {Approach.CONNECTION: 1}
     """
-    from .models import Approach
+    
 
     approach_icons = {}
     approach_data = card_data.get("approach_icons", [])
@@ -115,27 +113,27 @@ def parse_approach_icons(card_data: dict) -> dict:
     return approach_icons
 
 
-def parse_aspect_requirement(card_data: dict) -> Optional:
+def parse_aspect_requirement(card_data: dict) -> tuple[Aspect | None, int]:
     """
     Parse aspect requirement from JSON.
-
-    JSON format: {"aspect": "SPI", "min": 1}
-    Internal format: Aspect.SPI (just the aspect for now)
+    Returns: (aspect, min_value)
     """
-    from .models import Aspect
 
     aspect_req = card_data.get("aspect_requirement")
     if not aspect_req:
-        return None
+        return (None, 0)
 
     aspect_str = aspect_req.get("aspect")
+    min_value = aspect_req.get("min", 0)
+
+    aspect = None
     if aspect_str:
         try:
-            return Aspect(aspect_str)
+            aspect = Aspect(aspect_str)
         except ValueError:
-            return None
+            pass
 
-    return None
+    return (aspect, min_value)
 
 
 def parse_traits(card_data: dict) -> list[str]:

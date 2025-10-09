@@ -73,11 +73,15 @@ class CardLoadingTests(unittest.TestCase):
         wwm = WalkWithMe()
 
         # These should all come from JSON
+        self.assertEqual(wwm.id, "explorer-12-walk-with-me")
         self.assertEqual(wwm.title, "Walk With Me")
-        self.assertIn("walk-with-me", wwm.id.lower())
-        self.assertEqual(wwm.aspect, Aspect.SPI)
-        self.assertEqual(wwm.energy_cost.get(Aspect.SPI), 1)
+        self.assertIsInstance(wwm, MomentCard)
         self.assertEqual(wwm.card_set, "Explorer")
+        self.assertEqual(wwm.traits, ["Experience"])
+        self.assertEqual(wwm.aspect, Aspect.SPI)
+        self.assertEqual(wwm.requirement, 1)
+        self.assertEqual(wwm.energy_cost.get(Aspect.SPI), 1)
+        self.assertEqual(wwm.flavor_text, "Through practice and intention, you've learned to show others the vastness of possibility before them. There are no limits save the ones we place on ourselves.")
         self.assertIn("Experience", wwm.traits)
 
 

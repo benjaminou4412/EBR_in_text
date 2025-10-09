@@ -44,6 +44,7 @@ class Card:
     title: str
     id: str
     card_set: str = ""
+    flavor_text: str = ""
 
     #sometimes mutable
     traits: list[str] = field(default_factory=lambda: cast(list[str], [])) #from cards like Trails Markers
@@ -62,6 +63,7 @@ class Card:
 class RangerCard(Card):
     #immutable card identity
     aspect: Aspect | None = None
+    requirement: int = 0 #required aspect level to be legal for deckbuilding; goes from 1 to 3 for actual cards
 
     #sometimes mutable 
     energy_cost: dict[Aspect, int] = field(default_factory=lambda: cast(dict[Aspect, int], {}))
@@ -133,7 +135,7 @@ class FeatureCard(PathCard):
 @dataclass
 class RangerBeingCard(RangerCard, BeingCard):
     """Ranger Being - has ranger fields + path card fields"""
-    #may be needed for instances where location-basec card type matters
+    #may be needed for instances where location-based card type matters
     def get_types(self, location: str | None = None) -> set[type]:
         if location == "hand":
             return {RangerCard}
@@ -143,7 +145,7 @@ class RangerBeingCard(RangerCard, BeingCard):
 @dataclass
 class RangerFeatureCard(RangerCard, FeatureCard):
     """Ranger Feature - similar structure to Ranger Being"""
-    #may be needed for instances where location-basec card type matters
+    #may be needed for instances where location-based card type matters
     def get_types(self, location: str | None = None) -> set[type]:
         if location == "hand":
             return {RangerCard}
