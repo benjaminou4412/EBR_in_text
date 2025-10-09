@@ -3,6 +3,7 @@ Specific card implementations.
 Each card class loads its own JSON data and implements unique behavior.
 """
 
-from .walk_with_me import WalkWithMe
+from .explorer_cards import WalkWithMe
+from .conciliator_cards import ADearFriend
 
-__all__ = ["WalkWithMe"]
+__all__ = ["WalkWithMe", "ADearFriend"]

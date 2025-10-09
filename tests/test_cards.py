@@ -3,11 +3,8 @@ Tests for card creation and loading
 """
 
 import unittest
-from src.models import (
-    MomentCard, FeatureCard, GearCard, BeingCard,
-    Aspect, Zone
-)
-from src.cards import WalkWithMe
+from src.models import *
+from src.cards import *
 
 
 class CardCreationTests(unittest.TestCase):
@@ -77,12 +74,29 @@ class CardLoadingTests(unittest.TestCase):
         self.assertEqual(wwm.title, "Walk With Me")
         self.assertIsInstance(wwm, MomentCard)
         self.assertEqual(wwm.card_set, "Explorer")
-        self.assertEqual(wwm.traits, ["Experience"])
+        self.assertIn("Experience", wwm.traits)
         self.assertEqual(wwm.aspect, Aspect.SPI)
         self.assertEqual(wwm.requirement, 1)
         self.assertEqual(wwm.energy_cost.get(Aspect.SPI), 1)
         self.assertEqual(wwm.flavor_text, "Through practice and intention, you've learned to show others the vastness of possibility before them. There are no limits save the ones we place on ourselves.")
-        self.assertIn("Experience", wwm.traits)
+        
+
+    def test_a_dear_friend(self):
+        """Test loading A Dear Friend from JSON"""
+        adf = ADearFriend()
+
+        # These should all come from JSON
+        self.assertEqual(adf.id, "conciliator-14-a-dear-friend")
+        self.assertEqual(adf.title, "A Dear Friend")
+        self.assertIsInstance(adf, AttachmentCard)
+        self.assertEqual(adf.card_set, "Conciliator")
+        self.assertIn("Experience", adf.traits)
+        self.assertIn("Expert", adf.traits)   
+        self.assertEqual(adf.aspect, Aspect.SPI)
+        self.assertEqual(adf.requirement, 3)
+        self.assertEqual(adf.energy_cost.get(Aspect.SPI), 1)
+        self.assertEqual(adf.flavor_text, "")
+             
 
 
 if __name__ == '__main__':

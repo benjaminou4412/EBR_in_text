@@ -11,6 +11,7 @@ from .models import Approach
 # Map card set to their JSON files
 CARD_JSON_FILES = {
     "explorer": "reference JSON/Ranger Cards/explorer_cards.json",
+    "conciliator": "reference JSON/Ranger Cards/conciliator_cards.json",
     "valley": "reference JSON/Path Sets/valley.json"
     # Add more as needed
 }
@@ -149,3 +150,49 @@ def generate_card_id(title: str, card_set: str) -> str:
     set_part = card_set.lower().replace(" ", "-")
     title_part = title.lower().replace(" ", "-")
     return f"{set_part}-{title_part}"
+
+
+def load_ranger_card_fields(title: str, card_set: str) -> dict:
+    """
+    Load common RangerCard fields from JSON.
+
+    Returns a dict with all common fields that can be unpacked into super().__init__()
+    for any RangerCard subclass.
+
+    Args:
+        title: The card's title
+        card_set: The card's set name
+
+    Returns:
+        Dictionary with common RangerCard fields ready to unpack
+    """
+    data = load_card_json_by_title(title, card_set)  # type: ignore
+
+    # Parse all common fields
+    card_id = str(data.get("id", ""))
+    parsed_card_set = str(data.get("set", ""))
+    energy_cost = parse_energy_cost(data)
+    approach_icons = parse_approach_icons(data)
+    aspect_tuple = parse_aspect_requirement(data)
+    traits = parse_traits(data)
+    flavor_text = str(data.get("flavor_text", ""))
+
+    # Extract rules text for abilities_text
+    abilities: list[str] = []
+    for rule in data.get("rules", []):
+        text = rule.get("text", "")
+        if text:
+            abilities.append(text)
+
+    return {
+        "id": card_id,
+        "title": title,
+        "card_set": parsed_card_set,
+        "traits": traits,
+        "abilities_text": abilities,
+        "energy_cost": energy_cost,
+        "approach_icons": approach_icons,
+        "aspect": aspect_tuple[0],
+        "requirement": aspect_tuple[1],
+        "flavor_text": flavor_text
+    }
