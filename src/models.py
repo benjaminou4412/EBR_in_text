@@ -70,11 +70,10 @@ class Card:
     card_set: str = ""
     flavor_text: str = ""
     card_types: set[CardType] = field(default_factory=lambda: set())
-    traits: set[str] = field(default_factory=lambda: set()) #from cards like Trails Markers
-    keywords: set[str] = field(default_factory=lambda: set()) #will be mutable in expansion content (mycileal)
-    abilities_text: list[str] = field(default_factory=lambda: cast(list[str], [])) #will be mutable in expansion content (mycileal). includes tests, rules, and challenge effects
+    traits: set[str] = field(default_factory=lambda: set()) #mutable from cards like Trails Markers
+    abilities_text: list[str] = field(default_factory=lambda: cast(list[str], [])) #will be mutable in expansion content (mycileal). includes keywords, tests, rules, and challenge effects
     starting_tokens: tuple[str, int] = field(default_factory=lambda: cast(tuple[str, int], {})) #a card only ever has a single type of starting token
-    starting_area: Zone = Zone.WITHIN_REACH #we'll have to live with a non-null default here
+    starting_area: Zone | None = None #None for cards that don't enter play, like moments, attributes, etc. Attachments default to None and use targeting to determine their zone
     #ranger cards only
     aspect: Aspect | None = None
     requirement: int = 0 #required aspect level to be legal for deckbuilding; 1-3 are valid values, 0 is null
@@ -91,6 +90,11 @@ class Card:
     on_progress_clear_log: str | None = None
     on_harm_clear_log: str | None = None
 
+    #mission cards only
+    mission_description: str | None = None
+    mission_locations: list[str] | None = None
+    mission_objective: str | None = None
+    mission_clear_log: str | None = None
 
     #mutable state variables
     exhausted: bool = False
@@ -100,9 +104,6 @@ class Card:
     #path cards only
     progress: int = 0
     harm: int = 0
-
-
-    
 
     
     def __post_init__(self):

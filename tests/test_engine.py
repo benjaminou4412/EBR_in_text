@@ -10,7 +10,7 @@ def fixed_draw(mod : int, sym: Symbol):
 class EngineTests(unittest.TestCase):
     def test_thicket_progress_and_energy(self):
         # Setup state: one feature (thicket), ranger with two exploration cards in hand
-        thicket = FeatureCard(
+        thicket = Card(
             title = "Overgrown Thicket",
             id="woods-011-overgrown-thicket",
             presence=1,
@@ -19,8 +19,8 @@ class EngineTests(unittest.TestCase):
         ranger = RangerState(name="Ranger", hand=[], energy={Aspect.AWA: 3, Aspect.FIT: 2, Aspect.SPI: 2, Aspect.FOC: 1})
         # Create two pseudo cards with Exploration+1 each
         ranger.hand = [
-            AttributeCard(id="c1", title="E+1", approach_icons={Approach.EXPLORATION: 1}),
-            AttributeCard(id="c2", title="E+1", approach_icons={Approach.EXPLORATION: 1})
+            Card(id="c1", title="E+1", approach_icons={Approach.EXPLORATION: 1}),
+            Card(id="c2", title="E+1", approach_icons={Approach.EXPLORATION: 1})
         ]
         state = GameState(
             ranger=ranger,
@@ -55,7 +55,7 @@ class EngineTests(unittest.TestCase):
     
     def test_single_energy(self):
         # Setup state: one feature (thicket), ranger with no cards in hand
-        thicket = FeatureCard(
+        thicket = Card(
             title="Overgrown Thicket",
             id="woods-011-overgrown-thicket",
             presence=1,
@@ -92,14 +92,14 @@ class EngineTests(unittest.TestCase):
         self.assertEqual(len(state.ranger.hand), 0)
 
     def test_traverse_feature(self):
-        feat = FeatureCard(
+        feat = Card(
             title="Feature A",
             id="feat1",
             presence=1,
             progress_threshold=3
         )
         ranger = RangerState(name="Ranger", hand=[], energy={Aspect.AWA: 3, Aspect.FIT: 2, Aspect.SPI: 2, Aspect.FOC: 1})
-        ranger.hand = [AttributeCard(id="e1", title="E+1", approach_icons={Approach.EXPLORATION: 1})]
+        ranger.hand = [Card(id="e1", title="E+1", approach_icons={Approach.EXPLORATION: 1})]
         state = GameState(
             ranger=ranger,
             zones={
@@ -116,7 +116,7 @@ class EngineTests(unittest.TestCase):
             name="traverse",
             aspect=Aspect.FIT,
             approach=Approach.EXPLORATION,
-            difficulty_fn=lambda _s, _t: max(1, feat.presence),
+            difficulty_fn=lambda _s, _t: max(1, feat.presence if feat.presence is not None else 0),
             on_success=lambda s, eff, _t: feat.add_progress(eff),
             on_fail=lambda s, _t: setattr(state.ranger, "injury", state.ranger.injury + 1),
         )
@@ -131,14 +131,14 @@ class EngineTests(unittest.TestCase):
 
     def test_clear_on_progress_threshold(self):
         # Setup: Feature with progress_threshold=2
-        feature = FeatureCard(
+        feature = Card(
             title="Test Feature",
             id="test-feature",
             presence=1,
             progress_threshold=2,
         )
         ranger = RangerState(name="Ranger", hand=[], energy={Aspect.AWA: 3, Aspect.FIT: 2, Aspect.SPI: 2, Aspect.FOC: 1})
-        ranger.hand = [AttributeCard(id="c1", title="E+1", approach_icons={Approach.EXPLORATION: 1})]
+        ranger.hand = [Card(id="c1", title="E+1", approach_icons={Approach.EXPLORATION: 1})]
         state = GameState(
             ranger=ranger,
             zones={
@@ -169,7 +169,7 @@ class EngineTests(unittest.TestCase):
 
     def test_clear_on_harm_threshold(self):
         # Setup: Being with harm_threshold=2
-        being = BeingCard(
+        being = Card(
             title="Test Being",
             id="test-being",
             presence=1,
@@ -177,7 +177,7 @@ class EngineTests(unittest.TestCase):
         )
         ranger = RangerState(name="Ranger", hand=[], energy={Aspect.AWA: 5, Aspect.FIT: 2, Aspect.SPI: 2, Aspect.FOC: 1})
         # Add a card with +1 Conflict icon so we get 2 total effort (1 energy + 1 icon)
-        ranger.hand = [AttributeCard(id="c1", title="Conflict+1", approach_icons={Approach.CONFLICT: 1})]
+        ranger.hand = [Card(id="c1", title="Conflict+1", approach_icons={Approach.CONFLICT: 1})]
         state = GameState(
             ranger=ranger,
             zones={
@@ -208,7 +208,7 @@ class EngineTests(unittest.TestCase):
 
     def test_no_clear_below_threshold(self):
         # Setup: Feature with progress_threshold=3
-        feature = FeatureCard(
+        feature = Card(
             title="Test Feature 2",
             id="test-feature-2",
             presence=1,
