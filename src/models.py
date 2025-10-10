@@ -52,6 +52,7 @@ class Card:
     traits: list[str] = field(default_factory=lambda: cast(list[str], [])) #from cards like Trails Markers
     abilities_text: list[str] = field(default_factory=lambda: cast(list[str], [])) #will be mutable in expansion content (mycileal)
     starting_tokens: dict[str, int] = field(default_factory=lambda: cast(dict[str, int], {})) #theoretically mutable
+    area: Zone = Zone.WITHIN_REACH #some things move, some things stay in their area
 
     #highly mutable state variables
     exhausted: bool = False

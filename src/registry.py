@@ -23,7 +23,7 @@ def provide_common_tests(state: GameState) -> list[Action]:
             approach=Approach.EXPLORATION,
             target_provider=lambda s: _targets_by_type(s, FeatureCard),
             difficulty_fn=lambda s, tid: max(1, getattr(s.get_card_by_id(tid), 'presence', 1)),
-            on_success=lambda s, eff, tid: s.get_card_by_id(tid).add_progress(eff) if isinstance(s.get_card_by_id(tid), FeatureCard) else None,
+            on_success=lambda s, eff, tid: s.get_card_by_id(tid).add_progress(eff) if isinstance(s.get_card_by_id(tid), FeatureCard) else None, #type:ignore
             on_fail=lambda s, _tid: setattr(s.ranger, "injury", s.ranger.injury + 1),
             source_id="common",
             source_title="Common Test",
@@ -39,7 +39,7 @@ def provide_common_tests(state: GameState) -> list[Action]:
             approach=Approach.CONNECTION,
             target_provider=lambda s: _targets_by_type(s, BeingCard),
             difficulty_fn=lambda s, tid: max(1, getattr(s.get_card_by_id(tid), 'presence', 1)),
-            on_success=lambda s, eff, tid: s.get_card_by_id(tid).add_progress(eff) if isinstance(s.get_card_by_id(tid), BeingCard) else None,
+            on_success=lambda s, eff, tid: s.get_card_by_id(tid).add_progress(eff) if isinstance(s.get_card_by_id(tid), BeingCard) else None, #type:ignore
             source_id="common",
             source_title="Common Test",
         )
@@ -91,7 +91,7 @@ def provide_card_tests(state: GameState) -> list[Action]:
                     approach=Approach.EXPLORATION,
                     target_provider=None,
                     difficulty_fn=lambda _s, _t: 1,
-                    on_success=lambda s, eff, _t, eid=card.id: (c.add_progress(eff) if (c := s.get_card_by_id(eid)) and hasattr(c, 'add_progress') else None),
+                    on_success=lambda s, eff, _t, eid=card.id: (c.add_progress(eff) if (c := s.get_card_by_id(eid)) and hasattr(c, 'add_progress') else None), #type:ignore
                     source_id=card.id,
                     source_title=card.title,
                 )
@@ -106,7 +106,7 @@ def provide_card_tests(state: GameState) -> list[Action]:
                     approach=Approach.REASON,
                     target_provider=None,
                     difficulty_fn=lambda _s, _t: 2,
-                    on_success=lambda s, _eff, _t, eid=card.id: (c.add_harm(1) if (c := s.get_card_by_id(eid)) and hasattr(c, 'add_harm') else None),
+                    on_success=lambda s, _eff, _t, eid=card.id: (c.add_harm(1) if (c := s.get_card_by_id(eid)) and hasattr(c, 'add_harm') else None), #type:ignore
                     on_fail=lambda s, _t: None,  # Fatigue not modeled
                     source_id=card.id,
                     source_title=card.title,

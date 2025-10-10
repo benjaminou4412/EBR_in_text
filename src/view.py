@@ -9,7 +9,7 @@ def render_state(state: GameState) -> None:
     print(f"Ranger: {r.name} | Energy AWA {r.energy[Aspect.AWA]} FIT {r.energy[Aspect.FIT]} SPI {r.energy[Aspect.SPI]} FOC {r.energy[Aspect.FOC]} | Injury {r.injury}")
     print("Hand:")
     for i, c in enumerate(r.hand, start=1):
-        icons = ", ".join(f"{k}+{v}" for k, v in c.approach_icons if v)
+        icons = ", ".join(f"{k}+{v}" for k, v in c.approach_icons.items() if v)
         if not icons:
             icons = "-"
         print(f" {i}. {c.title} [{icons}]")
