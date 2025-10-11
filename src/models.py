@@ -115,8 +115,10 @@ class Card:
         
         if self.starting_tokens:
             self.unique_tokens = {self.starting_tokens[0]: self.starting_tokens[1]}
+    
 
-    #todo: add/remove unique tokens
+
+    #todo: methods for adding/removing unique tokens
 
     #ranger card only methods
     def get_current_equip_value(self) -> int | None:
@@ -158,6 +160,8 @@ class Card:
             return current_presence
         else:
             return None
+    
+    
         
     #todo: validate inputs on all these setters; amount should always be positive
     def add_progress(self, amount: int) -> None:

@@ -1,6 +1,6 @@
 from __future__ import annotations
 from typing import Optional
-from .models import GameState, Action, CommitDecision, Aspect, FeatureCard, BeingCard, WeatherCard
+from .models import GameState, Action, CommitDecision, Aspect, CardType
 
 
 def render_state(state: GameState) -> None:
@@ -16,11 +16,11 @@ def render_state(state: GameState) -> None:
 
     print("\nIn Play:")
     for card in state.all_cards_in_play():
-        if isinstance(card, FeatureCard):
-            print(f" - Feature: {card.title} prog {card.progress}/{card.progress_threshold} pres {card.presence} area {card.area}")
-        elif isinstance(card, BeingCard):
+        if CardType.FEATURE in card.card_types:
+            print(f" - Feature: {card.title} prog {card.progress}/{card.progress_threshold} pres {card.presence} area {card.starting_area}")
+        elif CardType.BEING in card.card_types:
             print(f" - Being: {card.title} prog {card.progress}/{card.progress_threshold} harm {card.harm}/{card.harm_threshold} pres {card.presence} {'(exhausted)' if card.exhausted else ''}")
-        elif isinstance(card, WeatherCard):
+        elif CardType.WEATHER in card.card_types:
             print(f" - Weather: {card.title}")
     print("")
 

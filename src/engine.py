@@ -1,7 +1,7 @@
 from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Callable, Optional, cast
-from .models import GameState, Action, CommitDecision, RangerState, Card, RangerCard, PathCard, Symbol, Aspect, Approach, Zone
+from .models import GameState, Action, CommitDecision, RangerState, Card, Symbol, Aspect, Approach, Zone, CardType
 from .challenge import draw_challenge
 
 
@@ -32,7 +32,7 @@ class GameEngine:
         for idx in decision.hand_indices:
             if not (0 <= idx < len(ranger.hand)):
                 continue
-            c: RangerCard = ranger.hand[idx]
+            c: Card = ranger.hand[idx]
             num_icons = c.approach_icons.get(approach, 0)
             if num_icons:
                 total += num_icons
@@ -102,13 +102,13 @@ class GameEngine:
     
     #check all in-play cards' clear thresholds and moves them to discard when thresholds are met
     #return list of cleared entities to display
-    def check_and_process_clears(self) -> list[PathCard]:
-        to_clear : list[PathCard]= []
+    def check_and_process_clears(self) -> list[Card]:
+        to_clear : list[Card]= []
         
         for zone in self.state.zones:
             remaining : list[Card] = []
             for card in self.state.zones[zone]:
-                if isinstance(card, PathCard):
+                if CardType.PATH in card.card_types:
                     clear_type = card.clear_if_threshold()
                     if clear_type == "progress":
                         #todo: check for clear-by-progress entry
@@ -130,7 +130,10 @@ class GameEngine:
             if not self.state.path_deck:
                 break
             card = self.state.path_deck.pop(0)
-            self.state.zones[card.area].append(card)
+            if card.starting_area is not None:
+                self.state.zones[card.starting_area].append(card)
+            else:
+                raise ValueError("Path card drawn is missing a starting area.")
 
 
     def phase4_refresh(self):

@@ -13,6 +13,7 @@ class EngineTests(unittest.TestCase):
         thicket = Card(
             title = "Overgrown Thicket",
             id="woods-011-overgrown-thicket",
+            card_types={CardType.PATH, CardType.FEATURE},
             presence=1,
             progress_threshold=2
         )
@@ -58,6 +59,7 @@ class EngineTests(unittest.TestCase):
         thicket = Card(
             title="Overgrown Thicket",
             id="woods-011-overgrown-thicket",
+            card_types={CardType.PATH, CardType.FEATURE},
             presence=1,
             progress_threshold=2
         )
@@ -95,6 +97,7 @@ class EngineTests(unittest.TestCase):
         feat = Card(
             title="Feature A",
             id="feat1",
+            card_types={CardType.PATH, CardType.FEATURE},
             presence=1,
             progress_threshold=3
         )
@@ -134,6 +137,7 @@ class EngineTests(unittest.TestCase):
         feature = Card(
             title="Test Feature",
             id="test-feature",
+            card_types={CardType.PATH, CardType.FEATURE},
             presence=1,
             progress_threshold=2,
         )
@@ -172,6 +176,7 @@ class EngineTests(unittest.TestCase):
         being = Card(
             title="Test Being",
             id="test-being",
+            card_types={CardType.PATH, CardType.BEING},
             presence=1,
             harm_threshold=2,
         )
@@ -211,6 +216,7 @@ class EngineTests(unittest.TestCase):
         feature = Card(
             title="Test Feature 2",
             id="test-feature-2",
+            card_types={CardType.PATH, CardType.FEATURE},
             presence=1,
             progress_threshold=3,
         )

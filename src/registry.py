@@ -1,12 +1,12 @@
 from __future__ import annotations
-from .models import GameState, Action, ActionTarget, Aspect, Approach, BeingCard, FeatureCard, Zone
+from .models import GameState, Action, ActionTarget, Aspect, Approach, Zone, CardType
 
 
-def _targets_by_type(state: GameState, card_type: type) -> list[ActionTarget]:
+def _targets_by_type(state: GameState, card_type: CardType) -> list[ActionTarget]:
     out: list[ActionTarget] = []
     for zone in state.zones.values():
         for card in zone:
-            if isinstance(card, card_type):
+            if card_type in card.card_types:
                 out.append(ActionTarget(id=card.id, title=card.title))
     return out
 
@@ -21,9 +21,9 @@ def provide_common_tests(state: GameState) -> list[Action]:
             name="Traverse (FIT + Exploration) [X=presence]",
             aspect=Aspect.FIT,
             approach=Approach.EXPLORATION,
-            target_provider=lambda s: _targets_by_type(s, FeatureCard),
+            target_provider=lambda s: _targets_by_type(s, CardType.FEATURE),
             difficulty_fn=lambda s, tid: max(1, getattr(s.get_card_by_id(tid), 'presence', 1)),
-            on_success=lambda s, eff, tid: s.get_card_by_id(tid).add_progress(eff) if isinstance(s.get_card_by_id(tid), FeatureCard) else None, #type:ignore
+            on_success=lambda s, eff, tid: s.get_card_by_id(tid).add_progress(eff) if CardType.FEATURE in s.get_card_by_id(tid).card_types else None, #type:ignore
             on_fail=lambda s, _tid: setattr(s.ranger, "injury", s.ranger.injury + 1),
             source_id="common",
             source_title="Common Test",
@@ -37,9 +37,9 @@ def provide_common_tests(state: GameState) -> list[Action]:
             name="Connect (SPI + Connection) [X=presence]",
             aspect=Aspect.SPI,
             approach=Approach.CONNECTION,
-            target_provider=lambda s: _targets_by_type(s, BeingCard),
+            target_provider=lambda s: _targets_by_type(s, CardType.BEING),
             difficulty_fn=lambda s, tid: max(1, getattr(s.get_card_by_id(tid), 'presence', 1)),
-            on_success=lambda s, eff, tid: s.get_card_by_id(tid).add_progress(eff) if isinstance(s.get_card_by_id(tid), BeingCard) else None, #type:ignore
+            on_success=lambda s, eff, tid: s.get_card_by_id(tid).add_progress(eff) if CardType.BEING in s.get_card_by_id(tid).card_types else None, #type:ignore
             source_id="common",
             source_title="Common Test",
         )
@@ -52,7 +52,7 @@ def provide_common_tests(state: GameState) -> list[Action]:
             name="Avoid (AWA + Conflict) [X=presence]",
             aspect=Aspect.AWA,
             approach=Approach.CONFLICT,
-            target_provider=lambda s: _targets_by_type(s, BeingCard),
+            target_provider=lambda s: _targets_by_type(s, CardType.BEING),
             difficulty_fn=lambda s, tid: max(1, getattr(s.get_card_by_id(tid), 'presence', 1)),
             on_success=lambda s, _eff, tid: setattr(s.get_card_by_id(tid), 'exhausted', True),
             source_id="common",

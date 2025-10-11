@@ -1,6 +1,6 @@
 
 import os
-from src.models import Card, RangerState, GameState, Action, Aspect, Symbol, Approach, WeatherCard, FeatureCard, BeingCard, Zone, RangerCard
+from src.models import Card, RangerState, GameState, Action, Aspect, Symbol, Approach, Zone, CardType
 from src.engine import GameEngine
 from src.registry import provide_common_tests, provide_card_tests
 from src.view import render_state, choose_action, choose_target, choose_commit
@@ -8,16 +8,16 @@ from src.decks import build_woods_path_deck
 from src.cards import OvergrownThicket, WalkWithMe, ADearFriend
 
 
-def pick_demo_cards() -> list[RangerCard]:
+def pick_demo_cards() -> list[Card]:
     
 
     walk_with_me_0 = WalkWithMe()
     walk_with_me_1 = WalkWithMe()
     a_dear_friend_0 = ADearFriend()
     a_dear_friend_1 = ADearFriend()
-    exploration_dummy = RangerCard(id="demo-explore-1", title="Demo Explore +1", approach_icons={Approach.EXPLORATION: 1})
-    reason_dummy = RangerCard(id="demo-reason-1", title="Demo Reason +1", approach_icons={Approach.REASON: 1})
-    conflict_dummy = RangerCard(id="demo-conflict-1", title="Demo Conflict +1", approach_icons={Approach.CONFLICT: 1})
+    exploration_dummy = Card(id="demo-explore-1", title="Demo Explore +1", approach_icons={Approach.EXPLORATION: 1})
+    reason_dummy = Card(id="demo-reason-1", title="Demo Reason +1", approach_icons={Approach.REASON: 1})
+    conflict_dummy = Card(id="demo-conflict-1", title="Demo Conflict +1", approach_icons={Approach.CONFLICT: 1})
 
     return [walk_with_me_0, walk_with_me_1, a_dear_friend_0, a_dear_friend_1, exploration_dummy, reason_dummy, conflict_dummy]
 
@@ -36,7 +36,7 @@ def register_symbol_effects(eng: GameEngine, state:GameState) -> None:
     # Overgrown Thicket: Mountain discards 1 progress
     def mountain_thicket(in_state: GameState) -> None:
         thicket = next(x for x in in_state.all_cards_in_play() if x.title == "Overgrown Thicket")
-        if isinstance(thicket, FeatureCard):
+        if CardType.FEATURE in thicket.card_types:
             if thicket.progress > 0:
                 thicket.progress = max(0, thicket.progress - 1)
                 print(f"Challenge: Mountain on {thicket.title} discards 1 progress (now {thicket.progress}).")
@@ -56,30 +56,33 @@ def build_demo_state() -> GameState:
     thicket = OvergrownThicket()
 
     # Add Sunberry Bramble (Feature)
-    bramble = FeatureCard(
+    bramble = Card(
         id="sunberry-bramble-01",
         title="Sunberry Bramble",
+        card_types={CardType.PATH, CardType.FEATURE},
         presence=1,
         progress_threshold=3,
         harm_threshold=2,
-        area=Zone.WITHIN_REACH,
+        starting_area=Zone.WITHIN_REACH,
     )
 
     # Add Sitka Doe (Being)
-    doe = BeingCard(
+    doe = Card(
         id="sitka-doe-01",
         title="Sitka Doe",
+        card_types={CardType.PATH, CardType.BEING},
         presence=1,
         progress_threshold=4,
         harm_threshold=2,
-        area=Zone.WITHIN_REACH,
+        starting_area=Zone.WITHIN_REACH,
     )
 
     # Add Midday Sun (Weather)
-    weather = WeatherCard(
+    weather = Card(
         id="midday-sun-01",
         title="Midday Sun",
-        area=Zone.SURROUNDINGS,
+        card_types={CardType.WEATHER},
+        starting_area=Zone.SURROUNDINGS,
     )
 
     ranger = RangerState(name="Demo Ranger", hand=hand, energy={Aspect.AWA: 99, Aspect.FIT: 99, Aspect.SPI: 99, Aspect.FOC: 99})

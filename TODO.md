@@ -3,23 +3,9 @@
 A living checklist distilled from our discussion. Grouped by area and roughly prioritized.
 
 ## Types & Models
-- [X] Add typed default factories for lists/dicts in dataclasses (silence IDE warnings)
-- [X] Introduce enums:
-  - [X] Aspect: `AWA`, `FIT`, `SPI`, `FOC`
-  - [X] Challenge: `Sun`, `Mountain`, `Crest`
-  - [X] Approach: `Conflict`, `Exploration`, `Reason`, `Connection`
-  - [X] Area: `Weather`, `Location`, `Missions`, `AlongTheWay`, `WithinReach`, `PlayerArea`
-- [ ] Add `DiscardPile` for ranger hand discards; consider converting `path_discard` later
-- [ ] Add `CardDefinition` (immutable print data) for hand cards that become permanents
-- [ ] Migrate codebase from `Entities` to proper `Card`-based classes and subclasses
-  - [X] Rewrite models.py to use new Card-based classes
-  - [X] Rewrite tests to use new Card-based classes
-  - [ ] Rewrite engine.py to use new Card-based classes
-  - [ ] Rewrite registry.py to use new Card-based classes
-  - [ ] Rewrite view.py to use new Card-based classes
-  - [ ] Rewrite main.py to use new Card-based classes
-- [ ] Introduce properly card loading from JSON
-  - [ ] Deprecate decks.py and move JSON loading to src/cards
+- [X] Add `DiscardPile` for ranger hand discards; consider converting `path_discard` later
+- [X] Introduce proper card loading from JSON
+  - [X] Deprecate decks.py and move JSON loading to src/cards
 
 ## Engine
 - [X] Extend test handling to take into account committing multiple energy. 
@@ -33,6 +19,9 @@ A living checklist distilled from our discussion. Grouped by area and roughly pr
   - [ ] Within an area, let active player pick resolution order (view callback)
   - [ ] Prevent re‑trigger when a card moves into an already‑resolved area during the same test
 - [ ] Expose deterministic hooks for tests (injectable chooser for effect ordering)
+- [ ] Track zones/areas of cards based on which collection they're in, not a state variable
+  - [ ] registry.py line 125: instead of setattr("area"), write a helper function that moves the card
+  - [ ] view.py line 20: print in-play cards by zone instead of by type
 
 ## Actions & Behaviors
 - [ ] Introduce behavior registry `card_id -> provider`:
@@ -75,10 +64,8 @@ A living checklist distilled from our discussion. Grouped by area and roughly pr
 - [ ] Challenge effect ordering and once‑per‑area semantics
 - [ ] Card‑specific behaviors (Bramble/Doe/Thicket/Weather)
 - [ ] End‑to‑end deterministic tests with fixed challenge drawer and effect selector
+- [ ] Test for each common test
 
 ## Tooling & Docs
-- [X] Apply typed default factories across codebase
-- [ ] Optionally migrate `energy` to `Dict[Aspect, int]` after enums
 - [ ] Add short docstrings to core dataclasses and engine methods
-- [ ] Optionally tune Pylance diagnostics once typed factories are in place
 
