@@ -22,6 +22,14 @@
             "args": ["tests.test_engine.EngineTests.test_thicket_progress_and_energy"],
             "console": "integratedTerminal",
             "justMyCode": true
+        },
+        {
+            "name": "Python: Debug main.py",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/main.py",
+            "console": "integratedTerminal",
+            "justMyCode": true
         }
     ]
 }
