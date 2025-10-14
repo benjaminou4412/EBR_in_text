@@ -21,6 +21,7 @@ def provide_common_tests(state: GameState) -> list[Action]:
             name="Traverse (FIT + Exploration) [X=presence]",
             aspect=Aspect.FIT,
             approach=Approach.EXPLORATION,
+            verb="Traverse",
             target_provider=lambda s: _targets_by_type(s, CardType.FEATURE),
             difficulty_fn=lambda s, tid: max(1, getattr(s.get_card_by_id(tid), 'presence', 1)),
             on_success=lambda s, eff, tid: s.get_card_by_id(tid).add_progress(eff) if CardType.FEATURE in s.get_card_by_id(tid).card_types else None, #type:ignore
@@ -37,6 +38,7 @@ def provide_common_tests(state: GameState) -> list[Action]:
             name="Connect (SPI + Connection) [X=presence]",
             aspect=Aspect.SPI,
             approach=Approach.CONNECTION,
+            verb="Connect",
             target_provider=lambda s: _targets_by_type(s, CardType.BEING),
             difficulty_fn=lambda s, tid: max(1, getattr(s.get_card_by_id(tid), 'presence', 1)),
             on_success=lambda s, eff, tid: s.get_card_by_id(tid).add_progress(eff) if CardType.BEING in s.get_card_by_id(tid).card_types else None, #type:ignore
@@ -52,6 +54,7 @@ def provide_common_tests(state: GameState) -> list[Action]:
             name="Avoid (AWA + Conflict) [X=presence]",
             aspect=Aspect.AWA,
             approach=Approach.CONFLICT,
+            verb="Avoid",
             target_provider=lambda s: _targets_by_type(s, CardType.BEING),
             difficulty_fn=lambda s, tid: max(1, getattr(s.get_card_by_id(tid), 'presence', 1)),
             on_success=lambda s, _eff, tid: setattr(s.get_card_by_id(tid), 'exhausted', True),
@@ -67,6 +70,7 @@ def provide_common_tests(state: GameState) -> list[Action]:
             name="Remember (FOC + Reason) [1]",
             aspect=Aspect.FOC,
             approach=Approach.REASON,
+            verb="Remember",
             target_provider=None,
             difficulty_fn=lambda _s, _t: 1,
             on_success=lambda s, eff, _t: None,  # No deck yet; placeholder
@@ -89,6 +93,7 @@ def provide_card_tests(state: GameState) -> list[Action]:
                     name=f"{card.title} (AWA + Exploration)",
                     aspect=Aspect.AWA,
                     approach=Approach.EXPLORATION,
+                    verb="Hunt",
                     target_provider=None,
                     difficulty_fn=lambda _s, _t: 1,
                     on_success=lambda s, eff, _t, eid=card.id: (c.add_progress(eff) if (c := s.get_card_by_id(eid)) and hasattr(c, 'add_progress') else None), #type:ignore
@@ -104,6 +109,7 @@ def provide_card_tests(state: GameState) -> list[Action]:
                     name=f"{card.title} (AWA + Reason) [2]",
                     aspect=Aspect.AWA,
                     approach=Approach.REASON,
+                    verb="Pluck",
                     target_provider=None,
                     difficulty_fn=lambda _s, _t: 2,
                     on_success=lambda s, _eff, _t, eid=card.id: (c.add_harm(1) if (c := s.get_card_by_id(eid)) and hasattr(c, 'add_harm') else None), #type:ignore
@@ -120,6 +126,7 @@ def provide_card_tests(state: GameState) -> list[Action]:
                     name=f"{card.title} (SPI + Conflict) [X=presence]",
                     aspect=Aspect.SPI,
                     approach=Approach.CONFLICT,
+                    verb="Spook",
                     target_provider=None,
                     difficulty_fn=lambda _s, _t: 1,
                     on_success=lambda s, _eff, _t, eid=card.id: (setattr(c, "area", Zone.ALONG_THE_WAY) if (c := s.get_card_by_id(eid)) else None),

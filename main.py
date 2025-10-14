@@ -3,13 +3,13 @@ import os
 from src.models import Card, RangerState, GameState, Action, Aspect, Symbol, Approach, Zone, CardType
 from src.engine import GameEngine
 from src.registry import provide_common_tests, provide_card_tests
-from src.view import render_state, choose_action, choose_target, choose_commit
+from src.view import render_state, choose_action, choose_target, choose_commit, report_test_outcome
 from src.decks import build_woods_path_deck
 from src.cards import OvergrownThicket, WalkWithMe, ADearFriend
 
 
 def pick_demo_cards() -> list[Card]:
-    
+
 
     walk_with_me_0 = WalkWithMe()
     walk_with_me_1 = WalkWithMe()
@@ -27,11 +27,6 @@ def clear_screen() -> None:
     os.system("cls" if os.name == "nt" else "clear")
 
 
-def show_state(state: GameState) -> None:
-    # Backward-compat wrapper to the view module
-    render_state(state)
-
-
 def register_symbol_effects(eng: GameEngine, state:GameState) -> None:
     # Overgrown Thicket: Mountain discards 1 progress
     def mountain_thicket(in_state: GameState) -> None:
@@ -46,7 +41,7 @@ def register_symbol_effects(eng: GameEngine, state:GameState) -> None:
     for card in state.all_cards_in_play():
         if card.title == "Overgrown Thicket":
             eng.register_symbol_handler((card.id, Symbol.MOUNTAIN), mountain_thicket)
-    
+
 
 
 def build_demo_state() -> GameState:
@@ -98,19 +93,22 @@ def build_demo_state() -> GameState:
 
 
 def menu_and_run(engine: GameEngine) -> None:
+    # Print welcome header once
+    print("=== Earthborne Rangers - Demo ===")
+    print("Welcome to the demo! Press Enter to begin...")
+    input()
+
     while True:
         # Phase 1: Draw path cards
         clear_screen()
-        print(f"Round {engine.state.round_number} — Phase 1: Draw Paths")
         engine.phase1_draw_paths(count=1)
-        show_state(engine.state)
-        input("Enter to proceed to Phase 2...")
+        render_state(engine.state, phase_header=f"Round {engine.state.round_number} — Phase 1: Draw Paths")
+        input("Press Enter to proceed to Phase 2...")
 
         # Phase 2: Actions until Rest
         while True:
             clear_screen()
-            print(f"Round {engine.state.round_number} — Phase 2: Actions")
-            show_state(engine.state)
+            render_state(engine.state, phase_header=f"Round {engine.state.round_number} — Phase 2: Actions")
 
             # derive actions
             actions = provide_card_tests(engine.state) + provide_common_tests(engine.state)
@@ -118,6 +116,7 @@ def menu_and_run(engine: GameEngine) -> None:
             actions.append(Action(
                 id="system-rest",
                 name="Rest (end actions)",
+                verb="Rest",
                 aspect="",
                 approach="",
                 is_test=False,
@@ -129,6 +128,8 @@ def menu_and_run(engine: GameEngine) -> None:
                 return
 
             if act.id == "system-rest":
+                print("\nYou rest and end your turn.")
+                input("Press Enter to proceed to Phase 3...")
                 break
 
             target_id = choose_target(engine.state, act)
@@ -138,37 +139,22 @@ def menu_and_run(engine: GameEngine) -> None:
                 outcome = engine.perform_action(act, decision or __import__('src.models', fromlist=['CommitDecision']).CommitDecision([]), target_id)
             except RuntimeError as e:
                 print(str(e))
-                input("Enter to continue...")
+                input("Press Enter to continue...")
                 continue
 
             if act.is_test:
-                print("")
-                print(f"Total effort committed: {outcome.base_effort}")
-                print(f"Test difficulty: {outcome.difficulty}")
-                print(f"Challenge draw: {outcome.modifier:+d}, symbol [{outcome.symbol.upper()}]")
-                print(f"Resulting effort: {outcome.base_effort} + ({outcome.modifier:d}) = {outcome.resulting_effort}")
-                if outcome.success:
-                    print(f"{outcome.resulting_effort} >= {outcome.difficulty}")
-                    print(f"Test succeeded!")
-                else:
-                    print(f"{outcome.resulting_effort} < {outcome.difficulty}")
-                    print(f"Test failed!")
-                for cleared_card in outcome.cleared:
-                    print(f"{cleared_card.title} cleared!")
-                input("Enter to continue...")
+                report_test_outcome(outcome)
 
         # Phase 3: Travel (skipped)
         clear_screen()
-        print(f"Round {engine.state.round_number} — Phase 3: Travel (skipped)")
-        show_state(engine.state)
-        input("Enter to proceed to Phase 4...")
+        render_state(engine.state, phase_header=f"Round {engine.state.round_number} — Phase 3: Travel (skipped)")
+        input("Press Enter to proceed to Phase 4...")
 
         # Phase 4: Refresh
         clear_screen()
-        print(f"Round {engine.state.round_number} — Phase 4: Refresh")
         engine.phase4_refresh()
-        show_state(engine.state)
-        input("Enter to start next round...")
+        render_state(engine.state, phase_header=f"Round {engine.state.round_number} — Phase 4: Refresh")
+        input("Press Enter to start next round...")
 
         engine.state.round_number += 1
 

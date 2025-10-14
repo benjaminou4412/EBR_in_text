@@ -268,6 +268,7 @@ class Action:
     aspect: Aspect | str  # required energy type (if is_test), str for non-test actions like Rest
     approach: Approach | str  # legal approach icons to commit (if is_test), str for non-test actions
     is_test: bool = True
+    verb: Optional[str] = None  # action verb (e.g. "Traverse", "Connect", "Hunt") for game effects that care
     # If the action requires a target, provide candidate targets based on state
     target_provider: Optional[Callable[[GameState], list[ActionTarget]]] = None
     # Computes difficulty for the chosen target (or state)
