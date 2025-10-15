@@ -4,8 +4,30 @@ from .models import GameState, Action, CommitDecision, Aspect, CardType, Zone, C
 from .engine import ChallengeOutcome
 
 
-def render_card_detail(card: Card, index: int | None = None) -> None:
+def get_display_id(cards_in_context: list[Card], card: Card) -> str:
+    """
+    Generate a display-friendly ID for a card based on context.
+
+    If multiple cards share the same title, appends A, B, C, etc.
+    Returns just the title if it's unique in context.
+    """
+    same_title = [c for c in cards_in_context if c.title == card.title]
+
+    if len(same_title) <= 1:
+        return card.title
+
+    # Multiple cards with same title - add letter suffixes
+    sorted_cards = sorted(same_title, key=lambda c: c.id)
+    index = sorted_cards.index(card)
+    letter = chr(65 + index)  # 65 is 'A' in ASCII
+    return f"{card.title} {letter}"
+
+
+def render_card_detail(card: Card, index: int | None = None, display_id: str | None = None) -> None:
     """Render a single card with full details in multi-line format"""
+    # Use display_id if provided, otherwise just use title
+    card_name = display_id if display_id else card.title
+
     # Build card type string
     type_strs : list[str]= []
     for ct in [CardType.MOMENT, CardType.GEAR, CardType.ATTACHMENT, CardType.ATTRIBUTE,
@@ -20,9 +42,9 @@ def render_card_detail(card: Card, index: int | None = None) -> None:
 
     # Header line with index if provided
     if index is not None:
-        print(f"{index}. {card.title} {type_line}")
+        print(f"{index}. {card_name} {type_line}")
     else:
-        print(f"{card.title} {type_line}")
+        print(f"{card_name} {type_line}")
 
     # Cost/Icons line for ranger cards
     if card.energy_cost is not None or card.approach_icons:
@@ -78,27 +100,40 @@ def render_state(state: GameState, phase_header: str = "") -> None:
         print("[Empty hand]")
 
     # Zones
+    all_cards = state.all_cards_in_play()
     for zone in [Zone.SURROUNDINGS, Zone.ALONG_THE_WAY, Zone.WITHIN_REACH, Zone.PLAYER_AREA]:
         print(f"\n--- {zone.value} ---")
         cards = state.zones.get(zone, [])
         if cards:
             for card in cards:
-                render_card_detail(card)
+                display_id = get_display_id(all_cards, card)
+                render_card_detail(card, display_id=display_id)
         else:
             print("[No cards currently in this zone]")
 
     print("")
 
 
-def choose_action(actions: list[Action]) -> Optional[Action]:
+def choose_action(actions: list[Action], state: GameState) -> Optional[Action]:
     """Prompt player to choose from available actions"""
     if not actions:
         print("No actions available.")
         return None
     print("\nChoose an action:")
+
+    all_cards = state.all_cards_in_play()
+
     for i, a in enumerate(actions, start=1):
         # Use verb for condensed display
-        if a.verb and a.source_title:
+        if a.verb and a.source_id and a.source_id != "common":
+            # Card-based action - find the card and get display ID
+            card = state.get_card_by_id(a.source_id)
+            if card:
+                display_name = get_display_id(all_cards, card)
+                display = f"{a.verb} ({display_name})"
+            else:
+                display = f"{a.verb} ({a.source_title})"
+        elif a.verb and a.source_title:
             display = f"{a.verb} ({a.source_title})"
         elif a.verb:
             display = a.verb
@@ -126,8 +161,17 @@ def choose_target(state: GameState, action: Action) -> Optional[str]:
         print("No valid targets.")
         return None
     print("Choose target:")
+
+    all_cards = state.all_cards_in_play()
+
     for i, t in enumerate(targets, start=1):
-        print(f" {i}. {t.title}")
+        # Find the actual card to get display ID
+        card = state.get_card_by_id(t.id)
+        if card:
+            display_name = get_display_id(all_cards, card)
+            print(f" {i}. {display_name}")
+        else:
+            print(f" {i}. {t.title}")
     try:
         idx = int(input("> ").strip()) - 1
         return targets[idx].id

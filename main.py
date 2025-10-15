@@ -122,7 +122,7 @@ def menu_and_run(engine: GameEngine) -> None:
                 is_test=False,
                 on_success=lambda s, _e, _t: None,
             ))
-            act = choose_action(actions)
+            act = choose_action(actions, engine.state)
             if not act:
                 # treat as cancel to end the run
                 return
