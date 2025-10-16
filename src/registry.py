@@ -129,7 +129,7 @@ def provide_card_tests(state: GameState) -> list[Action]:
                     verb="Spook",
                     target_provider=None,
                     difficulty_fn=lambda _s, _t: 1,
-                    on_success=lambda s, _eff, _t, eid=card.id: (setattr(c, "area", Zone.ALONG_THE_WAY) if (c := s.get_card_by_id(eid)) else None),
+                    on_success=lambda s, _eff, _t, eid=card.id: (s.move_card(eid, Zone.ALONG_THE_WAY)),
                     source_id=card.id,
                     source_title=card.title,
                 )

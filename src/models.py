@@ -250,6 +250,23 @@ class GameState:
     def get_card_by_id(self, card_id: str | None) -> Card | None:
         """Get a specific card by its instance ID"""
         return next((c for c in self.all_cards_in_play() if c.id == card_id), None)
+    
+    def get_card_zone_by_id(self, card_id: str | None) -> Zone | None:
+        """Get a card's current zone by its instance ID"""
+        for zone in self.zones:
+            for card in self.zones[zone]:
+                if card.id == card_id:
+                    return zone
+        return None
+
+    def move_card(self, card_id : str | None, target_zone : Zone) -> None:
+        """Move a card from its current zone to a target zone"""
+        target_card : Card | None = self.get_card_by_id(card_id)
+        current_zone : Zone | None = self.get_card_zone_by_id(card_id)
+        if current_zone is not None and target_card is not None:
+            self.zones[current_zone].remove(target_card)
+            self.zones[target_zone].append(target_card)
+        
 
 
 # Action system: derived from state; executed by engine.

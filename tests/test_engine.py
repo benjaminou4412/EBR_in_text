@@ -479,6 +479,94 @@ class CommonTestsTests(unittest.TestCase):
         self.assertEqual(state.ranger.energy[Aspect.AWA], 2)
         self.assertEqual(state.ranger.injury, 0)  # Avoid has no failure effect
 
+    def test_sitka_doe_spook_success_moves_to_along_the_way(self):
+        """Test that Sitka Doe's Spook test moves it from Within Reach to Along the Way on success"""
+        doe = Card(
+            title="Sitka Doe",
+            id="sitka-doe-01",
+            card_types={CardType.PATH, CardType.BEING},
+            presence=1,
+            progress_threshold=4,
+            harm_threshold=2,
+            starting_area=Zone.WITHIN_REACH
+        )
+        ranger = RangerState(
+            name="Ranger",
+            hand=[Card(id="conf1", title="Conflict+1", approach_icons={Approach.CONFLICT: 1})],
+            energy={Aspect.AWA: 3, Aspect.FIT: 2, Aspect.SPI: 2, Aspect.FOC: 1}
+        )
+        state = GameState(
+            ranger=ranger,
+            zones={
+                Zone.SURROUNDINGS: [],
+                Zone.ALONG_THE_WAY: [],
+                Zone.WITHIN_REACH: [doe],
+                Zone.PLAYER_AREA: [],
+            }
+        )
+        eng = GameEngine(state, challenge_drawer=fixed_draw(0, Symbol.SUN))
+
+        # Get the Sitka Doe spook action from registry
+        from src.registry import provide_card_tests
+        actions = provide_card_tests(state)
+        spook = next(a for a in actions if a.verb == "Spook" and "Sitka Doe" in a.name)
+
+        # Perform the spook action with 1 SPI energy + 1 Conflict card = 2 effort, difficulty 1
+        outcome = eng.perform_action(spook, CommitDecision(energy=1, hand_indices=[0]), target_id=None)
+
+        # Verify test succeeded
+        self.assertTrue(outcome.success)
+        self.assertEqual(state.ranger.energy[Aspect.SPI], 1)  # Started with 2, spent 1
+
+        # Verify the doe moved from Within Reach to Along the Way
+        self.assertEqual(len(state.zones[Zone.WITHIN_REACH]), 0, "Doe should no longer be in Within Reach")
+        self.assertEqual(len(state.zones[Zone.ALONG_THE_WAY]), 1, "Doe should now be in Along the Way")
+        self.assertEqual(state.zones[Zone.ALONG_THE_WAY][0].id, doe.id, "The card in Along the Way should be the doe")
+
+    def test_sitka_doe_spook_failure_does_not_move(self):
+        """Test that failing Sitka Doe's Spook test does not move it"""
+        doe = Card(
+            title="Sitka Doe",
+            id="sitka-doe-01",
+            card_types={CardType.PATH, CardType.BEING},
+            presence=1,
+            progress_threshold=4,
+            harm_threshold=2,
+            starting_area=Zone.WITHIN_REACH
+        )
+        ranger = RangerState(
+            name="Ranger",
+            hand=[],  # No cards to commit
+            energy={Aspect.AWA: 3, Aspect.FIT: 2, Aspect.SPI: 2, Aspect.FOC: 1}
+        )
+        state = GameState(
+            ranger=ranger,
+            zones={
+                Zone.SURROUNDINGS: [],
+                Zone.ALONG_THE_WAY: [],
+                Zone.WITHIN_REACH: [doe],
+                Zone.PLAYER_AREA: [],
+            }
+        )
+        eng = GameEngine(state, challenge_drawer=fixed_draw(-2, Symbol.SUN))  # Negative modifier to ensure failure
+
+        # Get the Sitka Doe spook action from registry
+        from src.registry import provide_card_tests
+        actions = provide_card_tests(state)
+        spook = next(a for a in actions if a.verb == "Spook" and "Sitka Doe" in a.name)
+
+        # Perform the spook action with 1 SPI energy + no cards + (-2 modifier) = 0 effort (clamped), difficulty 1
+        outcome = eng.perform_action(spook, CommitDecision(energy=1, hand_indices=[]), target_id=None)
+
+        # Verify test failed
+        self.assertFalse(outcome.success)
+        self.assertEqual(state.ranger.energy[Aspect.SPI], 1)  # Started with 2, spent 1
+
+        # Verify the doe stayed in Within Reach
+        self.assertEqual(len(state.zones[Zone.WITHIN_REACH]), 1, "Doe should still be in Within Reach")
+        self.assertEqual(len(state.zones[Zone.ALONG_THE_WAY]), 0, "Nothing should be in Along the Way")
+        self.assertEqual(state.zones[Zone.WITHIN_REACH][0].id, doe.id, "The card in Within Reach should be the doe")
+
 
 if __name__ == '__main__':
     unittest.main()
