@@ -231,6 +231,10 @@ class GameState:
     path_deck: list[Card] = field(default_factory=lambda: cast(list[Card], []))
     path_discard: list[Card] = field(default_factory=lambda: cast(list[Card], []))
 
+    message_queue: list[MessageEvent] = field(default_factory=lambda: cast(list[MessageEvent], []))
+
+    #Card getter methods
+
     def all_cards_in_play(self) -> list[Card]:
         """Get all cards across all zones"""
         return [card for cards in self.zones.values() for card in cards]
@@ -259,6 +263,8 @@ class GameState:
                     return zone
         return None
 
+    #Gamestate manipulation methods
+
     def move_card(self, card_id : str | None, target_zone : Zone) -> None:
         """Move a card from its current zone to a target zone"""
         target_card : Card | None = self.get_card_by_id(card_id)
@@ -266,6 +272,19 @@ class GameState:
         if current_zone is not None and target_card is not None:
             self.zones[current_zone].remove(target_card)
             self.zones[target_zone].append(target_card)
+            self.add_message(f"{target_card.title} moves to {target_zone.value}.")
+
+    #IO-related methods
+
+    def add_message(self, message: str) -> None:
+        new_message = MessageEvent(message)
+        self.message_queue.append(new_message)
+
+    def get_messages(self) -> list[MessageEvent]:
+        return self.message_queue.copy()
+    
+    def clear_messages(self) -> None:
+        self.message_queue.clear()
         
 
 
@@ -304,3 +323,8 @@ class CommitDecision:
     energy: int = 1
     # Indices into the ranger.hand to commit for icons
     hand_indices: list[int] = field(default_factory=lambda: cast(list[int], []))
+
+@dataclass
+class MessageEvent:
+    # Message to print to player
+    message: str = field(default_factory=lambda:cast(str, ""))

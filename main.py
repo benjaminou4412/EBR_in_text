@@ -3,7 +3,7 @@ import os
 from src.models import Card, RangerState, GameState, Action, Aspect, Symbol, Approach, Zone, CardType
 from src.engine import GameEngine
 from src.registry import provide_common_tests, provide_card_tests
-from src.view import render_state, choose_action, choose_target, choose_commit, report_test_outcome
+from src.view import render_state, choose_action, choose_target, choose_commit, report_test_outcome, display_and_clear_messages
 from src.decks import build_woods_path_deck
 from src.cards import OvergrownThicket, WalkWithMe, ADearFriend
 
@@ -144,6 +144,9 @@ def menu_and_run(engine: GameEngine) -> None:
 
             if act.is_test:
                 report_test_outcome(outcome)
+                display_and_clear_messages(engine.state)
+            
+            input("Press Enter to continue...")
 
         # Phase 3: Travel (skipped)
         clear_screen()

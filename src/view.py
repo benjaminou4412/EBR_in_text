@@ -232,4 +232,7 @@ def report_test_outcome(outcome: ChallengeOutcome) -> None:
         for cleared_card in outcome.cleared:
             print(f"{cleared_card.title} cleared!")
 
-    input("Press Enter to continue...")
+def display_and_clear_messages(state: GameState) -> None:
+    for event in state.message_queue:
+        print(event.message)
+    state.clear_messages()
