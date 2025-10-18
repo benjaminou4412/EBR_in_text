@@ -1,7 +1,6 @@
 from __future__ import annotations
 from typing import Optional
 from .models import GameState, Action, CommitDecision, Aspect, CardType, Zone, Card
-from .engine import ChallengeOutcome
 
 
 def get_display_id(cards_in_context: list[Card], card: Card) -> str:
@@ -213,24 +212,6 @@ def choose_commit(action: Action, hand_size: int) -> CommitDecision:
     return CommitDecision(hand_indices=hand_indices, energy=energy)
 
 
-def report_test_outcome(outcome: ChallengeOutcome) -> None:
-    """Report the results of a test to the player"""
-    print("")
-    print(f"Total effort committed: {outcome.base_effort}")
-    print(f"Test difficulty: {outcome.difficulty}")
-    print(f"Challenge draw: {outcome.modifier:+d}, symbol [{outcome.symbol.upper()}]")
-    print(f"Resulting effort: {outcome.base_effort} + ({outcome.modifier:d}) = {outcome.resulting_effort}")
-
-    if outcome.success:
-        print(f"{outcome.resulting_effort} >= {outcome.difficulty}")
-        print(f"Test succeeded!")
-    else:
-        print(f"{outcome.resulting_effort} < {outcome.difficulty}")
-        print(f"Test failed!")
-
-    if outcome.cleared:
-        for cleared_card in outcome.cleared:
-            print(f"{cleared_card.title} cleared!")
 
 def display_and_clear_messages(state: GameState) -> None:
     for event in state.message_queue:

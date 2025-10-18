@@ -1,6 +1,6 @@
 from __future__ import annotations
-from dataclasses import dataclass, field
-from typing import Callable, Optional, cast
+from dataclasses import dataclass
+from typing import Callable, Optional
 from .models import GameState, Action, CommitDecision, RangerState, Card, Symbol, Aspect, Approach, Zone, CardType
 from .challenge import draw_challenge
 
@@ -13,7 +13,6 @@ class ChallengeOutcome:
     symbol: Symbol
     resulting_effort: int
     success: bool
-    cleared: list[Card] = field(default_factory=lambda: cast(list[Card], [])) 
 
 
 class GameEngine:
@@ -50,6 +49,9 @@ class GameEngine:
             return ChallengeOutcome(difficulty=0, base_effort=0, modifier=0, symbol=Symbol.SUN, resulting_effort=0, success=True)
 
         r = self.state.ranger
+
+        # Step 1: Choose Test (technically already chosen) and suffer fatigue (TODO)
+
         # At this point, action.aspect/approach are guaranteed to be enums (not str) since is_test=True
         aspect = action.aspect if isinstance(action.aspect, Aspect) else Aspect.AWA  # type guard
         approach = action.approach if isinstance(action.approach, Approach) else Approach.EXPLORATION  # type guard
@@ -57,22 +59,43 @@ class GameEngine:
             raise RuntimeError(f"Insufficient energy for {aspect}")
         r.energy[aspect] -= decision.energy
 
+        # Step 2: Commit effort in the form of energy tokens and approach icons. TODO: Commit effort from other sources.
+
         base_effort, committed = self.commit_icons(r, approach, decision)
+
+        # Discard committed cards immediately after committing
+        self.discard_committed(r, committed)
+
+        # Step 3: Apply modifiers. TODO: Take into account modifiers from non-challenge-card sources.
+
         mod, symbol = self.draw_challenge()
         effort = max(0, base_effort + mod)
         difficulty = action.difficulty_fn(self.state, target_id)
+
+        self.state.add_message(f"Total effort committed: {base_effort}")
+        self.state.add_message(f"Test difficulty: {difficulty}")
+        self.state.add_message(f"Challenge draw: {mod:+d}, symbol [{symbol.upper()}]")
+        self.state.add_message(f"Resulting effort: {base_effort} + ({mod:d}) = {effort}")
+
+        # Step 4: Determine success or failure and apply results. TODO: notify "after you succeed/fail" listeners
         success = effort >= difficulty
 
         if success:
+            self.state.add_message(f"Test succeeded!")
             action.on_success(self.state, effort, target_id)
         else:
+            self.state.add_message(f"Test failed!")
             if action.on_fail:
                 action.on_fail(self.state, target_id)
 
         cleared : list[Card]= []
         cleared.extend(self.check_and_process_clears())
 
-        # Handle symbol effects (registered externally)
+        for cleared_card in cleared:
+            self.state.add_message(f"{cleared_card.title} cleared!")
+
+        cleared.clear()
+        # Step 5:  Resolve Challenge effects (registered externally)
 
         challenge_zones : list[Zone] = [
             Zone.SURROUNDINGS,     # Weather, Location, Mission
@@ -89,16 +112,19 @@ class GameEngine:
                         handler(self.state)
 
         cleared.extend(self.check_and_process_clears())
-        # Discard committed cards last
-        self.discard_committed(r, committed)
+
+        for cleared_card in cleared:
+            self.state.add_message(f"{cleared_card.title} cleared!")
+
         return ChallengeOutcome(
             difficulty=difficulty, 
             base_effort=base_effort, 
             modifier=mod, symbol=symbol, 
             resulting_effort=effort, 
-            success=success,
-            cleared=cleared
+            success=success
         )
+
+        
     
     #check all in-play cards' clear thresholds and moves them to discard when thresholds are met
     #return list of cleared entities to display
