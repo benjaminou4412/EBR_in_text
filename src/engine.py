@@ -36,6 +36,15 @@ class GameEngine:
     def register_symbol_handler(self, key: tuple[str, Symbol], fn: Callable[[GameEngine], None]):
         self.symbol_handlers[key] = fn
 
+    def refresh_symbol_handlers(self) -> None:
+        """Refresh symbol handlers to match currently active cards"""
+        self.symbol_handlers.clear()
+        for card in self.state.all_cards_in_play():
+            handlers = card.get_symbol_handlers()
+            if handlers:
+                for symbol, handler in handlers.items():
+                    self.register_symbol_handler((card.id, symbol), handler)
+
     def commit_icons(self, ranger: RangerState, approach: Approach, decision: CommitDecision) -> tuple[int, list[int]]:
         total = decision.energy
         valid_indices : list[int] = []
@@ -106,7 +115,7 @@ class GameEngine:
             self.state.add_message(f"{cleared_card.title} cleared!")
 
         cleared.clear()
-        # Step 5:  Resolve Challenge effects (registered externally)
+        # Step 5:  Resolve Challenge effects (dynamically from active cards)
 
         challenge_zones : list[Zone] = [
             Zone.SURROUNDINGS,     # Weather, Location, Mission
@@ -118,9 +127,10 @@ class GameEngine:
         for zone in challenge_zones:
             for card in self.state.zones[zone]:
                 if not card.exhausted:
-                    handler = self.symbol_handlers.get((card.id, symbol))
-                    if handler:
-                        handler(self)
+                    # Get handlers directly from the card (always current)
+                    handlers = card.get_symbol_handlers()
+                    if handlers and symbol in handlers:
+                        handlers[symbol](self)
 
         cleared.extend(self.check_and_process_clears())
 
