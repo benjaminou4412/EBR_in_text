@@ -84,6 +84,7 @@ def render_state(state: GameState, phase_header: str = "") -> None:
     print("")
     # Ranger status line
     print(f"Ranger: {r.name} | Energy AWA {r.energy[Aspect.AWA]} FIT {r.energy[Aspect.FIT]} SPI {r.energy[Aspect.SPI]} FOC {r.energy[Aspect.FOC]} | Injury {r.injury}")
+    print(f"Remaining deck size: {len(r.deck)} | Discard pile size: {len(r.discard)} | Fatigue stack size: {len(r.fatigue_pile)}")
 
     # Hand
     print("\n--- Hand ---")

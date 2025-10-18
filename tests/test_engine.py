@@ -553,6 +553,136 @@ class CommonTestsTests(unittest.TestCase):
         self.assertEqual(len(state.zones[Zone.ALONG_THE_WAY]), 0, "Nothing should be in Along the Way")
         self.assertEqual(state.zones[Zone.WITHIN_REACH][0].id, doe.id, "The card in Within Reach should be the doe")
 
+    def test_sitka_doe_sun_effect_moves_bucks_to_within_reach(self):
+        """Test that Sitka Doe's sun challenge effect moves all Sitka Bucks within reach"""
+        from src.cards import SitkaDoe, SitkaBuck
+        doe = SitkaDoe()
+        buck_a = SitkaBuck()
+        buck_b = SitkaBuck()
+
+        ranger = RangerState(
+            name="Ranger",
+            hand=[],
+            energy={Aspect.AWA: 3, Aspect.FIT: 2, Aspect.SPI: 2, Aspect.FOC: 1}
+        )
+        state = GameState(
+            ranger=ranger,
+            zones={
+                Zone.SURROUNDINGS: [],
+                Zone.ALONG_THE_WAY: [buck_a, buck_b],  # Bucks start here
+                Zone.WITHIN_REACH: [doe],  # Doe is here
+                Zone.PLAYER_AREA: [],
+            }
+        )
+        # Draw SUN symbol to trigger sun effect
+        eng = GameEngine(state, challenge_drawer=fixed_draw(0, Symbol.SUN))
+
+        # Perform any test to trigger challenge resolution
+        dummy_action = Action(
+            id="dummy",
+            name="dummy",
+            aspect=Aspect.AWA,
+            approach=Approach.EXPLORATION,
+            difficulty_fn=lambda _s, _t: 1,
+            on_success=lambda s, eff, _t: None,
+        )
+        eng.perform_action(dummy_action, CommitDecision(energy=1, hand_indices=[]), target_id=None)
+
+        # Verify both bucks moved to Within Reach
+        self.assertEqual(len(state.zones[Zone.ALONG_THE_WAY]), 0, "No bucks should remain in Along the Way")
+        self.assertEqual(len(state.zones[Zone.WITHIN_REACH]), 3, "Doe + 2 bucks should be Within Reach")
+
+        # Check that the bucks are the ones that moved
+        within_reach_ids = {card.id for card in state.zones[Zone.WITHIN_REACH]}
+        self.assertIn(buck_a.id, within_reach_ids, "Buck A should be in Within Reach")
+        self.assertIn(buck_b.id, within_reach_ids, "Buck B should be in Within Reach")
+        self.assertIn(doe.id, within_reach_ids, "Doe should still be in Within Reach")
+
+    def test_sitka_doe_mountain_effect_harms_doe_with_predator_presence(self):
+        """Test that Sitka Doe's mountain effect exhausts a predator and adds harm equal to its presence"""
+        from src.cards import SitkaDoe, ProwlingWolhund
+        doe = SitkaDoe()
+        wolhund = ProwlingWolhund()
+
+        ranger = RangerState(
+            name="Ranger",
+            hand=[],
+            energy={Aspect.AWA: 3, Aspect.FIT: 2, Aspect.SPI: 2, Aspect.FOC: 1}
+        )
+        state = GameState(
+            ranger=ranger,
+            zones={
+                Zone.SURROUNDINGS: [],
+                Zone.ALONG_THE_WAY: [wolhund],  # Active predator
+                Zone.WITHIN_REACH: [doe],
+                Zone.PLAYER_AREA: [],
+            }
+        )
+        # Draw MOUNTAIN symbol to trigger mountain effect
+        # Use deterministic chooser (default picks first option)
+        eng = GameEngine(state, challenge_drawer=fixed_draw(0, Symbol.MOUNTAIN))
+
+        # Verify initial state
+        self.assertFalse(wolhund.exhausted, "Wolhund should start active")
+        self.assertEqual(doe.harm, 0, "Doe should start with 0 harm")
+
+        # Perform any test to trigger challenge resolution
+        dummy_action = Action(
+            id="dummy",
+            name="dummy",
+            aspect=Aspect.AWA,
+            approach=Approach.EXPLORATION,
+            difficulty_fn=lambda _s, _t: 1,
+            on_success=lambda s, eff, _t: None,
+        )
+        eng.perform_action(dummy_action, CommitDecision(energy=1, hand_indices=[]), target_id=None)
+
+        # Verify wolhund is exhausted and doe took harm equal to wolhund's presence
+        self.assertTrue(wolhund.exhausted, "Wolhund should be exhausted")
+        self.assertEqual(doe.harm, wolhund.presence, f"Doe should have {wolhund.presence} harm (wolhund's presence)")
+
+    def test_sitka_doe_mountain_effect_no_active_predators(self):
+        """Test that Sitka Doe's mountain effect does nothing when no active predators exist"""
+        from src.cards import SitkaDoe, ProwlingWolhund
+        doe = SitkaDoe()
+        wolhund = ProwlingWolhund()
+        wolhund.exhausted = True  # Predator is exhausted
+
+        ranger = RangerState(
+            name="Ranger",
+            hand=[],
+            energy={Aspect.AWA: 3, Aspect.FIT: 2, Aspect.SPI: 2, Aspect.FOC: 1}
+        )
+        state = GameState(
+            ranger=ranger,
+            zones={
+                Zone.SURROUNDINGS: [],
+                Zone.ALONG_THE_WAY: [wolhund],  # Exhausted predator
+                Zone.WITHIN_REACH: [doe],
+                Zone.PLAYER_AREA: [],
+            }
+        )
+        # Draw MOUNTAIN symbol
+        eng = GameEngine(state, challenge_drawer=fixed_draw(0, Symbol.MOUNTAIN))
+
+        # Verify initial state
+        self.assertEqual(doe.harm, 0, "Doe should start with 0 harm")
+
+        # Perform any test to trigger challenge resolution
+        dummy_action = Action(
+            id="dummy",
+            name="dummy",
+            aspect=Aspect.AWA,
+            approach=Approach.EXPLORATION,
+            difficulty_fn=lambda _s, _t: 1,
+            on_success=lambda s, eff, _t: None,
+        )
+        eng.perform_action(dummy_action, CommitDecision(energy=1, hand_indices=[]), target_id=None)
+
+        # Verify no harm was dealt (no active predators)
+        self.assertEqual(doe.harm, 0, "Doe should still have 0 harm (no active predators)")
+        self.assertTrue(wolhund.exhausted, "Wolhund should still be exhausted")
+
 
 if __name__ == '__main__':
     unittest.main()
