@@ -116,7 +116,11 @@ class Card:
         if self.starting_tokens:
             self.unique_tokens = {self.starting_tokens[0]: self.starting_tokens[1]}
     
-
+    def get_symbol_handlers(self) -> dict[Symbol, Callable[[GameState], None]] | None:
+        return None
+    
+    def get_tests(self) -> list[Action] | None:
+        return None
 
     #todo: methods for adding/removing unique tokens
 

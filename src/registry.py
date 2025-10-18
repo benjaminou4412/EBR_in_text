@@ -1,5 +1,6 @@
 from __future__ import annotations
-from .models import GameState, Action, ActionTarget, Aspect, Approach, Zone, CardType
+from .models import GameState, Action, ActionTarget, Aspect, Approach, CardType
+from .engine import GameEngine
 
 
 def _targets_by_type(state: GameState, card_type: CardType) -> list[ActionTarget]:
@@ -83,57 +84,20 @@ def provide_common_tests(state: GameState) -> list[Action]:
 
 
 def provide_card_tests(state: GameState) -> list[Action]:
+    """Scan all cards in play and collect tests they provide"""
     actions: list[Action] = []
-    # Overgrown Thicket (AWA + Exploration): add progress equal to effort
     for card in state.all_cards_in_play():
-        if card.title == "Overgrown Thicket":
-            actions.append(
-                Action(
-                    id=f"test-{card.id}",
-                    name=f"{card.title} (AWA + Exploration)",
-                    aspect=Aspect.AWA,
-                    approach=Approach.EXPLORATION,
-                    verb="Hunt",
-                    target_provider=None,
-                    difficulty_fn=lambda _s, _t: 1,
-                    on_success=lambda s, eff, _t, eid=card.id: (c.add_progress(eff) if (c := s.get_card_by_id(eid)) and hasattr(c, 'add_progress') else None), #type:ignore
-                    source_id=card.id,
-                    source_title=card.title,
-                )
-            )
-
-        if card.title == "Sunberry Bramble":
-            actions.append(
-                Action(
-                    id=f"test-{card.id}",
-                    name=f"{card.title} (AWA + Reason) [2]",
-                    aspect=Aspect.AWA,
-                    approach=Approach.REASON,
-                    verb="Pluck",
-                    target_provider=None,
-                    difficulty_fn=lambda _s, _t: 2,
-                    on_success=lambda s, _eff, _t, eid=card.id: (c.add_harm(1) if (c := s.get_card_by_id(eid)) and hasattr(c, 'add_harm') else None), #type:ignore
-                    on_fail=lambda s, _t: None,  # Fatigue not modeled
-                    source_id=card.id,
-                    source_title=card.title,
-                )
-            )
-
-        if card.title == "Sitka Doe":
-            actions.append(
-                Action(
-                    id=f"test-{card.id}",
-                    name=f"{card.title} (SPI + Conflict) [X=presence]",
-                    aspect=Aspect.SPI,
-                    approach=Approach.CONFLICT,
-                    verb="Spook",
-                    target_provider=None,
-                    difficulty_fn=lambda _s, _t: 1,
-                    on_success=lambda s, _eff, _t, eid=card.id: (s.move_card(eid, Zone.ALONG_THE_WAY)),
-                    source_id=card.id,
-                    source_title=card.title,
-                )
-            )
-
+        tests = card.get_tests()
+        if tests is not None:
+            actions.extend(tests)
     return actions
+
+
+def register_card_symbol_effects(engine: GameEngine, state: GameState) -> None:
+    """Scan all cards in play and register their symbol handlers"""
+    for card in state.all_cards_in_play():
+        symbols = card.get_symbol_handlers()
+        if symbols is not None:
+            for symbol, handler in symbols.items():
+                engine.register_symbol_handler((card.id, symbol), handler)
 

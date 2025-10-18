@@ -481,15 +481,8 @@ class CommonTestsTests(unittest.TestCase):
 
     def test_sitka_doe_spook_success_moves_to_along_the_way(self):
         """Test that Sitka Doe's Spook test moves it from Within Reach to Along the Way on success"""
-        doe = Card(
-            title="Sitka Doe",
-            id="sitka-doe-01",
-            card_types={CardType.PATH, CardType.BEING},
-            presence=1,
-            progress_threshold=4,
-            harm_threshold=2,
-            starting_area=Zone.WITHIN_REACH
-        )
+        from src.cards import SitkaDoe
+        doe = SitkaDoe()
         ranger = RangerState(
             name="Ranger",
             hand=[Card(id="conf1", title="Conflict+1", approach_icons={Approach.CONFLICT: 1})],
@@ -525,15 +518,8 @@ class CommonTestsTests(unittest.TestCase):
 
     def test_sitka_doe_spook_failure_does_not_move(self):
         """Test that failing Sitka Doe's Spook test does not move it"""
-        doe = Card(
-            title="Sitka Doe",
-            id="sitka-doe-01",
-            card_types={CardType.PATH, CardType.BEING},
-            presence=1,
-            progress_threshold=4,
-            harm_threshold=2,
-            starting_area=Zone.WITHIN_REACH
-        )
+        from src.cards import SitkaDoe
+        doe = SitkaDoe()
         ranger = RangerState(
             name="Ranger",
             hand=[],  # No cards to commit

@@ -1,11 +1,11 @@
 
 import os
-from src.models import Card, RangerState, GameState, Action, Aspect, Symbol, Approach, Zone, CardType
+from src.models import Card, RangerState, GameState, Action, Aspect, Approach, Zone, CardType
 from src.engine import GameEngine
-from src.registry import provide_common_tests, provide_card_tests
+from src.registry import provide_common_tests, provide_card_tests, register_card_symbol_effects
 from src.view import render_state, choose_action, choose_target, choose_commit, display_and_clear_messages
 from src.decks import build_woods_path_deck
-from src.cards import OvergrownThicket, WalkWithMe, ADearFriend
+from src.cards import OvergrownThicket, SunberryBramble, SitkaDoe, WalkWithMe, ADearFriend
 
 
 def pick_demo_cards() -> list[Card]:
@@ -27,20 +27,6 @@ def clear_screen() -> None:
     os.system("cls" if os.name == "nt" else "clear")
 
 
-def register_symbol_effects(eng: GameEngine, state:GameState) -> None:
-    # Overgrown Thicket: Mountain discards 1 progress
-    def mountain_thicket(in_state: GameState) -> None:
-        thicket = next(x for x in in_state.all_cards_in_play() if x.title == "Overgrown Thicket")
-        if CardType.FEATURE in thicket.card_types:
-            if thicket.progress > 0:
-                thicket.progress = max(0, thicket.progress - 1)
-                print(f"Challenge: Mountain on {thicket.title} discards 1 progress (now {thicket.progress}).")
-            else:
-                print(f"Challenge: Mountain on {thicket.title} (no progress to discard).")
-
-    for card in state.all_cards_in_play():
-        if card.title == "Overgrown Thicket":
-            eng.register_symbol_handler((card.id, Symbol.MOUNTAIN), mountain_thicket)
 
 
 
@@ -51,26 +37,10 @@ def build_demo_state() -> GameState:
     thicket = OvergrownThicket()
 
     # Add Sunberry Bramble (Feature)
-    bramble = Card(
-        id="sunberry-bramble-01",
-        title="Sunberry Bramble",
-        card_types={CardType.PATH, CardType.FEATURE},
-        presence=1,
-        progress_threshold=3,
-        harm_threshold=2,
-        starting_area=Zone.WITHIN_REACH,
-    )
+    bramble = SunberryBramble()
 
     # Add Sitka Doe (Being)
-    doe = Card(
-        id="sitka-doe-01",
-        title="Sitka Doe",
-        card_types={CardType.PATH, CardType.BEING},
-        presence=1,
-        progress_threshold=4,
-        harm_threshold=2,
-        starting_area=Zone.WITHIN_REACH,
-    )
+    doe = SitkaDoe()
 
     # Add Midday Sun (Weather)
     weather = Card(
@@ -163,7 +133,7 @@ def menu_and_run(engine: GameEngine) -> None:
 def main() -> None:
     state = build_demo_state()
     engine = GameEngine(state)
-    register_symbol_effects(engine, state)
+    register_card_symbol_effects(engine, state)
     menu_and_run(engine)
 
 
