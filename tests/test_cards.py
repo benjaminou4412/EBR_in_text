@@ -235,6 +235,87 @@ class CardLoadingTests(unittest.TestCase):
         self.assertFalse(sb.exhausted)
         self.assertEqual(len(sb.modifiers), 0)
 
+    def test_load_sitka_doe(self):
+        """Test loading Sitka Doe from JSON - comprehensive field check"""
+        sd = SitkaDoe()
+
+        # Test ID format: title-uuid (readable and unique)
+        self.assertTrue(sd.id.startswith("sitka-doe-"))
+        self.assertEqual(len(sd.id), len("sitka-doe-") + 4)
+
+        # Fields from JSON
+        self.assertEqual(sd.title, "Sitka Doe")
+        self.assertEqual(sd.card_set, "woods")
+        self.assertIn(CardType.PATH, sd.card_types)
+        self.assertIn(CardType.BEING, sd.card_types)
+        self.assertEqual(len(sd.traits), 2)
+        self.assertIn("Prey", sd.traits)
+        self.assertIn("Mammal", sd.traits)
+        self.assertEqual(sd.presence, 1)
+        self.assertEqual(sd.harm_threshold, 2)
+        self.assertEqual(sd.progress_threshold, 4)
+        self.assertFalse(sd.harm_forbidden)
+        self.assertFalse(sd.progress_forbidden)
+        self.assertEqual(sd.starting_area, Zone.WITHIN_REACH)
+        self.assertEqual(len(sd.abilities_text), 3)  # 1 test + 2 challenge effects
+        self.assertIn("SPI + [conflict]:", sd.abilities_text[0])
+        self.assertIn("sun:", sd.abilities_text[1])
+        self.assertIn("mountain:", sd.abilities_text[2])
+        self.assertEqual(sd.flavor_text, "")
+
+        # Fields that should be null/default for path cards
+        self.assertIsNone(sd.aspect)
+        self.assertEqual(sd.requirement, 0)
+        self.assertIsNone(sd.energy_cost)
+        self.assertEqual(len(sd.approach_icons), 0)
+        self.assertIsNone(sd.equip_value)
+
+        # Mutable state defaults
+        self.assertEqual(sd.progress, 0)
+        self.assertEqual(sd.harm, 0)
+        self.assertFalse(sd.exhausted)
+        self.assertEqual(len(sd.modifiers), 0)
+
+    def test_load_sunberry_bramble(self):
+        """Test loading Sunberry Bramble from JSON - comprehensive field check"""
+        sbb = SunberryBramble()
+
+        # Test ID format: title-uuid (readable and unique)
+        self.assertTrue(sbb.id.startswith("sunberry-bramble-"))
+        self.assertEqual(len(sbb.id), len("sunberry-bramble-") + 4)
+
+        # Fields from JSON
+        self.assertEqual(sbb.title, "Sunberry Bramble")
+        self.assertEqual(sbb.card_set, "woods")
+        self.assertIn(CardType.PATH, sbb.card_types)
+        self.assertIn(CardType.FEATURE, sbb.card_types)
+        self.assertEqual(len(sbb.traits), 2)
+        self.assertIn("Flora", sbb.traits)
+        self.assertIn("Food", sbb.traits)
+        self.assertEqual(sbb.presence, 1)
+        self.assertEqual(sbb.harm_threshold, 2)
+        self.assertEqual(sbb.progress_threshold, 3)
+        self.assertFalse(sbb.harm_forbidden)
+        self.assertFalse(sbb.progress_forbidden)
+        self.assertEqual(sbb.starting_area, Zone.WITHIN_REACH)
+        self.assertEqual(len(sbb.abilities_text), 2)  # 1 test + 1 challenge effect
+        self.assertIn("AWA + [reason]:", sbb.abilities_text[0])
+        self.assertIn("mountain:", sbb.abilities_text[1])
+        self.assertEqual(sbb.flavor_text, "")
+
+        # Fields that should be null/default for path cards
+        self.assertIsNone(sbb.aspect)
+        self.assertEqual(sbb.requirement, 0)
+        self.assertIsNone(sbb.energy_cost)
+        self.assertEqual(len(sbb.approach_icons), 0)
+        self.assertIsNone(sbb.equip_value)
+
+        # Mutable state defaults
+        self.assertEqual(sbb.progress, 0)
+        self.assertEqual(sbb.harm, 0)
+        self.assertFalse(sbb.exhausted)
+        self.assertEqual(len(sbb.modifiers), 0)
+
 
 if __name__ == '__main__':
     unittest.main()
