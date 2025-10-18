@@ -177,9 +177,43 @@ def choose_action_target(state: GameState, action: Action) -> Optional[str]:
     except Exception:
         return None
     
-def choose_target(targets: list[Card]) -> Card:
-    """Prompt player to choose from among several cards"""
-    return targets[0]
+def choose_target(state: GameState, targets: list[Card]) -> Card:
+    """Prompt player to choose from among several cards.
+
+    Args:
+        state: GameState for context (used to generate display IDs)
+        targets: List of Card objects to choose from
+
+    Returns:
+        The chosen Card object
+    """
+    if not targets:
+        raise ValueError("Cannot choose from empty list of targets")
+
+    if len(targets) == 1:
+        # Only one option, auto-select
+        return targets[0]
+
+    # Display options with unique identifiers
+    all_cards = state.all_cards_in_play()
+
+    while True:
+        for i, card in enumerate(targets, start=1):
+            display_name = get_display_id(all_cards, card)
+            print(f" {i}. {display_name}")
+
+        try:
+            choice = input("> ").strip()
+            if not choice:
+                continue
+
+            idx = int(choice) - 1
+            if 0 <= idx < len(targets):
+                return targets[idx]
+            else:
+                print(f"Please enter a number between 1 and {len(targets)}.")
+        except ValueError:
+            print("Invalid input. Please enter a number.")
 
 
 def choose_commit(action: Action, hand_size: int) -> CommitDecision:

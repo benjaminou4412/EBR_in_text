@@ -19,17 +19,17 @@ class ChallengeOutcome:
 
 class GameEngine:
     def __init__(self,
-                  state: GameState, 
+                  state: GameState,
                   challenge_drawer: Callable[[], tuple[int, Symbol]] = draw_challenge,
-                  card_chooser: Callable[[list[Card]], Card] | None = None):
+                  card_chooser: Callable[[GameState, list[Card]], Card] | None = None):
         self.state = state
         self.draw_challenge = challenge_drawer
         # challenge symbol effects dispatch (entity-id + symbol -> callable)
         self.symbol_handlers: dict[tuple[str, Symbol], Callable[[GameEngine], None]] = {}
         self.card_chooser = card_chooser if card_chooser is not None else self._default_chooser
 
-    def _default_chooser(self, choices: list[Card]) -> Card:
-        #Placeholder default; tests should pass in more sophisticated choosers, runtime should prompt player
+    def _default_chooser(self, _state: GameState, choices: list[Card]) -> Card:  # noqa: ARG002
+        """Placeholder default; tests should pass in more sophisticated choosers, runtime should prompt player"""
         return choices[0]
 
 
