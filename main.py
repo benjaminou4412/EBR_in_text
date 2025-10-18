@@ -12,14 +12,12 @@ def pick_demo_cards() -> list[Card]:
 
 
     walk_with_me_0 = WalkWithMe()
-    walk_with_me_1 = WalkWithMe()
     a_dear_friend_0 = ADearFriend()
-    a_dear_friend_1 = ADearFriend()
     exploration_dummy = Card(id="demo-explore-1", title="Demo Explore +1", approach_icons={Approach.EXPLORATION: 1})
     reason_dummy = Card(id="demo-reason-1", title="Demo Reason +1", approach_icons={Approach.REASON: 1})
     conflict_dummy = Card(id="demo-conflict-1", title="Demo Conflict +1", approach_icons={Approach.CONFLICT: 1})
 
-    return [walk_with_me_0, walk_with_me_1, a_dear_friend_0, a_dear_friend_1, exploration_dummy, reason_dummy, conflict_dummy]
+    return [walk_with_me_0, a_dear_friend_0, exploration_dummy, reason_dummy, conflict_dummy]
 
 
 def clear_screen() -> None:
@@ -44,11 +42,11 @@ def build_demo_state() -> GameState:
 
     # Add two Sitka Buck
     buck_0 = SitkaBuck()
-    buck_1 = SitkaBuck()
+    #buck_1 = SitkaBuck()
 
     # Add two Prowling Wolhunds
     wol_0 = ProwlingWolhund()
-    wol_1 = ProwlingWolhund()
+    #wol_1 = ProwlingWolhund()
 
     # Add Midday Sun (Weather)
     weather = Card(
@@ -62,7 +60,7 @@ def build_demo_state() -> GameState:
     # Build a simple path deck from woods, excluding the ones already in play
     deck = build_woods_path_deck()
     surroundings : list[Card] = [weather]
-    along_the_way : list[Card] = [wol_0, wol_1, buck_0, buck_1]
+    along_the_way : list[Card] = [wol_0, buck_0]
     within_reach : list[Card] = [thicket, bramble, doe]
     player_area : list[Card] = []
     current_zones : dict[Zone,list[Card]]= {Zone.SURROUNDINGS : surroundings, Zone.ALONG_THE_WAY : along_the_way, Zone.WITHIN_REACH : within_reach, Zone.PLAYER_AREA : player_area}

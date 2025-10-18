@@ -34,7 +34,7 @@ def render_card_detail(card: Card, index: int | None = None, display_id: str | N
             parts.append(f"Cost: {card.energy_cost} {card.aspect.value}")
         if card.approach_icons:
             icons_str = ", ".join(f"{k.value}+{v}" for k, v in card.approach_icons.items() if v)
-            parts.append(f"Icons: {icons_str}")
+            parts.append(f"Approach Icons: {icons_str}")
         if parts:
             print(f"   {' | '.join(parts)}")
 
@@ -69,17 +69,6 @@ def render_state(state: GameState, phase_header: str = "") -> None:
     if phase_header:
         print(f"=== {phase_header} ===")
 
-    # Ranger status line
-    print(f"Ranger: {r.name} | Energy AWA {r.energy[Aspect.AWA]} FIT {r.energy[Aspect.FIT]} SPI {r.energy[Aspect.SPI]} FOC {r.energy[Aspect.FOC]} | Injury {r.injury}")
-
-    # Hand
-    print("\n--- Hand ---")
-    if r.hand:
-        for i, card in enumerate(r.hand, start=1):
-            render_card_detail(card, index=i)
-    else:
-        print("[Empty hand]")
-
     # Zones
     all_cards = state.all_cards_in_play()
     for zone in [Zone.SURROUNDINGS, Zone.ALONG_THE_WAY, Zone.WITHIN_REACH, Zone.PLAYER_AREA]:
@@ -93,6 +82,16 @@ def render_state(state: GameState, phase_header: str = "") -> None:
             print("[No cards currently in this zone]")
 
     print("")
+    # Ranger status line
+    print(f"Ranger: {r.name} | Energy AWA {r.energy[Aspect.AWA]} FIT {r.energy[Aspect.FIT]} SPI {r.energy[Aspect.SPI]} FOC {r.energy[Aspect.FOC]} | Injury {r.injury}")
+
+    # Hand
+    print("\n--- Hand ---")
+    if r.hand:
+        for i, card in enumerate(r.hand, start=1):
+            render_card_detail(card, index=i)
+    else:
+        print("[Empty hand]")
 
 
 def choose_action(actions: list[Action], state: GameState) -> Optional[Action]:
