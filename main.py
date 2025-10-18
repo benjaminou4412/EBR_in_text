@@ -3,9 +3,9 @@ import os
 from src.models import Card, RangerState, GameState, Action, Aspect, Approach, Zone, CardType
 from src.engine import GameEngine
 from src.registry import provide_common_tests, provide_card_tests, register_card_symbol_effects
-from src.view import render_state, choose_action, choose_action_target, choose_commit, display_and_clear_messages, choose_target
+from src.view import render_state, choose_action, choose_action_target, choose_commit, choose_target
 from src.decks import build_woods_path_deck
-from src.cards import OvergrownThicket, SunberryBramble, SitkaDoe, WalkWithMe, ADearFriend
+from src.cards import OvergrownThicket, SunberryBramble, SitkaDoe, WalkWithMe, ADearFriend, ProwlingWolhund, SitkaBuck
 
 
 def pick_demo_cards() -> list[Card]:
@@ -36,11 +36,19 @@ def build_demo_state() -> GameState:
     #Add Overgrown Thicket
     thicket = OvergrownThicket()
 
-    # Add Sunberry Bramble (Feature)
+    # Add Sunberry Bramble 
     bramble = SunberryBramble()
 
-    # Add Sitka Doe (Being)
+    # Add Sitka Doe
     doe = SitkaDoe()
+
+    # Add two Sitka Buck
+    buck_0 = SitkaBuck()
+    buck_1 = SitkaBuck()
+
+    # Add two Prowling Wolhunds
+    wol_0 = ProwlingWolhund()
+    wol_1 = ProwlingWolhund()
 
     # Add Midday Sun (Weather)
     weather = Card(
@@ -54,7 +62,7 @@ def build_demo_state() -> GameState:
     # Build a simple path deck from woods, excluding the ones already in play
     deck = build_woods_path_deck()
     surroundings : list[Card] = [weather]
-    along_the_way : list[Card] = []
+    along_the_way : list[Card] = [wol_0, wol_1, buck_0, buck_1]
     within_reach : list[Card] = [thicket, bramble, doe]
     player_area : list[Card] = []
     current_zones : dict[Zone,list[Card]]= {Zone.SURROUNDINGS : surroundings, Zone.ALONG_THE_WAY : along_the_way, Zone.WITHIN_REACH : within_reach, Zone.PLAYER_AREA : player_area}
@@ -103,7 +111,7 @@ def menu_and_run(engine: GameEngine) -> None:
                 break
 
             target_id = choose_action_target(engine.state, act)
-            decision = choose_commit(act, len(engine.state.ranger.hand)) if act.is_test else None
+            decision = choose_commit(act, len(engine.state.ranger.hand), engine.state) if act.is_test else None
 
             try:
                 engine.perform_action(act, decision or __import__('src.models', fromlist=['CommitDecision']).CommitDecision([]), target_id)
@@ -112,8 +120,6 @@ def menu_and_run(engine: GameEngine) -> None:
                 input("Press Enter to continue...")
                 continue
 
-            display_and_clear_messages(engine.state)
-            
             input("Press Enter to continue...")
 
         # Phase 3: Travel (skipped)

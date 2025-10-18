@@ -5,6 +5,13 @@ Each card class loads its own JSON data and implements unique behavior.
 
 from .explorer_cards import WalkWithMe
 from .conciliator_cards import ADearFriend
-from .woods_cards import SitkaBuck, OvergrownThicket, SunberryBramble, SitkaDoe
+from .woods_cards import SitkaBuck, OvergrownThicket, SunberryBramble, SitkaDoe, ProwlingWolhund
 
-__all__ = ["WalkWithMe", "ADearFriend", "SitkaBuck", "OvergrownThicket", "SunberryBramble", "SitkaDoe"]
+__all__ = ["WalkWithMe",
+            "ADearFriend", 
+            "SitkaBuck", 
+            "OvergrownThicket", 
+            "SunberryBramble", 
+            "SitkaDoe", 
+            "ProwlingWolhund", 
+            "SitkaBuck"]

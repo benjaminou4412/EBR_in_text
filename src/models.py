@@ -2,6 +2,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Optional, Callable, cast, TYPE_CHECKING
 from enum import Enum
+from .utils import get_display_id
 import uuid
 
 if TYPE_CHECKING:
@@ -305,7 +306,7 @@ class GameState:
         if current_zone is not None and target_card is not None:
             self.zones[current_zone].remove(target_card)
             self.zones[target_zone].append(target_card)
-            self.add_message(f"{target_card.title} moves to {target_zone.value}.")
+            self.add_message(f"{get_display_id(self.all_cards_in_play(), target_card)} moves to {target_zone.value}.")
 
     def fatigue_ranger(self, amount: int) -> None:
         """Move top amount cards from ranger deck to top of fatigue pile (one at a time)"""

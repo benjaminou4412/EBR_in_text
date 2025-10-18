@@ -1,25 +1,7 @@
 from __future__ import annotations
 from typing import Optional
 from .models import GameState, Action, CommitDecision, Aspect, CardType, Zone, Card
-
-
-def get_display_id(cards_in_context: list[Card], card: Card) -> str:
-    """
-    Generate a display-friendly ID for a card based on context.
-
-    If multiple cards share the same title, appends A, B, C, etc.
-    Returns just the title if it's unique in context.
-    """
-    same_title = [c for c in cards_in_context if c.title == card.title]
-
-    if len(same_title) <= 1:
-        return card.title
-
-    # Multiple cards with same title - add letter suffixes
-    sorted_cards = sorted(same_title, key=lambda c: c.id)
-    index = sorted_cards.index(card)
-    letter = chr(65 + index)  # 65 is 'A' in ASCII
-    return f"{card.title} {letter}"
+from .utils import get_display_id
 
 
 def render_card_detail(card: Card, index: int | None = None, display_id: str | None = None) -> None:
@@ -115,6 +97,8 @@ def render_state(state: GameState, phase_header: str = "") -> None:
 
 def choose_action(actions: list[Action], state: GameState) -> Optional[Action]:
     """Prompt player to choose from available actions"""
+    display_and_clear_messages(state)
+
     if not actions:
         print("No actions available.")
         return None
@@ -153,6 +137,8 @@ def choose_action(actions: list[Action], state: GameState) -> Optional[Action]:
 
 def choose_action_target(state: GameState, action: Action) -> Optional[str]:
     """Prompt player to choose a target for an action"""
+    display_and_clear_messages(state)
+
     if not action.target_provider:
         return None
     targets = action.target_provider(state)
@@ -187,6 +173,8 @@ def choose_target(state: GameState, targets: list[Card]) -> Card:
     Returns:
         The chosen Card object
     """
+    display_and_clear_messages(state)
+
     if not targets:
         raise ValueError("Cannot choose from empty list of targets")
 
@@ -216,8 +204,10 @@ def choose_target(state: GameState, targets: list[Card]) -> Card:
             print("Invalid input. Please enter a number.")
 
 
-def choose_commit(action: Action, hand_size: int) -> CommitDecision:
+def choose_commit(action: Action, hand_size: int, state: GameState) -> CommitDecision:
     """Prompt player to commit energy and cards for a test"""
+    display_and_clear_messages(state)
+
     # Energy commitment
     energy = 1  # default
     raw_energy = input(f"Commit [{action.aspect}] energy (default 1): ").strip()

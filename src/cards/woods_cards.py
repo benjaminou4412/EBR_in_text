@@ -4,9 +4,12 @@ Woods terrain set card implementations
 from typing import Optional, Callable
 from ..models import *
 from ..json_loader import load_card_fields #type:ignore
-from ..view import get_display_id
+from ..utils import get_display_id
 from ..engine import GameEngine
 
+class ProwlingWolhund(Card):
+    def __init__(self):
+        super().__init__(**load_card_fields("Prowling Wolhund", "woods")) #type:ignore
 
 class SitkaBuck(Card):
     def __init__(self):
@@ -81,9 +84,10 @@ class SitkaDoe(Card):
         if bucks is None:
             engine.state.add_message(f"Challenge (Sun) on {get_display_id(engine.state.all_cards_in_play(), self)}: (no Sitka Buck in play)")
         else:
+            engine.state.add_message(f"Challenge (Sun) on {get_display_id(engine.state.all_cards_in_play(), self)}: The Sitka Buck are drawn to the doe. They move within reach.")
             for buck in bucks:
                 engine.state.move_card(buck.id, Zone.WITHIN_REACH)
-            engine.state.add_message(f"Challenge (Sun) on {get_display_id(engine.state.all_cards_in_play(), self)}: The Sitka Buck are drawn to the doe. They move within reach.")
+            
 
     def _mountain_effect(self, engine: GameEngine) -> None:
         """Mountain effect: If there is an active predator, exhaust it >> Add harm to this being equal to that predator's presence"""
