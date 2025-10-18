@@ -3,7 +3,7 @@ import os
 from src.models import Card, RangerState, GameState, Action, Aspect, Approach, Zone, CardType
 from src.engine import GameEngine
 from src.registry import provide_common_tests, provide_card_tests, register_card_symbol_effects
-from src.view import render_state, choose_action, choose_target, choose_commit, display_and_clear_messages
+from src.view import render_state, choose_action, choose_action_target, choose_commit, display_and_clear_messages
 from src.decks import build_woods_path_deck
 from src.cards import OvergrownThicket, SunberryBramble, SitkaDoe, WalkWithMe, ADearFriend
 
@@ -102,7 +102,7 @@ def menu_and_run(engine: GameEngine) -> None:
                 input("Press Enter to proceed to Phase 3...")
                 break
 
-            target_id = choose_target(engine.state, act)
+            target_id = choose_action_target(engine.state, act)
             decision = choose_commit(act, len(engine.state.ranger.hand)) if act.is_test else None
 
             try:

@@ -266,6 +266,32 @@ class GameState:
                 if card.id == card_id:
                     return zone
         return None
+    
+    def get_cards_by_title(self, title: str) -> list[Card] | None:
+        """Get all in-play cards of a given title"""
+        results: list[Card] = []
+        for zone in self.zones:
+            for card in self.zones[zone]:
+                if card.title == title:
+                    results.append(card)
+        if results:
+            return results
+        else:
+            return None
+    
+    def get_cards_by_trait(self, trait: str) -> list[Card] | None:
+        """Get all in-play cards with a given trait"""
+        results: list[Card] = []
+        for zone in self.zones:
+            for card in self.zones[zone]:
+                for curr_trait in card.traits:
+                    if trait.lower() == curr_trait.lower():
+                        results.append(card)
+                
+        if results:
+            return results
+        else:
+            return None
 
     #Gamestate manipulation methods
 
@@ -277,6 +303,24 @@ class GameState:
             self.zones[current_zone].remove(target_card)
             self.zones[target_zone].append(target_card)
             self.add_message(f"{target_card.title} moves to {target_zone.value}.")
+
+    def fatigue_ranger(self, amount: int) -> None:
+        """Move top amount cards from ranger deck to top of fatigue pile (one at a time)"""
+        cards_to_fatigue = min(amount, len(self.ranger.deck))
+        for _ in range(cards_to_fatigue):
+            card = self.ranger.deck.pop(0)  # Take from top of deck
+            self.ranger.fatigue_pile.insert(0, card)  # Insert at top of fatigue pile
+        if cards_to_fatigue > 0:
+            self.add_message(f"Ranger suffers {cards_to_fatigue} fatigue.")
+
+    def soothe_ranger(self, amount: int) -> None:
+        """Move top amount cards from fatigue pile to hand"""
+        cards_to_soothe = min(amount, len(self.ranger.fatigue_pile))
+        for _ in range(cards_to_soothe):
+            card = self.ranger.fatigue_pile.pop(0)  # Take from top of fatigue pile
+            self.ranger.hand.append(card)  # Add to hand
+        if cards_to_soothe > 0:
+            self.add_message(f"Ranger soothes {cards_to_soothe} fatigue.")
 
     #IO-related methods
 

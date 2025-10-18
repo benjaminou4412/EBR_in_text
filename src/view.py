@@ -151,7 +151,7 @@ def choose_action(actions: list[Action], state: GameState) -> Optional[Action]:
         return None
 
 
-def choose_target(state: GameState, action: Action) -> Optional[str]:
+def choose_action_target(state: GameState, action: Action) -> Optional[str]:
     """Prompt player to choose a target for an action"""
     if not action.target_provider:
         return None
@@ -176,6 +176,10 @@ def choose_target(state: GameState, action: Action) -> Optional[str]:
         return targets[idx].id
     except Exception:
         return None
+    
+def choose_target(targets: list[Card], prompt: str) -> Card:
+    """Prompt player to choose from among several cards"""
+    return targets[0]
 
 
 def choose_commit(action: Action, hand_size: int) -> CommitDecision:
