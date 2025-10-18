@@ -1,8 +1,11 @@
 from __future__ import annotations
 from dataclasses import dataclass, field
-from typing import Optional, Callable, cast
+from typing import Optional, Callable, cast, TYPE_CHECKING
 from enum import Enum
 import uuid
+
+if TYPE_CHECKING:
+    from .engine import GameEngine
 
 
 # Enums for fixed game constants
@@ -116,7 +119,7 @@ class Card:
         if self.starting_tokens:
             self.unique_tokens = {self.starting_tokens[0]: self.starting_tokens[1]}
     
-    def get_symbol_handlers(self) -> dict[Symbol, Callable[[GameState], None]] | None:
+    def get_symbol_handlers(self) -> dict[Symbol, Callable[[GameEngine], None]] | None:
         return None
     
     def get_tests(self) -> list[Action] | None:

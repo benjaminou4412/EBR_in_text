@@ -4,7 +4,8 @@ Woods terrain set card implementations
 from typing import Optional, Callable
 from ..models import *
 from ..json_loader import load_card_fields #type:ignore
-from ..view import choose_target, get_display_id
+from ..view import get_display_id
+from ..engine import GameEngine
 
 
 class SitkaBuck(Card):
@@ -67,42 +68,43 @@ class SitkaDoe(Card):
         """Spook test success: move to Along the Way"""
         state.move_card(self.id, Zone.ALONG_THE_WAY)
 
-    def get_symbol_handlers(self) -> dict[Symbol, Callable[[GameState], None]] | None:
+    def get_symbol_handlers(self) -> dict[Symbol, Callable[[GameEngine], None]] | None:
         """Returns challenge symbol effects for this card"""
         return {
             Symbol.SUN: self._sun_effect,
             Symbol.MOUNTAIN: self._mountain_effect
         }
 
-    def _sun_effect(self, state: GameState) -> None:
+    def _sun_effect(self, engine: GameEngine) -> None:
         """Sun effect: If there are 1 or more Sitka Bucks in play >> Move each Sitka Buck within reach"""
-        bucks = state.get_cards_by_title("Sitka Buck")
+        bucks = engine.state.get_cards_by_title("Sitka Buck")
         if bucks is None:
-            state.add_message(f"Challenge (Sun) on {get_display_id(state.all_cards_in_play(), self)}: (no Sitka Buck in play)")
+            engine.state.add_message(f"Challenge (Sun) on {get_display_id(engine.state.all_cards_in_play(), self)}: (no Sitka Buck in play)")
         else:
             for buck in bucks:
-                state.move_card(buck.id, Zone.WITHIN_REACH)
-            state.add_message(f"Challenge (Sun) on {get_display_id(state.all_cards_in_play(), self)}: The Sitka Buck are drawn to the doe. They move within reach.")
+                engine.state.move_card(buck.id, Zone.WITHIN_REACH)
+            engine.state.add_message(f"Challenge (Sun) on {get_display_id(engine.state.all_cards_in_play(), self)}: The Sitka Buck are drawn to the doe. They move within reach.")
 
-    def _mountain_effect(self, state: GameState) -> None:
+    def _mountain_effect(self, engine: GameEngine) -> None:
         """Mountain effect: If there is an active predator, exhaust it >> Add harm to this being equal to that predator's presence"""
-        predators = state.get_cards_by_trait("Predator")
+        predators = engine.state.get_cards_by_trait("Predator")
         if predators is not None:
             active_predators = [predator for predator in predators if predator.exhausted == False]
             if not active_predators:
-                state.add_message(f"Challenge (Mountain) on {get_display_id(state.all_cards_in_play(), self)}: (no active predators in play)")
+                engine.state.add_message(f"Challenge (Mountain) on {get_display_id(engine.state.all_cards_in_play(), self)}: (no active predators in play)")
             else:
-                target_predator = choose_target(active_predators, f"Challenge (Mountain) on {get_display_id(state.all_cards_in_play(), self)}: Choose a predator that will exhaust itself and harm Sitka Doe:")
+                engine.state.add_message(f"Challenge (Mountain) on {get_display_id(engine.state.all_cards_in_play(), self)}: Choose a predator that will exhaust itself and harm Sitka Doe:")
+                target_predator = engine.card_chooser(active_predators)
                 target_predator.exhausted = True
                 target_presence = target_predator.get_current_presence()
                 if target_presence is not None:
                     #this should always happen
                     self.add_harm(target_presence)
-                    state.add_message(f"{get_display_id(active_predators, target_predator)} is now exhausted.")
-                    state.add_message(f"{get_display_id(state.all_cards_in_play(), self)} suffered harm equal to {get_display_id(active_predators, target_predator)}'s presence ({target_presence}).")
+                    engine.state.add_message(f"{get_display_id(active_predators, target_predator)} is now exhausted.")
+                    engine.state.add_message(f"{get_display_id(engine.state.all_cards_in_play(), self)} suffered harm equal to {get_display_id(active_predators, target_predator)}'s presence ({target_presence}).")
 
         else:
-            state.add_message(f"Challenge (Mountain) on {get_display_id(state.all_cards_in_play(), self)}: (no predators in play)")
+            engine.state.add_message(f"Challenge (Mountain) on {get_display_id(engine.state.all_cards_in_play(), self)}: (no predators in play)")
             
 
 
@@ -132,19 +134,19 @@ class OvergrownThicket(Card):
         """Hunt test success: add progress equal to effort"""
         self.add_progress(effort)
 
-    def get_symbol_handlers(self) -> dict[Symbol, Callable[[GameState], None]] | None:
+    def get_symbol_handlers(self) -> dict[Symbol, Callable[[GameEngine], None]] | None:
         """Returns challenge symbol effects for this card"""
         return {
             Symbol.MOUNTAIN: self._mountain_effect
         }
 
-    def _mountain_effect(self, state: GameState) -> None:
+    def _mountain_effect(self, engine: GameEngine) -> None:
         """Mountain effect: discard 1 progress"""
         if self.progress > 0:
             self.progress -= 1
-            state.add_message(f"Challenge (Mountain) on {get_display_id(state.all_cards_in_play(), self)}: discards 1 progress (now {self.progress}).")
+            engine.state.add_message(f"Challenge (Mountain) on {get_display_id(engine.state.all_cards_in_play(), self)}: discards 1 progress (now {self.progress}).")
             curr_presence = self.get_current_presence()
             if curr_presence is not None:
-                state.fatigue_ranger(curr_presence)
+                engine.state.fatigue_ranger(curr_presence)
         else:
-            state.add_message(f"Challenge: (Mountain) on {get_display_id(state.all_cards_in_play(), self)}: (no progress to discard).")
+            engine.state.add_message(f"Challenge: (Mountain) on {get_display_id(engine.state.all_cards_in_play(), self)}: (no progress to discard).")

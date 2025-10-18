@@ -177,7 +177,7 @@ def choose_action_target(state: GameState, action: Action) -> Optional[str]:
     except Exception:
         return None
     
-def choose_target(targets: list[Card], prompt: str) -> Card:
+def choose_target(targets: list[Card]) -> Card:
     """Prompt player to choose from among several cards"""
     return targets[0]
 

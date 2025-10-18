@@ -15,14 +15,25 @@ class ChallengeOutcome:
     success: bool
 
 
+
+
 class GameEngine:
-    def __init__(self, state: GameState, challenge_drawer: Callable[[], tuple[int, Symbol]] = draw_challenge):
+    def __init__(self,
+                  state: GameState, 
+                  challenge_drawer: Callable[[], tuple[int, Symbol]] = draw_challenge,
+                  card_chooser: Callable[[list[Card]], Card] | None = None):
         self.state = state
         self.draw_challenge = challenge_drawer
         # challenge symbol effects dispatch (entity-id + symbol -> callable)
-        self.symbol_handlers: dict[tuple[str, Symbol], Callable[[GameState], None]] = {}
+        self.symbol_handlers: dict[tuple[str, Symbol], Callable[[GameEngine], None]] = {}
+        self.card_chooser = card_chooser if card_chooser is not None else self._default_chooser
 
-    def register_symbol_handler(self, key: tuple[str, Symbol], fn: Callable[[GameState], None]):
+    def _default_chooser(self, choices: list[Card]) -> Card:
+        #Placeholder default; tests should pass in more sophisticated choosers, runtime should prompt player
+        return choices[0]
+
+
+    def register_symbol_handler(self, key: tuple[str, Symbol], fn: Callable[[GameEngine], None]):
         self.symbol_handlers[key] = fn
 
     def commit_icons(self, ranger: RangerState, approach: Approach, decision: CommitDecision) -> tuple[int, list[int]]:
@@ -109,7 +120,7 @@ class GameEngine:
                 if not card.exhausted:
                     handler = self.symbol_handlers.get((card.id, symbol))
                     if handler:
-                        handler(self.state)
+                        handler(self)
 
         cleared.extend(self.check_and_process_clears())
 
