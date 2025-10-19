@@ -86,6 +86,10 @@ def menu_and_run(engine: GameEngine) -> None:
             clear_screen()
             render_state(engine.state, phase_header=f"Round {engine.state.round_number} — Phase 2: Actions")
 
+            print("")
+
+            print("--- Event log and choices ---")
+
             # derive actions
             actions = provide_card_tests(engine.state) + provide_common_tests(engine.state)
             # add system Rest action

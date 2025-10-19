@@ -1,6 +1,6 @@
 from __future__ import annotations
 from typing import Optional
-from .models import GameState, Action, CommitDecision, Aspect, CardType, Zone, Card
+from .models import GameState, Action, CommitDecision, Aspect, Approach, CardType, Zone, Card
 from .utils import get_display_id
 
 
@@ -208,9 +208,13 @@ def choose_commit(action: Action, hand_size: int, state: GameState) -> CommitDec
     """Prompt player to commit energy and cards for a test"""
     display_and_clear_messages(state)
 
+    # Get display strings for aspect/approach
+    aspect_str = action.aspect.value if isinstance(action.aspect, Aspect) else action.aspect
+    approach_str = action.approach.value if isinstance(action.approach, Approach) else action.approach
+
     # Energy commitment
     energy = 1  # default
-    raw_energy = input(f"Commit [{action.aspect}] energy (default 1): ").strip()
+    raw_energy = input(f"Commit [{aspect_str}] energy (default 1): ").strip()
     if raw_energy:
         try:
             energy = int(raw_energy)
@@ -222,7 +226,7 @@ def choose_commit(action: Action, hand_size: int, state: GameState) -> CommitDec
             energy = 1
 
     # Card commitment
-    raw = input(f"Commit cards for [{action.approach}] (comma-separated indices, blank=none): ").strip()
+    raw = input(f"Commit cards for [{approach_str}] (comma-separated indices, blank=none): ").strip()
     hand_indices : list[int] = []
     if raw:
         try:
