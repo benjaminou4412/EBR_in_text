@@ -3,7 +3,7 @@ import os
 from src.models import Card, RangerState, GameState, Action, Aspect, Approach, Zone, CardType
 from src.engine import GameEngine
 from src.registry import provide_common_tests, provide_card_tests
-from src.view import render_state, choose_action, choose_action_target, choose_commit, choose_target
+from src.view import render_state, choose_action, choose_action_target, choose_commit, choose_target, display_and_clear_messages, initiate_test
 from src.decks import build_woods_path_deck
 from src.cards import OvergrownThicket, SunberryBramble, SitkaDoe, WalkWithMe, ADearFriend, ProwlingWolhund, SitkaBuck
 
@@ -113,16 +113,18 @@ def menu_and_run(engine: GameEngine) -> None:
                 break
 
             target_id = choose_action_target(engine.state, act)
+            initiate_test(act, engine.state, target_id)
             decision = choose_commit(act, len(engine.state.ranger.hand), engine.state) if act.is_test else None
 
             try:
                 engine.perform_action(act, decision or __import__('src.models', fromlist=['CommitDecision']).CommitDecision([]), target_id)
             except RuntimeError as e:
                 print(str(e))
-                input("Press Enter to continue...")
+                input("There was a runtime error! Press Enter to continue...")
                 continue
 
-            input("Press Enter to continue...")
+            display_and_clear_messages(engine.state)
+            input("Action performed. Press Enter to continue...")
 
         # Phase 3: Travel (skipped)
         clear_screen()

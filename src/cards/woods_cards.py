@@ -97,7 +97,10 @@ class SitkaDoe(Card):
             if not active_predators:
                 engine.state.add_message(f"Challenge (Mountain) on {get_display_id(engine.state.all_cards_in_play(), self)}: (no active predators in play)")
             else:
-                engine.state.add_message(f"Challenge (Mountain) on {get_display_id(engine.state.all_cards_in_play(), self)}: Choose a predator that will exhaust itself and harm Sitka Doe:")
+                if len(active_predators)==1:
+                    engine.state.add_message(f"Challenge (Mountain) on {get_display_id(engine.state.all_cards_in_play(), self)}: the active predator in play exhausts itself and harms Sitka Doe:")
+                else:
+                    engine.state.add_message(f"Challenge (Mountain) on {get_display_id(engine.state.all_cards_in_play(), self)}: Choose a predator that will exhaust itself and harm Sitka Doe:")
                 target_predator = engine.card_chooser(engine.state, active_predators)
                 target_predator.exhausted = True
                 target_presence = target_predator.get_current_presence()

@@ -207,6 +207,7 @@ def choose_target(state: GameState, targets: list[Card]) -> Card:
 def choose_commit(action: Action, hand_size: int, state: GameState) -> CommitDecision:
     """Prompt player to commit energy and cards for a test"""
     display_and_clear_messages(state)
+    
 
     # Get display strings for aspect/approach
     aspect_str = action.aspect.value if isinstance(action.aspect, Aspect) else action.aspect
@@ -214,7 +215,7 @@ def choose_commit(action: Action, hand_size: int, state: GameState) -> CommitDec
 
     # Energy commitment
     energy = 1  # default
-    raw_energy = input(f"Commit [{aspect_str}] energy (default 1): ").strip()
+    raw_energy = input(f"Commit [{aspect_str}] energy (default and minimum 1): ").strip()
     if raw_energy:
         try:
             energy = int(raw_energy)
@@ -243,7 +244,19 @@ def choose_commit(action: Action, hand_size: int, state: GameState) -> CommitDec
 
     return CommitDecision(hand_indices=hand_indices, energy=energy)
 
+def initiate_test(action: Action, state: GameState, target_id: str | None):
+    """Show player relevant information before decisions are made during a test"""
+    # Get display strings for aspect/approach
+    aspect_str = action.aspect.value if isinstance(action.aspect, Aspect) else action.aspect
+    approach_str = action.approach.value if isinstance(action.approach, Approach) else action.approach  
 
+    # Show player Test Step 1 information
+    print(f"[{action.verb}] test initiated of aspect [{aspect_str}] and approach [{approach_str}].")
+    print(f"This test is of difficulty {action.difficulty_fn(state,target_id)}.")
+    print(f"Step 1: You suffer fatigue from each ready card between you and your interaction target.") #TODO: actually implement fatigue here
+
+    # Show player test Step 2 information
+    print(f"Step 2: Commit effort from your energy pool, approach icons in hand, and other sources.")
 
 def display_and_clear_messages(state: GameState) -> None:
     for event in state.message_queue:

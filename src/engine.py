@@ -70,8 +70,6 @@ class GameEngine:
 
         r = self.state.ranger
 
-        # Step 1: Choose Test (technically already chosen) and suffer fatigue (TODO)
-
         # At this point, action.aspect/approach are guaranteed to be enums (not str) since is_test=True
         aspect = action.aspect if isinstance(action.aspect, Aspect) else Aspect.AWA  # type guard
         approach = action.approach if isinstance(action.approach, Approach) else Approach.EXPLORATION  # type guard
@@ -91,19 +89,23 @@ class GameEngine:
         mod, symbol = self.draw_challenge()
         effort = max(0, base_effort + mod)
         difficulty = action.difficulty_fn(self.state, target_id)
+        self.state.add_message(f"Step 3: Draw a challenge card and apply modifiers.")
+        self.state.add_message(f"You drew: [{aspect.value}]{mod:+d}, symbol [{symbol.upper()}]")
 
-        self.state.add_message(f"Total effort committed: {base_effort}")
-        self.state.add_message(f"Test difficulty: {difficulty}")
-        self.state.add_message(f"Challenge draw: {mod:+d}, symbol [{symbol.upper()}]")
-        self.state.add_message(f"Resulting effort: {base_effort} + ({mod:d}) = {effort}")
+
 
         # Step 4: Determine success or failure and apply results. TODO: notify "after you succeed/fail" listeners
+        self.state.add_message(f"Step 4: Determine success or failure and apply results.")
+        self.state.add_message(f"Total effort committed: {base_effort}")
+        self.state.add_message(f"Test difficulty: {difficulty}")
         success = effort >= difficulty
 
         if success:
+            self.state.add_message(f"Result: {base_effort} + ({mod:d}) = {effort} >= {difficulty}")
             self.state.add_message(f"Test succeeded!")
             action.on_success(self.state, effort, target_id)
         else:
+            self.state.add_message(f"Result: {base_effort} + ({mod:d}) = {effort} < {difficulty}")
             self.state.add_message(f"Test failed!")
             if action.on_fail:
                 action.on_fail(self.state, target_id)
@@ -116,7 +118,7 @@ class GameEngine:
 
         cleared.clear()
         # Step 5:  Resolve Challenge effects (dynamically from active cards)
-
+        self.state.add_message(f"Step 5: Resolve [{symbol.upper()}] challenge effects, if any.")
         challenge_zones : list[Zone] = [
             Zone.SURROUNDINGS,     # Weather, Location, Mission
             Zone.ALONG_THE_WAY,    # TODO: player chooses order
@@ -124,14 +126,17 @@ class GameEngine:
             Zone.PLAYER_AREA,      # TODO: player chooses order
         ]
 
+        nonzero_challenges = False
         for zone in challenge_zones:
             for card in self.state.zones[zone]:
                 if not card.exhausted:
                     # Get handlers directly from the card (always current)
                     handlers = card.get_symbol_handlers()
                     if handlers and symbol in handlers:
+                        nonzero_challenges = True
                         handlers[symbol](self)
-
+        if not nonzero_challenges:
+            self.state.add_message("No challenge effects resolved.")
         cleared.extend(self.check_and_process_clears())
 
         for cleared_card in cleared:
