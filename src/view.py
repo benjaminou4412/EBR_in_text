@@ -1,5 +1,7 @@
 from __future__ import annotations
 from typing import Optional
+import shutil
+import textwrap
 from .models import GameState, Action, CommitDecision, Aspect, Approach, CardType, Zone, Card
 from .utils import get_display_id
 
@@ -54,11 +56,18 @@ def render_card_detail(card: Card, index: int | None = None, display_id: str | N
 
     # Rules text
     if card.abilities_text:
+        # Get terminal width, default to 120 if unable to detect
+        terminal_width = shutil.get_terminal_size(fallback=(120, 24)).columns
+        max_ability_width = terminal_width - 6  # Account for "   " indentation
+
         for ability in card.abilities_text:
-            # Truncate very long abilities for display
-            if len(ability) > 100:
-                ability = ability[:97] + "..."
-            print(f"   {ability}")
+            # Word wrap long abilities instead of truncating
+            if len(ability) > max_ability_width:
+                wrapped_lines = textwrap.wrap(ability, width=max_ability_width)
+                for line in wrapped_lines:
+                    print(f"   {line}")
+            else:
+                print(f"   {ability}")
 
 
 def render_state(state: GameState, phase_header: str = "") -> None:
