@@ -1,7 +1,7 @@
 from __future__ import annotations
 from dataclasses import dataclass
 from typing import Callable, Optional
-from .models import GameState, Action, CommitDecision, RangerState, Card, Symbol, Aspect, Approach, Zone, CardType
+from .models import GameState, Action, CommitDecision, RangerState, Card, Symbol, Aspect, Approach, Zone, CardType, EventType, TimingType
 from .challenge import draw_challenge
 
 
@@ -104,6 +104,12 @@ class GameEngine:
             self.state.add_message(f"Result: {base_effort} + ({mod:d}) = {effort} >= {difficulty}")
             self.state.add_message(f"Test succeeded!")
             action.on_success(self.state, effort, target_id)
+            for listener in self.state.listeners:
+                if listener.event_type == EventType.TEST_SUCCEED and listener.timing_type == TimingType.AFTER:
+                    if action.verb is not None and listener.test_type is not None:
+                        if action.verb.lower() == listener.test_type.lower():
+                            listener.effect_fn(self.state)
+
         else:
             self.state.add_message(f"Result: {base_effort} + ({mod:d}) = {effort} < {difficulty}")
             self.state.add_message(f"Test failed!")

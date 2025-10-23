@@ -29,7 +29,7 @@ def clear_screen() -> None:
 
 
 def build_demo_state() -> GameState:
-    hand = pick_demo_cards()
+    ranger_deck = pick_demo_cards()
 
     #Add Overgrown Thicket
     thicket = OvergrownThicket()
@@ -56,7 +56,7 @@ def build_demo_state() -> GameState:
         starting_area=Zone.SURROUNDINGS,
     )
 
-    ranger = RangerState(name="Demo Ranger", hand=hand, energy={Aspect.AWA: 99, Aspect.FIT: 99, Aspect.SPI: 99, Aspect.FOC: 99})
+    ranger = RangerState(name="Demo Ranger", hand=[], energy={Aspect.AWA: 99, Aspect.FIT: 99, Aspect.SPI: 99, Aspect.FOC: 99}, deck=ranger_deck)
     # Build a simple path deck from woods, excluding the ones already in play
     deck = build_woods_path_deck()
     surroundings : list[Card] = [weather]
@@ -65,6 +65,11 @@ def build_demo_state() -> GameState:
     player_area : list[Card] = []
     current_zones : dict[Zone,list[Card]]= {Zone.SURROUNDINGS : surroundings, Zone.ALONG_THE_WAY : along_the_way, Zone.WITHIN_REACH : within_reach, Zone.PLAYER_AREA : player_area}
     state = GameState(ranger=ranger, zones=current_zones, round_number=1, path_deck=deck)
+    state.ranger.draw_card(state)
+    state.ranger.draw_card(state)
+    state.ranger.draw_card(state)
+    state.ranger.draw_card(state)
+    state.ranger.draw_card(state)
     return state
 
 

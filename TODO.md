@@ -7,9 +7,9 @@ A living checklist distilled from our discussion. Grouped by area and roughly pr
 **Goal:** Implement Walk With Me card, which requires building an event/timing trigger system for "Response:" cards.
 
 **Implementation Steps:**
-- [ ] 1. Create EventListener dataclass (models.py)
+- [X] 1. Create EventListener dataclass (models.py)
   - Fields: event_type, timing, filter_fn, effect_fn, source_card_id
-- [ ] 2. Add event_listeners registry to GameState (models.py)
+- [X] 2. Add event_listeners registry to GameState (models.py)
   - list[EventListener] field
   - Method to register/unregister listeners
 - [ ] 3. Add response_decider to GameEngine (engine.py)
@@ -21,11 +21,11 @@ A living checklist distilled from our discussion. Grouped by area and roughly pr
   - Scans registry, filters by event_type and timing
   - Calls filter_fn to check if listener should fire
   - If yes, calls effect_fn with engine and context
-- [ ] 5. Implement Walk With Me card class (explorer_cards.py)
+- [X] 5. Implement Walk With Me card class (explorer_cards.py)
   - Override enters_hand() or on_zone_change() to register listener
   - Listener filters for: event="TEST_SUCCEED", timing="after", verb="Traverse"
   - Effect: prompt to play, pay cost, choose being, add progress, discard self
-- [ ] 6. Call trigger_listeners in perform_action (engine.py)
+- [X] 6. Call trigger_listeners in perform_action (engine.py)
   - After test success: trigger_listeners("TEST_SUCCEED", "after", context={...})
   - Context includes: action, verb, effort, target_id, success
 - [ ] 7. Implement interactive response_decider (view.py)

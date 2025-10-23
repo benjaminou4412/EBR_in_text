@@ -61,6 +61,34 @@ class CardType(str, Enum):
     LOCATION = "Location"
     MISSION = "Mission"
 
+class EventType(str, Enum):
+    #timing windows shared by multiple cards
+    TAKE_FATIGUE = "take_fatigue"
+    PERFORM_TEST = "perform_test"
+    COMMIT_EFFORT = "commit_effort"
+    AFTER_TEST = "after_test"
+    TEST_SUCCEED = "test_succeed"
+    PLAY_CARD = "play_card"
+    USE_TOKEN = "use_token"
+    REST = "rest"
+    SUFFER_INJURY = "suffer_injury"
+    ADD_HARM = "add_harm"
+    ADD_PROGRESS = "add_progress"
+    CLEAR = "clear"
+    CHALLENGE_EFFECT = "challenge_effect"
+    SCOUT = "scout"
+    TRAVEL = "travel"
+    READY = "ready"
+    CHALLENGE_DECK_SHUFFLE = "challenge_deck_shuffle"
+    DRAW_CHALLENGE_CARD = "draw_challenge_card"
+
+class TimingType(str, Enum):
+    BEFORE_WOULD = "before_would"
+    BEFORE = "before"
+    WHEN_WOULD = "when_would"
+    WHEN = "when"
+    AFTER = "after"
+
 # Core data structures: pure state and card data
 
 
@@ -154,6 +182,10 @@ class Card:
             return current_energy_cost
         else:
             return None
+        
+    def enters_hand(self) -> EventListener | None:
+        """Moments and other cards that establish a listener upon entering hand implement this"""
+        return None
 
     #path card only methods
     def get_current_presence(self) -> int | None:
@@ -223,6 +255,17 @@ class RangerState:
     energy: dict[Aspect, int] = field(default_factory=lambda: {Aspect.AWA: 0, Aspect.FIT: 0, Aspect.SPI: 0, Aspect.FOC: 0})
     injury: int = 0
 
+    def draw_card(self, state: GameState) -> None:
+        if len(self.deck) == 0:
+            #TODO: attempting to draw from an empty deck should end the day
+            return
+        else:
+            drawn: Card = self.deck.pop(0)
+            self.hand.append(drawn)
+            listener = drawn.enters_hand()
+            if listener is not None:
+                state.add_listener(listener)
+
 
 @dataclass
 class GameState:
@@ -240,6 +283,8 @@ class GameState:
     path_discard: list[Card] = field(default_factory=lambda: cast(list[Card], []))
 
     message_queue: list[MessageEvent] = field(default_factory=lambda: cast(list[MessageEvent], []))
+
+    listeners: list[EventListener] = field(default_factory=lambda: cast(list[EventListener], []))
 
     #Card getter methods
 
@@ -337,6 +382,19 @@ class GameState:
     
     def clear_messages(self) -> None:
         self.message_queue.clear()
+
+    #listener management methods
+
+    def add_listener(self, listener: EventListener) -> None:
+        self.listeners.append(listener)
+    
+    def remove_listener_by_id(self, id: str) -> None:
+        target = None
+        for listener in self.listeners:
+            if listener.source_card_id == id:
+                target = listener
+        if target is not None:
+            self.listeners.remove(target)
         
 
 
@@ -380,3 +438,14 @@ class CommitDecision:
 class MessageEvent:
     # Message to print to player
     message: str = field(default_factory=lambda:cast(str, ""))
+
+@dataclass
+class EventListener:
+    event_type: EventType
+    effect_fn: Callable[[GameState], None] #may have to modify the function signature here
+    source_card_id: str
+    timing_type: TimingType
+    test_type: str | None = None #"Traverse", "Connect", etc.
+    
+    
+    
