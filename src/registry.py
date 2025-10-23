@@ -25,8 +25,8 @@ def provide_common_tests(state: GameState) -> list[Action]:
             verb="Traverse",
             target_provider=lambda s: _targets_by_type(s, CardType.FEATURE),
             difficulty_fn=lambda s, tid: max(1, getattr(s.get_card_by_id(tid), 'presence', 1)),
-            on_success=lambda s, eff, tid: s.get_card_by_id(tid).add_progress(eff) if CardType.FEATURE in s.get_card_by_id(tid).card_types else None, #type:ignore
-            on_fail=lambda s, _tid: setattr(s.ranger, "injury", s.ranger.injury + 1),
+            on_success=lambda e, eff, tid: e.state.get_card_by_id(tid).add_progress(eff) if CardType.FEATURE in e.state.get_card_by_id(tid).card_types else None, #type:ignore
+            on_fail=lambda e, _tid: setattr(e.state.ranger, "injury", e.state.ranger.injury + 1),
             source_id="common",
             source_title="Common Test",
         )
@@ -42,7 +42,7 @@ def provide_common_tests(state: GameState) -> list[Action]:
             verb="Connect",
             target_provider=lambda s: _targets_by_type(s, CardType.BEING),
             difficulty_fn=lambda s, tid: max(1, getattr(s.get_card_by_id(tid), 'presence', 1)),
-            on_success=lambda s, eff, tid: s.get_card_by_id(tid).add_progress(eff) if CardType.BEING in s.get_card_by_id(tid).card_types else None, #type:ignore
+            on_success=lambda e, eff, tid: e.state.get_card_by_id(tid).add_progress(eff) if CardType.BEING in e.state.get_card_by_id(tid).card_types else None, #type:ignore
             source_id="common",
             source_title="Common Test",
         )
@@ -58,7 +58,7 @@ def provide_common_tests(state: GameState) -> list[Action]:
             verb="Avoid",
             target_provider=lambda s: _targets_by_type(s, CardType.BEING),
             difficulty_fn=lambda s, tid: max(1, getattr(s.get_card_by_id(tid), 'presence', 1)),
-            on_success=lambda s, _eff, tid: setattr(s.get_card_by_id(tid), 'exhausted', True),
+            on_success=lambda e, _eff, tid: setattr(e.state.get_card_by_id(tid), 'exhausted', True),
             source_id="common",
             source_title="Common Test",
         )
@@ -74,7 +74,7 @@ def provide_common_tests(state: GameState) -> list[Action]:
             verb="Remember",
             target_provider=None,
             difficulty_fn=lambda _s, _t: 1,
-            on_success=lambda s, eff, _t: None,  # No deck yet; placeholder
+            on_success=lambda e, eff, _t: None,  # No deck yet; placeholder
             source_id="common",
             source_title="Common Test",
         )

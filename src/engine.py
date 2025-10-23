@@ -3,6 +3,7 @@ from dataclasses import dataclass
 from typing import Callable, Optional
 from .models import GameState, Action, CommitDecision, RangerState, Card, Symbol, Aspect, Approach, Zone, CardType, EventType, TimingType
 from .challenge import draw_challenge
+from .utils import get_display_id
 
 
 @dataclass
@@ -65,7 +66,7 @@ class GameEngine:
     def perform_action(self, action: Action, decision: CommitDecision, target_id: Optional[str]) -> ChallengeOutcome:
         # Non-test actions (e.g., Rest) skip challenge + energy
         if not action.is_test:
-            action.on_success(self.state, 0, target_id)
+            action.on_success(self, 0, target_id)
             return ChallengeOutcome(difficulty=0, base_effort=0, modifier=0, symbol=Symbol.SUN, resulting_effort=0, success=True)
 
         r = self.state.ranger
@@ -103,18 +104,14 @@ class GameEngine:
         if success:
             self.state.add_message(f"Result: {base_effort} + ({mod:d}) = {effort} >= {difficulty}")
             self.state.add_message(f"Test succeeded!")
-            action.on_success(self.state, effort, target_id)
-            for listener in self.state.listeners:
-                if listener.event_type == EventType.TEST_SUCCEED and listener.timing_type == TimingType.AFTER:
-                    if action.verb is not None and listener.test_type is not None:
-                        if action.verb.lower() == listener.test_type.lower():
-                            listener.effect_fn(self.state)
+            action.on_success(self, effort, target_id)
+            self.trigger_listeners(EventType.TEST_SUCCEED, TimingType.AFTER, action)
 
         else:
             self.state.add_message(f"Result: {base_effort} + ({mod:d}) = {effort} < {difficulty}")
             self.state.add_message(f"Test failed!")
             if action.on_fail:
-                action.on_fail(self.state, target_id)
+                action.on_fail(self, target_id)
 
         cleared : list[Card]= []
         cleared.extend(self.check_and_process_clears())
@@ -181,6 +178,42 @@ class GameEngine:
             self.state.zones[zone] = remaining
         self.state.path_discard.extend(to_clear)
         return to_clear
+    
+    def trigger_listeners(self, event_type: EventType, timing_type: TimingType, action: Action):
+        for listener in self.state.listeners:
+                if listener.event_type == event_type and listener.timing_type == timing_type:
+                    if action.verb is not None and listener.test_type is not None:
+                        if action.verb.lower() == listener.test_type.lower():
+                            listener.effect_fn(self)
+
+    #Gamestate manipulation methods
+
+    def move_card(self, card_id : str | None, target_zone : Zone) -> None:
+        """Move a card from its current zone to a target zone"""
+        target_card : Card | None = self.state.get_card_by_id(card_id)
+        current_zone : Zone | None = self.state.get_card_zone_by_id(card_id)
+        if current_zone is not None and target_card is not None:
+            self.state.zones[current_zone].remove(target_card)
+            self.state.zones[target_zone].append(target_card)
+            self.state.add_message(f"{get_display_id(self.state.all_cards_in_play(), target_card)} moves to {target_zone.value}.")
+
+    def fatigue_ranger(self, amount: int) -> None:
+        """Move top amount cards from ranger deck to top of fatigue pile (one at a time)"""
+        cards_to_fatigue = min(amount, len(self.state.ranger.deck))
+        for _ in range(cards_to_fatigue):
+            card = self.state.ranger.deck.pop(0)  # Take from top of deck
+            self.state.ranger.fatigue_pile.insert(0, card)  # Insert at top of fatigue pile
+        if cards_to_fatigue > 0:
+            self.state.add_message(f"Ranger suffers {cards_to_fatigue} fatigue.")
+
+    def soothe_ranger(self, amount: int) -> None:
+        """Move top amount cards from fatigue pile to hand"""
+        cards_to_soothe = min(amount, len(self.state.ranger.fatigue_pile))
+        for _ in range(cards_to_soothe):
+            card = self.state.ranger.fatigue_pile.pop(0)  # Take from top of fatigue pile
+            self.state.ranger.hand.append(card)  # Add to hand
+        if cards_to_soothe > 0:
+            self.state.add_message(f"Ranger soothes {cards_to_soothe} fatigue.")
 
     # Round/Phase helpers
     def phase1_draw_paths(self, count: int = 1):

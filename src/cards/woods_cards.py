@@ -40,7 +40,7 @@ class SunberryBramble(Card):
             )
         ]
 
-    def _on_pluck_success(self, state: GameState, effort: int, target_id: Optional[str]) -> None:
+    def _on_pluck_success(self, engine: GameEngine, effort: int, target_id: Optional[str]) -> None:
         """Pluck test success: add 1 harm"""
         self.add_harm(1)
 
@@ -67,9 +67,9 @@ class SitkaDoe(Card):
             )
         ]
 
-    def _on_spook_success(self, state: GameState, effort: int, target_id: Optional[str]) -> None:
+    def _on_spook_success(self, engine: GameEngine, effort: int, target_id: Optional[str]) -> None:
         """Spook test success: move to Along the Way"""
-        state.move_card(self.id, Zone.ALONG_THE_WAY)
+        engine.move_card(self.id, Zone.ALONG_THE_WAY)
 
     def get_symbol_handlers(self) -> dict[Symbol, Callable[[GameEngine], None]] | None:
         """Returns challenge symbol effects for this card"""
@@ -86,7 +86,7 @@ class SitkaDoe(Card):
         else:
             engine.state.add_message(f"Challenge (Sun) on {get_display_id(engine.state.all_cards_in_play(), self)}: The Sitka Buck are drawn to the doe. They move within reach.")
             for buck in bucks:
-                engine.state.move_card(buck.id, Zone.WITHIN_REACH)
+                engine.move_card(buck.id, Zone.WITHIN_REACH)
             
 
     def _mountain_effect(self, engine: GameEngine) -> None:
@@ -137,7 +137,7 @@ class OvergrownThicket(Card):
             )
         ]
 
-    def _on_hunt_success(self, state: GameState, effort: int, target_id: Optional[str]) -> None:
+    def _on_hunt_success(self, engine: GameEngine, effort: int, target_id: Optional[str]) -> None:
         """Hunt test success: add progress equal to effort"""
         self.add_progress(effort)
 
@@ -154,6 +154,6 @@ class OvergrownThicket(Card):
             engine.state.add_message(f"Challenge (Mountain) on {get_display_id(engine.state.all_cards_in_play(), self)}: discards 1 progress (now {self.progress}).")
             curr_presence = self.get_current_presence()
             if curr_presence is not None:
-                engine.state.fatigue_ranger(curr_presence)
+                engine.fatigue_ranger(curr_presence)
         else:
             engine.state.add_message(f"Challenge: (Mountain) on {get_display_id(engine.state.all_cards_in_play(), self)}: (no progress to discard).")

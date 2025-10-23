@@ -2,7 +2,6 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Optional, Callable, cast, TYPE_CHECKING
 from enum import Enum
-from .utils import get_display_id
 import uuid
 
 if TYPE_CHECKING:
@@ -342,34 +341,7 @@ class GameState:
         else:
             return None
 
-    #Gamestate manipulation methods
-
-    def move_card(self, card_id : str | None, target_zone : Zone) -> None:
-        """Move a card from its current zone to a target zone"""
-        target_card : Card | None = self.get_card_by_id(card_id)
-        current_zone : Zone | None = self.get_card_zone_by_id(card_id)
-        if current_zone is not None and target_card is not None:
-            self.zones[current_zone].remove(target_card)
-            self.zones[target_zone].append(target_card)
-            self.add_message(f"{get_display_id(self.all_cards_in_play(), target_card)} moves to {target_zone.value}.")
-
-    def fatigue_ranger(self, amount: int) -> None:
-        """Move top amount cards from ranger deck to top of fatigue pile (one at a time)"""
-        cards_to_fatigue = min(amount, len(self.ranger.deck))
-        for _ in range(cards_to_fatigue):
-            card = self.ranger.deck.pop(0)  # Take from top of deck
-            self.ranger.fatigue_pile.insert(0, card)  # Insert at top of fatigue pile
-        if cards_to_fatigue > 0:
-            self.add_message(f"Ranger suffers {cards_to_fatigue} fatigue.")
-
-    def soothe_ranger(self, amount: int) -> None:
-        """Move top amount cards from fatigue pile to hand"""
-        cards_to_soothe = min(amount, len(self.ranger.fatigue_pile))
-        for _ in range(cards_to_soothe):
-            card = self.ranger.fatigue_pile.pop(0)  # Take from top of fatigue pile
-            self.ranger.hand.append(card)  # Add to hand
-        if cards_to_soothe > 0:
-            self.add_message(f"Ranger soothes {cards_to_soothe} fatigue.")
+    
 
     #IO-related methods
 
@@ -420,8 +392,8 @@ class Action:
     # Computes difficulty for the chosen target (or state)
     difficulty_fn: Callable[[GameState, Optional[str]], int] = lambda _s, _t: 1
     # Effects
-    on_success: Callable[[GameState, int, Optional[str]], None] = lambda _s, _e, _t: None
-    on_fail: Optional[Callable[[GameState, Optional[str]], None]] = None
+    on_success: Callable[[GameEngine, int, Optional[str]], None] = lambda _s, _e, _t: None
+    on_fail: Optional[Callable[[GameEngine, Optional[str]], None]] = None
     # Source metadata (for display/tracking)
     source_id: Optional[str] = None  # card/entity id or "common"
     source_title: Optional[str] = None
@@ -442,10 +414,10 @@ class MessageEvent:
 @dataclass
 class EventListener:
     event_type: EventType
-    effect_fn: Callable[[GameState], None] #may have to modify the function signature here
+    effect_fn: Callable[[GameEngine], None]
     source_card_id: str
     timing_type: TimingType
     test_type: str | None = None #"Traverse", "Connect", etc.
-    
+
     
     
