@@ -26,8 +26,6 @@ class GameEngine:
                   response_decider: Callable[[GameEngine, str],bool] | None = None):
         self.state = state
         self.draw_challenge = challenge_drawer
-        # challenge symbol effects dispatch (entity-id + symbol -> callable)
-        self.symbol_handlers: dict[tuple[str, Symbol], Callable[[GameEngine], None]] = {}
         self.card_chooser = card_chooser if card_chooser is not None else self._default_chooser
         self.response_decider = response_decider if response_decider is not None else self._default_decider
         # Event listeners and message queue (game engine concerns, not board state)
@@ -41,19 +39,6 @@ class GameEngine:
     def _default_decider(self, _engine: 'GameEngine', _prompt: str) -> bool:  # noqa: ARG002
         """Default: always play responses (for tests)"""
         return True
-
-
-    def register_symbol_handler(self, key: tuple[str, Symbol], fn: Callable[[GameEngine], None]):
-        self.symbol_handlers[key] = fn
-
-    def refresh_symbol_handlers(self) -> None:
-        """Refresh symbol handlers to match currently active cards"""
-        self.symbol_handlers.clear()
-        for card in self.state.all_cards_in_play():
-            handlers = card.get_symbol_handlers()
-            if handlers:
-                for symbol, handler in handlers.items():
-                    self.register_symbol_handler((card.id, symbol), handler)
 
     def commit_icons(self, ranger: RangerState, approach: Approach, decision: CommitDecision) -> tuple[int, list[int]]:
         total = decision.energy
@@ -146,12 +131,16 @@ class GameEngine:
 
         cleared.clear()
         # Step 5:  Resolve Challenge effects (dynamically from active cards)
+        # TODO: Future challenge resolution features:
+        #   - When multiple cards in the same zone have challenge effects, player chooses the order
+        #   - If new cards enter play during challenge resolution, their effects should trigger
+        #   - If cards move zones during challenge resolution and become active, their effects should trigger
         self.add_message(f"Step 5: Resolve [{symbol.upper()}] challenge effects, if any.")
         challenge_zones : list[Zone] = [
             Zone.SURROUNDINGS,     # Weather, Location, Mission
-            Zone.ALONG_THE_WAY,    # TODO: player chooses order
-            Zone.WITHIN_REACH,     # TODO: player chooses order
-            Zone.PLAYER_AREA,      # TODO: player chooses order
+            Zone.ALONG_THE_WAY,    # TODO: player chooses order within zone
+            Zone.WITHIN_REACH,     # TODO: player chooses order within zone
+            Zone.PLAYER_AREA,      # TODO: player chooses order within zone
         ]
 
         nonzero_challenges = False

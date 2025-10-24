@@ -123,12 +123,3 @@ def provide_card_tests(state: GameState) -> list[Action]:
             actions.extend(tests)
     return actions
 
-
-def register_card_symbol_effects(engine: GameEngine, state: GameState) -> None:
-    """Scan all cards in play and register their symbol handlers"""
-    for card in state.all_cards_in_play():
-        symbols = card.get_symbol_handlers()
-        if symbols is not None:
-            for symbol, handler in symbols.items():
-                engine.register_symbol_handler((card.id, symbol), handler)
-
