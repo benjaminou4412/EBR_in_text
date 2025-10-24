@@ -2,44 +2,6 @@
 
 A living checklist distilled from our discussion. Grouped by area and roughly prioritized.
 
-## Current Focus: Walk With Me Implementation (Event Listener System)
-
-**Goal:** Implement Walk With Me card, which requires building an event/timing trigger system for "Response:" cards.
-
-**Implementation Steps:**
-- [X] 1. Create EventListener dataclass (models.py)
-  - Fields: event_type, timing, filter_fn, effect_fn, source_card_id
-- [X] 2. Add event_listeners registry to GameState (models.py)
-  - list[EventListener] field
-  - Method to register/unregister listeners
-- [ ] 3. Add response_decider to GameEngine (engine.py)
-  - Callable[[GameState, Card, dict], bool] for "play this Response?" decisions
-  - Default implementation: auto-play if can afford
-  - Runtime gets interactive version from view.py
-- [ ] 4. Create trigger_listeners method in GameEngine (engine.py)
-  - Signature: trigger_listeners(event_type: str, timing: str, context: dict)
-  - Scans registry, filters by event_type and timing
-  - Calls filter_fn to check if listener should fire
-  - If yes, calls effect_fn with engine and context
-- [X] 5. Implement Walk With Me card class (explorer_cards.py)
-  - Override enters_hand() or on_zone_change() to register listener
-  - Listener filters for: event="TEST_SUCCEED", timing="after", verb="Traverse"
-  - Effect: prompt to play, pay cost, choose being, add progress, discard self
-- [X] 6. Call trigger_listeners in perform_action (engine.py)
-  - After test success: trigger_listeners("TEST_SUCCEED", "after", context={...})
-  - Context includes: action, verb, effort, target_id, success
-- [ ] 7. Implement interactive response_decider (view.py)
-  - choose_play_response(state, card, context) -> bool
-  - Show card details, prompt "Play this card? (y/n)"
-- [ ] 8. Wire up response_decider in main.py
-  - Pass choose_play_response to GameEngine constructor
-- [ ] 9. Write tests for Walk With Me
-  - Test listener registration when card enters hand
-  - Test trigger fires after successful Traverse
-  - Test doesn't trigger after failed Traverse or non-Traverse tests
-  - Test energy cost is paid, progress is added, card is discarded
-  - All tests should be silent (use default response_decider)
-
 
 ## Engine 
 - [ ] Extend `CommitDecision` to support committing in‑play entities (exhaust/spend tokens)

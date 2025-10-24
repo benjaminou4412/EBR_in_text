@@ -726,10 +726,10 @@ class WalkWithMeTests(unittest.TestCase):
         )
 
         # Deterministic choosers: always say yes, always pick first option
-        def always_yes(_state: GameState, _prompt: str) -> bool:
+        def always_yes(_engine: GameEngine, _prompt: str) -> bool:
             return True
 
-        def pick_first(_state: GameState, choices: list[Card]) -> Card:
+        def pick_first(_engine: GameEngine, choices: list[Card]) -> Card:
             return choices[0]
 
         eng = GameEngine(state,
@@ -741,7 +741,7 @@ class WalkWithMeTests(unittest.TestCase):
         listener = wwm.enters_hand()
         self.assertIsNotNone(listener, "Walk With Me should create a listener")
         if listener:  # Type guard for mypy
-            state.add_listener(listener)
+            eng.add_listener(listener)
 
         # Perform Traverse test (3 effort = 1 FIT energy + 2 Exploration icons)
         from src.registry import provide_common_tests
@@ -768,7 +768,7 @@ class WalkWithMeTests(unittest.TestCase):
         self.assertEqual(being.progress, 3, "Being should have 3 progress from Walk With Me")
 
         # Verify listener was cleaned up
-        self.assertEqual(len(state.listeners), 0, "Listener should be removed after triggering")
+        self.assertEqual(len(eng.listeners), 0, "Listener should be removed after triggering")
 
     def test_walk_with_me_player_declines(self):
         """Test Walk With Me when player chooses not to play it"""
@@ -808,7 +808,7 @@ class WalkWithMeTests(unittest.TestCase):
         )
 
         # Response decider says NO
-        def always_no(_state: GameState, _prompt: str) -> bool:
+        def always_no(_engine: GameEngine, _prompt: str) -> bool:
             return False
 
         eng = GameEngine(state,
@@ -818,7 +818,7 @@ class WalkWithMeTests(unittest.TestCase):
         # Register listener
         listener = wwm.enters_hand()
         if listener:  # Type guard for mypy
-            state.add_listener(listener)
+            eng.add_listener(listener)
 
         # Perform Traverse test
         from src.registry import provide_common_tests
@@ -842,7 +842,7 @@ class WalkWithMeTests(unittest.TestCase):
         self.assertEqual(being.progress, 0, "Being should have no progress")
 
         # Verify listener is still active (can trigger again)
-        self.assertEqual(len(state.listeners), 1, "Listener should remain active")
+        self.assertEqual(len(eng.listeners), 1, "Listener should remain active")
 
     def test_walk_with_me_insufficient_energy(self):
         """Test Walk With Me when player has insufficient SPI"""
@@ -882,7 +882,7 @@ class WalkWithMeTests(unittest.TestCase):
         )
 
         # Player says yes but has no energy
-        def always_yes(_state: GameState, _prompt: str) -> bool:
+        def always_yes(_engine: GameEngine, _prompt: str) -> bool:
             return True
 
         eng = GameEngine(state,
@@ -892,7 +892,7 @@ class WalkWithMeTests(unittest.TestCase):
         # Register listener
         listener = wwm.enters_hand()
         if listener:  # Type guard for mypy
-            state.add_listener(listener)
+            eng.add_listener(listener)
 
         # Perform Traverse test
         from src.registry import provide_common_tests
@@ -916,7 +916,7 @@ class WalkWithMeTests(unittest.TestCase):
         self.assertEqual(being.progress, 0, "Being should have no progress")
 
         # Verify listener remains active
-        self.assertEqual(len(state.listeners), 1, "Listener should remain active")
+        self.assertEqual(len(eng.listeners), 1, "Listener should remain active")
 
     def test_walk_with_me_no_valid_targets(self):
         """Test Walk With Me when there are no Beings in play to target"""
@@ -949,7 +949,7 @@ class WalkWithMeTests(unittest.TestCase):
         )
 
         # Player says yes
-        def always_yes(_state: GameState, _prompt: str) -> bool:
+        def always_yes(_engine: GameEngine, _prompt: str) -> bool:
             return True
 
         eng = GameEngine(state,
@@ -959,7 +959,7 @@ class WalkWithMeTests(unittest.TestCase):
         # Register listener
         listener = wwm.enters_hand()
         if listener:  # Type guard for mypy
-            state.add_listener(listener)
+            eng.add_listener(listener)
 
         # Perform Traverse test
         from src.registry import provide_common_tests
@@ -980,7 +980,7 @@ class WalkWithMeTests(unittest.TestCase):
         self.assertEqual(state.ranger.energy[Aspect.SPI], 2, "SPI should be unchanged (no targets)")
 
         # Verify listener remains active
-        self.assertEqual(len(state.listeners), 1, "Listener should remain active")
+        self.assertEqual(len(eng.listeners), 1, "Listener should remain active")
 
     def test_walk_with_me_only_triggers_on_traverse(self):
         """Test that Walk With Me only triggers on Traverse tests, not Connect tests"""
@@ -1013,7 +1013,7 @@ class WalkWithMeTests(unittest.TestCase):
         )
 
         # Player would say yes if prompted
-        def always_yes(_state: GameState, _prompt: str) -> bool:
+        def always_yes(_engine: GameEngine, _prompt: str) -> bool:
             return True
 
         eng = GameEngine(state,
@@ -1023,7 +1023,7 @@ class WalkWithMeTests(unittest.TestCase):
         # Register listener
         listener = wwm.enters_hand()
         if listener:  # Type guard for mypy
-            state.add_listener(listener)
+            eng.add_listener(listener)
 
         # Perform CONNECT test (not Traverse!)
         from src.registry import provide_common_tests
@@ -1047,7 +1047,7 @@ class WalkWithMeTests(unittest.TestCase):
         self.assertEqual(being.progress, 2, "Being should only have 2 progress from Connect test")
 
         # Listener should still be active
-        self.assertEqual(len(state.listeners), 1, "Listener should remain active for future Traverse tests")
+        self.assertEqual(len(eng.listeners), 1, "Listener should remain active for future Traverse tests")
 
     def test_walk_with_me_chooses_correct_being(self):
         """Test that Walk With Me targets the Being chosen by card_chooser"""
@@ -1094,10 +1094,10 @@ class WalkWithMeTests(unittest.TestCase):
         )
 
         # Chooser picks Being B specifically
-        def pick_being_b(_state: GameState, choices: list[Card]) -> Card:
+        def pick_being_b(_engine: GameEngine, choices: list[Card]) -> Card:
             return next(c for c in choices if c.id == "being-b")
 
-        def always_yes(_state: GameState, _prompt: str) -> bool:
+        def always_yes(_engine: GameEngine, _prompt: str) -> bool:
             return True
 
         eng = GameEngine(state,
@@ -1108,7 +1108,7 @@ class WalkWithMeTests(unittest.TestCase):
         # Register listener
         listener = wwm.enters_hand()
         if listener:  # Type guard for mypy
-            state.add_listener(listener)
+            eng.add_listener(listener)
 
         # Perform Traverse test with 5 effort
         from src.registry import provide_common_tests

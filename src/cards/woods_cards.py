@@ -82,9 +82,9 @@ class SitkaDoe(Card):
         """Sun effect: If there are 1 or more Sitka Bucks in play >> Move each Sitka Buck within reach"""
         bucks = engine.state.get_cards_by_title("Sitka Buck")
         if bucks is None:
-            engine.state.add_message(f"Challenge (Sun) on {get_display_id(engine.state.all_cards_in_play(), self)}: (no Sitka Buck in play)")
+            engine.add_message(f"Challenge (Sun) on {get_display_id(engine.state.all_cards_in_play(), self)}: (no Sitka Buck in play)")
         else:
-            engine.state.add_message(f"Challenge (Sun) on {get_display_id(engine.state.all_cards_in_play(), self)}: The Sitka Buck are drawn to the doe. They move within reach.")
+            engine.add_message(f"Challenge (Sun) on {get_display_id(engine.state.all_cards_in_play(), self)}: The Sitka Buck are drawn to the doe. They move within reach.")
             for buck in bucks:
                 engine.move_card(buck.id, Zone.WITHIN_REACH)
             
@@ -95,23 +95,23 @@ class SitkaDoe(Card):
         if predators is not None:
             active_predators = [predator for predator in predators if predator.exhausted == False]
             if not active_predators:
-                engine.state.add_message(f"Challenge (Mountain) on {get_display_id(engine.state.all_cards_in_play(), self)}: (no active predators in play)")
+                engine.add_message(f"Challenge (Mountain) on {get_display_id(engine.state.all_cards_in_play(), self)}: (no active predators in play)")
             else:
                 if len(active_predators)==1:
-                    engine.state.add_message(f"Challenge (Mountain) on {get_display_id(engine.state.all_cards_in_play(), self)}: the active predator in play exhausts itself and harms Sitka Doe:")
+                    engine.add_message(f"Challenge (Mountain) on {get_display_id(engine.state.all_cards_in_play(), self)}: the active predator in play exhausts itself and harms Sitka Doe:")
                 else:
-                    engine.state.add_message(f"Challenge (Mountain) on {get_display_id(engine.state.all_cards_in_play(), self)}: Choose a predator that will exhaust itself and harm Sitka Doe:")
-                target_predator = engine.card_chooser(engine.state, active_predators)
+                    engine.add_message(f"Challenge (Mountain) on {get_display_id(engine.state.all_cards_in_play(), self)}: Choose a predator that will exhaust itself and harm Sitka Doe:")
+                target_predator = engine.card_chooser(engine, active_predators)
                 target_predator.exhausted = True
                 target_presence = target_predator.get_current_presence()
                 if target_presence is not None:
                     #this should always happen
                     self.add_harm(target_presence)
-                    engine.state.add_message(f"{get_display_id(active_predators, target_predator)} is now exhausted.")
-                    engine.state.add_message(f"{get_display_id(engine.state.all_cards_in_play(), self)} suffered harm equal to {get_display_id(active_predators, target_predator)}'s presence ({target_presence}).")
+                    engine.add_message(f"{get_display_id(active_predators, target_predator)} is now exhausted.")
+                    engine.add_message(f"{get_display_id(engine.state.all_cards_in_play(), self)} suffered harm equal to {get_display_id(active_predators, target_predator)}'s presence ({target_presence}).")
 
         else:
-            engine.state.add_message(f"Challenge (Mountain) on {get_display_id(engine.state.all_cards_in_play(), self)}: (no predators in play)")
+            engine.add_message(f"Challenge (Mountain) on {get_display_id(engine.state.all_cards_in_play(), self)}: (no predators in play)")
             
 
 
@@ -151,9 +151,9 @@ class OvergrownThicket(Card):
         """Mountain effect: discard 1 progress"""
         if self.progress > 0:
             self.progress -= 1
-            engine.state.add_message(f"Challenge (Mountain) on {get_display_id(engine.state.all_cards_in_play(), self)}: discards 1 progress (now {self.progress}).")
+            engine.add_message(f"Challenge (Mountain) on {get_display_id(engine.state.all_cards_in_play(), self)}: discards 1 progress (now {self.progress}).")
             curr_presence = self.get_current_presence()
             if curr_presence is not None:
                 engine.fatigue_ranger(curr_presence)
         else:
-            engine.state.add_message(f"Challenge: (Mountain) on {get_display_id(engine.state.all_cards_in_play(), self)}: (no progress to discard).")
+            engine.add_message(f"Challenge: (Mountain) on {get_display_id(engine.state.all_cards_in_play(), self)}: (no progress to discard).")

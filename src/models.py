@@ -254,27 +254,25 @@ class RangerState:
     energy: dict[Aspect, int] = field(default_factory=lambda: {Aspect.AWA: 0, Aspect.FIT: 0, Aspect.SPI: 0, Aspect.FOC: 0})
     injury: int = 0
 
-    def draw_card(self, state: GameState) -> None:
+    def draw_card(self) -> EventListener | None:
+        """Draw a card from deck to hand. Returns listener if card creates one, None otherwise."""
         if len(self.deck) == 0:
             #TODO: attempting to draw from an empty deck should end the day
-            return
+            return None
         else:
             drawn: Card = self.deck.pop(0)
             self.hand.append(drawn)
-            listener = drawn.enters_hand()
-            if listener is not None:
-                state.add_listener(listener)
-    
-    def spend_energy(self, state: GameState, amount: int, aspect: Aspect) -> bool:
+            return drawn.enters_hand()
+
+    def spend_energy(self, amount: int, aspect: Aspect) -> tuple[bool, str | None]:
         """Attempt to spend the specified amount of energy from the specified aspect's energy pool.
-        Returns true if energy was successfully spent, returns false if insufficient energy"""
+        Returns (success: bool, error_message: str | None)"""
         curr_energy = self.energy[aspect]
         if amount > curr_energy:
-            state.add_message(f"Insufficient {aspect.value} energy.")
-            return False
+            return (False, f"Insufficient {aspect.value} energy.")
         else:
             self.energy[aspect] = self.energy[aspect] - amount
-            return True
+            return (True, None)
 
 
 @dataclass
@@ -291,10 +289,6 @@ class GameState:
     # Path deck for Phase 1 draws
     path_deck: list[Card] = field(default_factory=lambda: cast(list[Card], []))
     path_discard: list[Card] = field(default_factory=lambda: cast(list[Card], []))
-
-    message_queue: list[MessageEvent] = field(default_factory=lambda: cast(list[MessageEvent], []))
-
-    listeners: list[EventListener] = field(default_factory=lambda: cast(list[EventListener], []))
 
     #Card getter methods
 
@@ -352,32 +346,6 @@ class GameState:
         else:
             return None
 
-    
-
-    #IO-related methods
-
-    def add_message(self, message: str) -> None:
-        new_message = MessageEvent(message)
-        self.message_queue.append(new_message)
-
-    def get_messages(self) -> list[MessageEvent]:
-        return self.message_queue.copy()
-    
-    def clear_messages(self) -> None:
-        self.message_queue.clear()
-
-    #listener management methods
-
-    def add_listener(self, listener: EventListener) -> None:
-        self.listeners.append(listener)
-    
-    def remove_listener_by_id(self, id: str) -> None:
-        target = None
-        for listener in self.listeners:
-            if listener.source_card_id == id:
-                target = listener
-        if target is not None:
-            self.listeners.remove(target)
         
 
 

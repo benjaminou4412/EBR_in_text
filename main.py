@@ -65,11 +65,9 @@ def build_demo_state() -> GameState:
     player_area : list[Card] = []
     current_zones : dict[Zone,list[Card]]= {Zone.SURROUNDINGS : surroundings, Zone.ALONG_THE_WAY : along_the_way, Zone.WITHIN_REACH : within_reach, Zone.PLAYER_AREA : player_area}
     state = GameState(ranger=ranger, zones=current_zones, round_number=1, path_deck=deck)
-    state.ranger.draw_card(state)
-    state.ranger.draw_card(state)
-    state.ranger.draw_card(state)
-    state.ranger.draw_card(state)
-    state.ranger.draw_card(state)
+    # Note: Cards drawn to hand - listeners will be registered when engine is created
+    for _ in range(5):
+        state.ranger.draw_card()
     return state
 
 
@@ -107,7 +105,7 @@ def menu_and_run(engine: GameEngine) -> None:
                 is_test=False,
                 on_success=lambda s, _e, _t: None,
             ))
-            act = choose_action(actions, engine.state)
+            act = choose_action(actions, engine.state, engine)
             if not act:
                 # treat as cancel to end the run
                 return
@@ -117,9 +115,9 @@ def menu_and_run(engine: GameEngine) -> None:
                 input("Press Enter to proceed to Phase 3...")
                 break
 
-            target_id = choose_action_target(engine.state, act)
+            target_id = choose_action_target(engine.state, act, engine)
             initiate_test(act, engine.state, target_id)
-            decision = choose_commit(act, len(engine.state.ranger.hand), engine.state) if act.is_test else None
+            decision = choose_commit(act, len(engine.state.ranger.hand), engine.state, engine) if act.is_test else None
 
             try:
                 engine.perform_action(act, decision or __import__('src.models', fromlist=['CommitDecision']).CommitDecision([]), target_id)
@@ -128,7 +126,7 @@ def menu_and_run(engine: GameEngine) -> None:
                 input("There was a runtime error! Press Enter to continue...")
                 continue
 
-            display_and_clear_messages(engine.state)
+            display_and_clear_messages(engine)
             input("Action performed. Press Enter to continue...")
 
         # Phase 3: Travel (skipped)
@@ -148,6 +146,8 @@ def menu_and_run(engine: GameEngine) -> None:
 def main() -> None:
     state = build_demo_state()
     engine = GameEngine(state, card_chooser=choose_target, response_decider=choose_response)
+    # Reconstruct listeners from cards in hand
+    engine.reconstruct_listeners()
     menu_and_run(engine)
 
 

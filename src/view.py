@@ -1,9 +1,12 @@
 from __future__ import annotations
-from typing import Optional
+from typing import Optional, TYPE_CHECKING
 import shutil
 import textwrap
 from .models import GameState, Action, CommitDecision, Aspect, Approach, CardType, Zone, Card
 from .utils import get_display_id
+
+if TYPE_CHECKING:
+    from .engine import GameEngine
 
 
 def render_card_detail(card: Card, index: int | None = None, display_id: str | None = None) -> None:
@@ -104,9 +107,9 @@ def render_state(state: GameState, phase_header: str = "") -> None:
         print("[Empty hand]")
 
 
-def choose_action(actions: list[Action], state: GameState) -> Optional[Action]:
+def choose_action(actions: list[Action], state: GameState, engine: GameEngine) -> Optional[Action]:
     """Prompt player to choose from available actions"""
-    display_and_clear_messages(state)
+    display_and_clear_messages(engine)
 
     if not actions:
         print("No actions available.")
@@ -144,9 +147,9 @@ def choose_action(actions: list[Action], state: GameState) -> Optional[Action]:
         return None
 
 
-def choose_action_target(state: GameState, action: Action) -> Optional[str]:
+def choose_action_target(state: GameState, action: Action, engine: GameEngine) -> Optional[str]:
     """Prompt player to choose a target for an action"""
-    display_and_clear_messages(state)
+    display_and_clear_messages(engine)
 
     if not action.target_provider:
         return None
@@ -172,17 +175,17 @@ def choose_action_target(state: GameState, action: Action) -> Optional[str]:
     except Exception:
         return None
     
-def choose_response(state: GameState, prompt: str) -> bool:
+def choose_response(engine: GameEngine, prompt: str) -> bool:
     """Prompt a player on whether to activate a response ability or play a response card
 
     Args:
-        state: GameState for message display
+        engine: GameEngine for message display
         prompt: Custom prompt text describing the response opportunity
 
     Returns:
         True if player chooses to play the response, False otherwise
     """
-    display_and_clear_messages(state)
+    display_and_clear_messages(engine)
     print(prompt)
 
     while True:
@@ -195,17 +198,17 @@ def choose_response(state: GameState, prompt: str) -> bool:
         else:
             print("Invalid input. Please enter 'y' or 'n'.")
 
-def choose_target(state: GameState, targets: list[Card]) -> Card:
+def choose_target(engine: GameEngine, targets: list[Card]) -> Card:
     """Prompt player to choose from among several cards.
 
     Args:
-        state: GameState for context (used to generate display IDs)
+        engine: GameEngine for context and message display
         targets: List of Card objects to choose from
 
     Returns:
         The chosen Card object
     """
-    display_and_clear_messages(state)
+    display_and_clear_messages(engine)
 
     if not targets:
         raise ValueError("Cannot choose from empty list of targets")
@@ -215,7 +218,7 @@ def choose_target(state: GameState, targets: list[Card]) -> Card:
         return targets[0]
 
     # Display options with unique identifiers
-    all_cards = state.all_cards_in_play()
+    all_cards = engine.state.all_cards_in_play()
 
     while True:
         for i, card in enumerate(targets, start=1):
@@ -236,9 +239,9 @@ def choose_target(state: GameState, targets: list[Card]) -> Card:
             print("Invalid input. Please enter a number.")
 
 
-def choose_commit(action: Action, hand_size: int, state: GameState) -> CommitDecision:
+def choose_commit(action: Action, hand_size: int, state: GameState, engine: GameEngine) -> CommitDecision:
     """Prompt player to commit energy and cards for a test"""
-    display_and_clear_messages(state)
+    display_and_clear_messages(engine)
     
 
     # Get display strings for aspect/approach
@@ -290,7 +293,8 @@ def initiate_test(action: Action, state: GameState, target_id: str | None):
     # Show player test Step 2 information
     print(f"Step 2: Commit effort from your energy pool, approach icons in hand, and other sources.")
 
-def display_and_clear_messages(state: GameState) -> None:
-    for event in state.message_queue:
+def display_and_clear_messages(engine: GameEngine) -> None:
+    """Display and clear messages from the game engine"""
+    for event in engine.get_messages():
         print(event.message)
-    state.clear_messages()
+    engine.clear_messages()
