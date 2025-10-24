@@ -73,6 +73,49 @@ class GameEngine:
             ranger.discard.append(card)
             # Remove any listeners associated with committed cards
             self.remove_listener_by_id(card.id)
+    
+    def interaction_fatigue(self, ranger: RangerState, target: Card) -> None:
+        """Apply fatigue from cards between ranger and target"""
+        cards_between = self.state.get_cards_between_ranger_and_target(target)
+        target_zone : Zone | None = self.state.get_card_zone_by_id(target.id)
+        if target_zone is None:
+            raise RuntimeError(f"Something went horribly wrong, this target has no zone.")
+        
+        # TODO:Filter out Friendly cards
+        fatiguing_cards = [card for card in cards_between if card.exhausted == False]
+        self.add_message(f"Interacting with {get_display_id(self.state.all_cards_in_play(), target)} in {target_zone.value}...")
+        if not fatiguing_cards:
+            self.add_message(f"No cards between you and the target; no interaction fatigue.")
+            return
+        else:
+            self.add_message(f"Each ready card between you and the target fatigues you:")
+            for card in fatiguing_cards:
+                self.add_message(f"    {get_display_id(self.state.all_cards_in_play(), card)} fatigues you.")
+                curr_presence = card.get_current_presence()
+                if curr_presence is not None:
+                    self.fatigue_ranger(ranger, curr_presence)
+                else:
+                    raise RuntimeError(f"Something has gone horribly wrong; this card should have a presence.")
+                    
+    def initiate_test(self, action: Action, state: GameState, target_id: str | None):
+        """Show player relevant information before decisions are made during a test"""
+        # Get display strings for aspect/approach
+        aspect_str = action.aspect.value if isinstance(action.aspect, Aspect) else action.aspect
+        approach_str = action.approach.value if isinstance(action.approach, Approach) else action.approach  
+
+        # Show player Test Step 1 information
+        self.add_message(f"[{action.verb}] test initiated of aspect [{aspect_str}] and approach [{approach_str}].")
+        self.add_message(f"This test is of difficulty {action.difficulty_fn(state,target_id)}.")
+        self.add_message(f"Step 1: You suffer fatigue from each ready card between you and your interaction target.")
+        if target_id is not None:
+            target = self.state.get_card_by_id(target_id)
+            if target is not None: #should always be not-None
+                self.interaction_fatigue(self.state.ranger, target)
+        else:
+            self.add_message(f"This test has no target; interaction fatigue skipped.")
+        # Show player test Step 2 information
+        self.add_message(f"Step 2: Commit effort from your energy pool, approach icons in hand, and other sources.")
+        
 
     def perform_action(self, action: Action, decision: CommitDecision, target_id: Optional[str]) -> ChallengeOutcome:
         # Non-test actions (e.g., Rest) skip challenge + energy
@@ -80,7 +123,7 @@ class GameEngine:
             action.on_success(self, 0, target_id)
             return ChallengeOutcome(difficulty=0, base_effort=0, modifier=0, symbol=ChallengeIcon.SUN, resulting_effort=0, success=True)
 
-        r = self.state.ranger
+        r = self.state.ranger        
 
         # At this point, action.aspect/approach are guaranteed to be enums (not str) since is_test=True
         aspect = action.aspect if isinstance(action.aspect, Aspect) else Aspect.AWA  # type guard
@@ -258,9 +301,9 @@ class GameEngine:
             self.state.zones[target_zone].append(target_card)
             self.add_message(f"{get_display_id(self.state.all_cards_in_play(), target_card)} moves to {target_zone.value}.")
 
-    def fatigue_ranger(self, amount: int) -> None:
+    def fatigue_ranger(self, ranger: RangerState, amount: int) -> None:
         """Move top amount cards from ranger deck to top of fatigue pile (one at a time)"""
-        if amount > len(self.state.ranger.deck):
+        if amount > len(ranger.deck):
             # Can't fatigue more than remaining deck - end the day
             self.add_message(f"Ranger needs to suffer {amount} fatigue, but only {len(self.state.ranger.deck)} cards remain in deck.")
             self.add_message("Cannot fatigue from empty deck - the day must end!")
@@ -268,18 +311,18 @@ class GameEngine:
             return
 
         for _ in range(amount):
-            card = self.state.ranger.deck.pop(0)  # Take from top of deck
-            self.state.ranger.fatigue_pile.insert(0, card)  # Insert at top of fatigue pile
+            card = ranger.deck.pop(0)  # Take from top of deck
+            ranger.fatigue_pile.insert(0, card)  # Insert at top of fatigue pile
 
         if amount > 0:
             self.add_message(f"Ranger suffers {amount} fatigue.")
 
-    def soothe_ranger(self, amount: int) -> None:
+    def soothe_ranger(self, ranger: RangerState, amount: int) -> None:
         """Move top amount cards from fatigue pile to hand"""
-        cards_to_soothe = min(amount, len(self.state.ranger.fatigue_pile))
+        cards_to_soothe = min(amount, len(ranger.fatigue_pile))
         for _ in range(cards_to_soothe):
-            card = self.state.ranger.fatigue_pile.pop(0)  # Take from top of fatigue pile
-            self.state.ranger.hand.append(card)  # Add to hand
+            card = ranger.fatigue_pile.pop(0)  # Take from top of fatigue pile
+            ranger.hand.append(card)  # Add to hand
         if cards_to_soothe > 0:
             self.add_message(f"Ranger soothes {cards_to_soothe} fatigue.")
 
@@ -309,7 +352,7 @@ class GameEngine:
         #Step 1: Suffer 1 Fatigue per injury
         if (self.state.ranger.injury > 0):
             self.add_message(f"Your ranger is injured, so you suffer fatigue.")
-            self.fatigue_ranger(self.state.ranger.injury)
+            self.fatigue_ranger(self.state.ranger, self.state.ranger.injury)
         #Step 2: Draw 1 Ranger Card
         listener, draw_message, should_end_day = self.state.ranger.draw_card()
         if should_end_day:

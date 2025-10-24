@@ -381,7 +381,27 @@ class GameState:
         else:
             return None
 
+    def get_cards_between_ranger_and_target(self, target: Card) -> list[Card]:
+        """Get all cards that are 'between' the ranger and a target in the given zone.
+        Returns cards in order from closest to farthest."""
+        between: list[Card] = []
+        target_zone = self.get_card_zone_by_id(target.id)
         
+        # Cards attached to role are ALWAYS between (all zones)
+        # TODO: When we have attachments, add them here
+        
+        if target_zone == Zone.WITHIN_REACH:
+            # Only role attachments (already added above)
+            pass
+        elif target_zone == Zone.ALONG_THE_WAY:
+            # Role attachments + Within Reach
+            between.extend(self.zones[Zone.WITHIN_REACH])
+        elif target_zone == Zone.SURROUNDINGS:
+            # Role attachments + Within Reach + Along the Way
+            between.extend(self.zones[Zone.WITHIN_REACH])
+            between.extend(self.zones[Zone.ALONG_THE_WAY])
+        
+        return between
 
 
 # Action system: derived from state; executed by engine.

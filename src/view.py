@@ -176,6 +176,9 @@ def choose_action_target(state: GameState, action: Action, engine: GameEngine) -
     if not targets:
         print("No valid targets.")
         return None
+    elif len(targets)==1:
+        print("Only 1 valid target; automatically chosen.")
+        return targets[0].id
     print("Choose target:")
 
     all_cards = state.all_cards_in_play()
@@ -294,19 +297,6 @@ def choose_commit(action: Action, hand_size: int, state: GameState, engine: Game
 
     return CommitDecision(hand_indices=hand_indices, energy=energy)
 
-def initiate_test(action: Action, state: GameState, target_id: str | None):
-    """Show player relevant information before decisions are made during a test"""
-    # Get display strings for aspect/approach
-    aspect_str = action.aspect.value if isinstance(action.aspect, Aspect) else action.aspect
-    approach_str = action.approach.value if isinstance(action.approach, Approach) else action.approach  
-
-    # Show player Test Step 1 information
-    print(f"[{action.verb}] test initiated of aspect [{aspect_str}] and approach [{approach_str}].")
-    print(f"This test is of difficulty {action.difficulty_fn(state,target_id)}.")
-    print(f"Step 1: You suffer fatigue from each ready card between you and your interaction target.") #TODO: actually implement fatigue here
-
-    # Show player test Step 2 information
-    print(f"Step 2: Commit effort from your energy pool, approach icons in hand, and other sources.")
 
 def display_and_clear_messages(engine: GameEngine) -> None:
     """Display and clear messages from the game engine"""

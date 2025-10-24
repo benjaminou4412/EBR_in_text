@@ -31,10 +31,10 @@ class SunberryBramble(Card):
                 aspect=Aspect.AWA,
                 approach=Approach.REASON,
                 verb="Pluck",
-                target_provider=None,
+                target_provider=lambda _s: [self],
                 difficulty_fn=lambda _s, _t: 2,
                 on_success=self._on_pluck_success,
-                on_fail=lambda _s, _t: None,  # Fatigue not modeled
+                on_fail=self._fail_effect,
                 source_id=self.id,
                 source_title=self.title,
             )
@@ -42,7 +42,15 @@ class SunberryBramble(Card):
 
     def _on_pluck_success(self, engine: GameEngine, effort: int, target_id: Optional[str]) -> None:
         """Pluck test success: add 1 harm"""
+        engine.add_message(f"Target {self.title} takes 1 harm")
         self.add_harm(1)
+        engine.soothe_ranger(engine.state.ranger, 2)
+
+    def _fail_effect(self, engine: GameEngine, message: str | None) -> None:
+        engine.add_message(f"Target {self.title} fatigues you.")
+        curr_presence = self.get_current_presence()
+        if curr_presence is not None:
+            engine.fatigue_ranger(engine.state.ranger, curr_presence)
 
 
 class SitkaDoe(Card):
@@ -59,7 +67,7 @@ class SitkaDoe(Card):
                 aspect=Aspect.SPI,
                 approach=Approach.CONFLICT,
                 verb="Spook",
-                target_provider=None,
+                target_provider=lambda _s: [self],
                 difficulty_fn=lambda _s, _t: 1,
                 on_success=self._on_spook_success,
                 source_id=self.id,
@@ -109,7 +117,7 @@ class OvergrownThicket(Card):
                 aspect=Aspect.AWA,
                 approach=Approach.EXPLORATION,
                 verb="Hunt",
-                target_provider=None,
+                target_provider=lambda _s: [self],
                 difficulty_fn=lambda _s, _t: 1,
                 on_success=self._on_hunt_success,
                 source_id=self.id,
@@ -134,6 +142,6 @@ class OvergrownThicket(Card):
             engine.add_message(f"Challenge (Mountain) on {get_display_id(engine.state.all_cards_in_play(), self)}: discards 1 progress (now {self.progress}).")
             curr_presence = self.get_current_presence()
             if curr_presence is not None:
-                engine.fatigue_ranger(curr_presence)
+                engine.fatigue_ranger(engine.state.ranger, curr_presence)
         else:
             engine.add_message(f"Challenge: (Mountain) on {get_display_id(engine.state.all_cards_in_play(), self)}: (no progress to discard).")

@@ -4,7 +4,7 @@ import random
 from src.models import Card, RangerState, GameState, Action, Aspect, Approach, Zone, CardType
 from src.engine import GameEngine
 from src.registry import provide_common_tests, provide_card_tests
-from src.view import render_state, choose_action, choose_action_target, choose_commit, choose_target, display_and_clear_messages, initiate_test, choose_response
+from src.view import render_state, choose_action, choose_action_target, choose_commit, choose_target, display_and_clear_messages, choose_response
 from src.decks import build_woods_path_deck
 from src.cards import OvergrownThicket, SunberryBramble, SitkaDoe, WalkWithMe, ADearFriend, ProwlingWolhund, SitkaBuck
 
@@ -149,9 +149,9 @@ def menu_and_run(engine: GameEngine) -> None:
                 print("\nThe day has ended. Demo complete!")
                 input("Press Enter to exit...")
                 return
-
+            #TODO: Handle Exhaust actions and Play actions, which are not tests (so they should break before we hit test logic)
             target_id = choose_action_target(engine.state, act, engine)
-            initiate_test(act, engine.state, target_id)
+            engine.initiate_test(act, engine.state, target_id)
             decision = choose_commit(act, len(engine.state.ranger.hand), engine.state, engine) if act.is_test else None
 
             try:
