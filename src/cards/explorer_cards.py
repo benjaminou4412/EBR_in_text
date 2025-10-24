@@ -25,4 +25,5 @@ class WalkWithMe(Card):
             if engine.state.ranger.spend_energy(engine.state, 1, Aspect.SPI):
                 engine.state.ranger.discard.append(self)
                 engine.state.ranger.hand.remove(self)
+                engine.state.remove_listener_by_id(self.id)
                 engine.state.add_message(f"Played Walk With Me with no effects after traverse test success for testing purposes.")

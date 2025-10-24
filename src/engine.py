@@ -1,7 +1,7 @@
 from __future__ import annotations
 from dataclasses import dataclass
 from typing import Callable, Optional
-from .models import GameState, Action, CommitDecision, RangerState, Card, Symbol, Aspect, Approach, Zone, CardType, EventType, TimingType
+from .models import GameState, Action, CommitDecision, RangerState, Card, Symbol, Aspect, Approach, Zone, CardType, EventType, TimingType, EventListener
 from .challenge import draw_challenge
 from .utils import get_display_id
 
@@ -186,11 +186,15 @@ class GameEngine:
         return to_clear
     
     def trigger_listeners(self, event_type: EventType, timing_type: TimingType, action: Action):
+        triggered : list[EventListener]= []
         for listener in self.state.listeners:
                 if listener.event_type == event_type and listener.timing_type == timing_type:
                     if action.verb is not None and listener.test_type is not None:
                         if action.verb.lower() == listener.test_type.lower():
-                            listener.effect_fn(self)
+                            triggered.append(listener)
+        for listener in triggered:
+            listener.effect_fn(self)
+
 
     #Gamestate manipulation methods
 
