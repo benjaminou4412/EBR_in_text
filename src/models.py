@@ -425,7 +425,7 @@ class MessageEvent:
 @dataclass
 class EventListener:
     event_type: EventType
-    effect_fn: Callable[[GameEngine], None]
+    effect_fn: Callable[[GameEngine, int], None]
     source_card_id: str
     timing_type: TimingType
     test_type: str | None = None #"Traverse", "Connect", etc.

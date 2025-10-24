@@ -684,5 +684,470 @@ class CommonTestsTests(unittest.TestCase):
         self.assertTrue(wolhund.exhausted, "Wolhund should still be exhausted")
 
 
+class WalkWithMeTests(unittest.TestCase):
+    """Tests for Walk With Me response card"""
+
+    def test_walk_with_me_standard_play(self):
+        """Test Walk With Me triggers after successful Traverse, player says yes, and has energy"""
+        from src.cards import WalkWithMe
+        wwm = WalkWithMe()
+
+        feature = Card(
+            title="Test Feature",
+            id="test-feature",
+            card_types={CardType.PATH, CardType.FEATURE},
+            presence=1,
+            progress_threshold=5
+        )
+        being = Card(
+            title="Test Being",
+            id="test-being",
+            card_types={CardType.PATH, CardType.BEING},
+            presence=1,
+            progress_threshold=5,
+            harm_threshold=3
+        )
+
+        ranger = RangerState(
+            name="Ranger",
+            hand=[wwm],  # Walk With Me in hand
+            deck=[],
+            energy={Aspect.AWA: 3, Aspect.FIT: 2, Aspect.SPI: 2, Aspect.FOC: 1}  # Has SPI
+        )
+
+        state = GameState(
+            ranger=ranger,
+            zones={
+                Zone.SURROUNDINGS: [],
+                Zone.ALONG_THE_WAY: [feature],
+                Zone.WITHIN_REACH: [being],  # Target for Walk With Me
+                Zone.PLAYER_AREA: [],
+            }
+        )
+
+        # Deterministic choosers: always say yes, always pick first option
+        def always_yes(_state: GameState, _prompt: str) -> bool:
+            return True
+
+        def pick_first(_state: GameState, choices: list[Card]) -> Card:
+            return choices[0]
+
+        eng = GameEngine(state,
+                        challenge_drawer=fixed_draw(0, Symbol.SUN),
+                        card_chooser=pick_first,
+                        response_decider=always_yes)
+
+        # Register listener when card enters hand
+        listener = wwm.enters_hand()
+        self.assertIsNotNone(listener, "Walk With Me should create a listener")
+        if listener:  # Type guard for mypy
+            state.add_listener(listener)
+
+        # Perform Traverse test (3 effort = 1 FIT energy + 2 Exploration icons)
+        from src.registry import provide_common_tests
+        actions = provide_common_tests(state)
+        traverse = next(a for a in actions if a.id == "common-traverse")
+
+        # Add cards with Exploration icons for effort
+        ranger.hand.append(Card(id="e1", title="E+1", approach_icons={Approach.EXPLORATION: 1}))
+        ranger.hand.append(Card(id="e2", title="E+1", approach_icons={Approach.EXPLORATION: 1}))
+
+        outcome = eng.perform_action(traverse, CommitDecision(energy=1, hand_indices=[1, 2]), target_id=feature.id)
+
+        # Verify test succeeded
+        self.assertTrue(outcome.success)
+        self.assertEqual(outcome.resulting_effort, 3)  # 1 energy + 2 icons
+        self.assertEqual(feature.progress, 3)  # Feature gets 3 progress from test
+
+        # Verify Walk With Me was played
+        self.assertNotIn(wwm, state.ranger.hand, "Walk With Me should be removed from hand")
+        self.assertIn(wwm, state.ranger.discard, "Walk With Me should be in discard")
+        self.assertEqual(state.ranger.energy[Aspect.SPI], 1, "Should have spent 1 SPI (started with 2)")
+
+        # Verify being got progress equal to effort (3)
+        self.assertEqual(being.progress, 3, "Being should have 3 progress from Walk With Me")
+
+        # Verify listener was cleaned up
+        self.assertEqual(len(state.listeners), 0, "Listener should be removed after triggering")
+
+    def test_walk_with_me_player_declines(self):
+        """Test Walk With Me when player chooses not to play it"""
+        from src.cards import WalkWithMe
+        wwm = WalkWithMe()
+
+        feature = Card(
+            title="Test Feature",
+            id="test-feature",
+            card_types={CardType.PATH, CardType.FEATURE},
+            presence=1,
+            progress_threshold=5
+        )
+        being = Card(
+            title="Test Being",
+            id="test-being",
+            card_types={CardType.PATH, CardType.BEING},
+            presence=1,
+            progress_threshold=5
+        )
+
+        ranger = RangerState(
+            name="Ranger",
+            hand=[wwm],
+            deck=[],
+            energy={Aspect.AWA: 3, Aspect.FIT: 2, Aspect.SPI: 2, Aspect.FOC: 1}
+        )
+
+        state = GameState(
+            ranger=ranger,
+            zones={
+                Zone.SURROUNDINGS: [],
+                Zone.ALONG_THE_WAY: [feature],
+                Zone.WITHIN_REACH: [being],
+                Zone.PLAYER_AREA: [],
+            }
+        )
+
+        # Response decider says NO
+        def always_no(_state: GameState, _prompt: str) -> bool:
+            return False
+
+        eng = GameEngine(state,
+                        challenge_drawer=fixed_draw(0, Symbol.SUN),
+                        response_decider=always_no)
+
+        # Register listener
+        listener = wwm.enters_hand()
+        if listener:  # Type guard for mypy
+            state.add_listener(listener)
+
+        # Perform Traverse test
+        from src.registry import provide_common_tests
+        actions = provide_common_tests(state)
+        traverse = next(a for a in actions if a.id == "common-traverse")
+
+        ranger.hand.append(Card(id="e1", title="E+1", approach_icons={Approach.EXPLORATION: 1}))
+
+        outcome = eng.perform_action(traverse, CommitDecision(energy=1, hand_indices=[1]), target_id=feature.id)
+
+        # Verify test succeeded
+        self.assertTrue(outcome.success)
+        self.assertEqual(feature.progress, 2)
+
+        # Verify Walk With Me was NOT played
+        self.assertIn(wwm, state.ranger.hand, "Walk With Me should still be in hand")
+        self.assertNotIn(wwm, state.ranger.discard, "Walk With Me should not be discarded")
+        self.assertEqual(state.ranger.energy[Aspect.SPI], 2, "SPI should be unchanged")
+
+        # Verify being got no progress
+        self.assertEqual(being.progress, 0, "Being should have no progress")
+
+        # Verify listener is still active (can trigger again)
+        self.assertEqual(len(state.listeners), 1, "Listener should remain active")
+
+    def test_walk_with_me_insufficient_energy(self):
+        """Test Walk With Me when player has insufficient SPI"""
+        from src.cards import WalkWithMe
+        wwm = WalkWithMe()
+
+        feature = Card(
+            title="Test Feature",
+            id="test-feature",
+            card_types={CardType.PATH, CardType.FEATURE},
+            presence=1,
+            progress_threshold=5
+        )
+        being = Card(
+            title="Test Being",
+            id="test-being",
+            card_types={CardType.PATH, CardType.BEING},
+            presence=1,
+            progress_threshold=5
+        )
+
+        ranger = RangerState(
+            name="Ranger",
+            hand=[wwm],
+            deck=[],
+            energy={Aspect.AWA: 3, Aspect.FIT: 2, Aspect.SPI: 0, Aspect.FOC: 1}  # NO SPI!
+        )
+
+        state = GameState(
+            ranger=ranger,
+            zones={
+                Zone.SURROUNDINGS: [],
+                Zone.ALONG_THE_WAY: [feature],
+                Zone.WITHIN_REACH: [being],
+                Zone.PLAYER_AREA: [],
+            }
+        )
+
+        # Player says yes but has no energy
+        def always_yes(_state: GameState, _prompt: str) -> bool:
+            return True
+
+        eng = GameEngine(state,
+                        challenge_drawer=fixed_draw(0, Symbol.SUN),
+                        response_decider=always_yes)
+
+        # Register listener
+        listener = wwm.enters_hand()
+        if listener:  # Type guard for mypy
+            state.add_listener(listener)
+
+        # Perform Traverse test
+        from src.registry import provide_common_tests
+        actions = provide_common_tests(state)
+        traverse = next(a for a in actions if a.id == "common-traverse")
+
+        ranger.hand.append(Card(id="e1", title="E+1", approach_icons={Approach.EXPLORATION: 1}))
+
+        outcome = eng.perform_action(traverse, CommitDecision(energy=1, hand_indices=[1]), target_id=feature.id)
+
+        # Verify test succeeded
+        self.assertTrue(outcome.success)
+        self.assertEqual(feature.progress, 2)
+
+        # Verify Walk With Me was NOT played (insufficient energy)
+        self.assertIn(wwm, state.ranger.hand, "Walk With Me should still be in hand (no energy)")
+        self.assertNotIn(wwm, state.ranger.discard, "Walk With Me should not be discarded")
+        self.assertEqual(state.ranger.energy[Aspect.SPI], 0, "SPI should still be 0")
+
+        # Verify being got no progress
+        self.assertEqual(being.progress, 0, "Being should have no progress")
+
+        # Verify listener remains active
+        self.assertEqual(len(state.listeners), 1, "Listener should remain active")
+
+    def test_walk_with_me_no_valid_targets(self):
+        """Test Walk With Me when there are no Beings in play to target"""
+        from src.cards import WalkWithMe
+        wwm = WalkWithMe()
+
+        feature = Card(
+            title="Test Feature",
+            id="test-feature",
+            card_types={CardType.PATH, CardType.FEATURE},
+            presence=1,
+            progress_threshold=5
+        )
+
+        ranger = RangerState(
+            name="Ranger",
+            hand=[wwm],
+            deck=[],
+            energy={Aspect.AWA: 3, Aspect.FIT: 2, Aspect.SPI: 2, Aspect.FOC: 1}
+        )
+
+        state = GameState(
+            ranger=ranger,
+            zones={
+                Zone.SURROUNDINGS: [],
+                Zone.ALONG_THE_WAY: [feature],
+                Zone.WITHIN_REACH: [],  # NO BEINGS!
+                Zone.PLAYER_AREA: [],
+            }
+        )
+
+        # Player says yes
+        def always_yes(_state: GameState, _prompt: str) -> bool:
+            return True
+
+        eng = GameEngine(state,
+                        challenge_drawer=fixed_draw(0, Symbol.SUN),
+                        response_decider=always_yes)
+
+        # Register listener
+        listener = wwm.enters_hand()
+        if listener:  # Type guard for mypy
+            state.add_listener(listener)
+
+        # Perform Traverse test
+        from src.registry import provide_common_tests
+        actions = provide_common_tests(state)
+        traverse = next(a for a in actions if a.id == "common-traverse")
+
+        ranger.hand.append(Card(id="e1", title="E+1", approach_icons={Approach.EXPLORATION: 1}))
+
+        outcome = eng.perform_action(traverse, CommitDecision(energy=1, hand_indices=[1]), target_id=feature.id)
+
+        # Verify test succeeded
+        self.assertTrue(outcome.success)
+        self.assertEqual(feature.progress, 2)
+
+        # Verify Walk With Me was NOT played (no valid targets)
+        self.assertIn(wwm, state.ranger.hand, "Walk With Me should still be in hand (no targets)")
+        self.assertNotIn(wwm, state.ranger.discard, "Walk With Me should not be discarded")
+        self.assertEqual(state.ranger.energy[Aspect.SPI], 2, "SPI should be unchanged (no targets)")
+
+        # Verify listener remains active
+        self.assertEqual(len(state.listeners), 1, "Listener should remain active")
+
+    def test_walk_with_me_only_triggers_on_traverse(self):
+        """Test that Walk With Me only triggers on Traverse tests, not Connect tests"""
+        from src.cards import WalkWithMe
+        wwm = WalkWithMe()
+
+        being = Card(
+            title="Test Being",
+            id="test-being",
+            card_types={CardType.PATH, CardType.BEING},
+            presence=1,
+            progress_threshold=5
+        )
+
+        ranger = RangerState(
+            name="Ranger",
+            hand=[wwm],
+            deck=[],
+            energy={Aspect.AWA: 3, Aspect.FIT: 2, Aspect.SPI: 2, Aspect.FOC: 1}
+        )
+
+        state = GameState(
+            ranger=ranger,
+            zones={
+                Zone.SURROUNDINGS: [],
+                Zone.ALONG_THE_WAY: [],
+                Zone.WITHIN_REACH: [being],
+                Zone.PLAYER_AREA: [],
+            }
+        )
+
+        # Player would say yes if prompted
+        def always_yes(_state: GameState, _prompt: str) -> bool:
+            return True
+
+        eng = GameEngine(state,
+                        challenge_drawer=fixed_draw(0, Symbol.SUN),
+                        response_decider=always_yes)
+
+        # Register listener
+        listener = wwm.enters_hand()
+        if listener:  # Type guard for mypy
+            state.add_listener(listener)
+
+        # Perform CONNECT test (not Traverse!)
+        from src.registry import provide_common_tests
+        actions = provide_common_tests(state)
+        connect = next(a for a in actions if a.id == "common-connect")
+
+        ranger.hand.append(Card(id="c1", title="Conn+1", approach_icons={Approach.CONNECTION: 1}))
+
+        outcome = eng.perform_action(connect, CommitDecision(energy=1, hand_indices=[1]), target_id=being.id)
+
+        # Verify test succeeded
+        self.assertTrue(outcome.success)
+        self.assertEqual(being.progress, 2)  # From Connect test
+
+        # Verify Walk With Me did NOT trigger
+        self.assertIn(wwm, state.ranger.hand, "Walk With Me should still be in hand")
+        self.assertNotIn(wwm, state.ranger.discard, "Walk With Me should not be discarded")
+        self.assertEqual(state.ranger.energy[Aspect.SPI], 1, "SPI should only go down by 1 from initiating the Connect")
+
+        # Being should only have progress from Connect, not from Walk With Me
+        self.assertEqual(being.progress, 2, "Being should only have 2 progress from Connect test")
+
+        # Listener should still be active
+        self.assertEqual(len(state.listeners), 1, "Listener should remain active for future Traverse tests")
+
+    def test_walk_with_me_chooses_correct_being(self):
+        """Test that Walk With Me targets the Being chosen by card_chooser"""
+        from src.cards import WalkWithMe
+        wwm = WalkWithMe()
+
+        feature = Card(
+            title="Test Feature",
+            id="test-feature",
+            card_types={CardType.PATH, CardType.FEATURE},
+            presence=1,
+            progress_threshold=5
+        )
+        being_a = Card(
+            title="Being A",
+            id="being-a",
+            card_types={CardType.PATH, CardType.BEING},
+            presence=1,
+            progress_threshold=5
+        )
+        being_b = Card(
+            title="Being B",
+            id="being-b",
+            card_types={CardType.PATH, CardType.BEING},
+            presence=1,
+            progress_threshold=5
+        )
+
+        ranger = RangerState(
+            name="Ranger",
+            hand=[wwm],
+            deck=[],
+            energy={Aspect.AWA: 3, Aspect.FIT: 2, Aspect.SPI: 2, Aspect.FOC: 1}
+        )
+
+        state = GameState(
+            ranger=ranger,
+            zones={
+                Zone.SURROUNDINGS: [],
+                Zone.ALONG_THE_WAY: [feature],
+                Zone.WITHIN_REACH: [being_a, being_b],  # Two beings
+                Zone.PLAYER_AREA: [],
+            }
+        )
+
+        # Chooser picks Being B specifically
+        def pick_being_b(_state: GameState, choices: list[Card]) -> Card:
+            return next(c for c in choices if c.id == "being-b")
+
+        def always_yes(_state: GameState, _prompt: str) -> bool:
+            return True
+
+        eng = GameEngine(state,
+                        challenge_drawer=fixed_draw(0, Symbol.SUN),
+                        card_chooser=pick_being_b,
+                        response_decider=always_yes)
+
+        # Register listener
+        listener = wwm.enters_hand()
+        if listener:  # Type guard for mypy
+            state.add_listener(listener)
+
+        # Perform Traverse test with 5 effort
+        from src.registry import provide_common_tests
+        actions = provide_common_tests(state)
+        traverse = next(a for a in actions if a.id == "common-traverse")
+
+        # Add 4 exploration icons for total of 5 effort
+        for i in range(4):
+            ranger.hand.append(Card(id=f"e{i}", title="E+1", approach_icons={Approach.EXPLORATION: 1}))
+
+        outcome = eng.perform_action(traverse, CommitDecision(energy=1, hand_indices=[1, 2, 3, 4]), target_id=feature.id)
+
+        # Verify test succeeded
+        self.assertTrue(outcome.success)
+        self.assertEqual(outcome.resulting_effort, 5)
+
+        # Verify Walk With Me was played
+        self.assertIn(wwm, state.ranger.discard, "Walk With Me should be discarded")
+
+        # Verify Being B got the progress, not Being A
+        self.assertEqual(being_b.progress, 5, "Being B should have 5 progress from Walk With Me")
+        self.assertEqual(being_a.progress, 0, "Being A should have no progress")
+
+    def test_walk_with_me_listener_created_on_enters_hand(self):
+        """Test that Walk With Me creates the correct listener when entering hand"""
+        from src.cards import WalkWithMe
+        wwm = WalkWithMe()
+
+        listener = wwm.enters_hand()
+
+        self.assertIsNotNone(listener, "Walk With Me should create a listener")
+        # Type assertion for tests - we know it's not None after the check
+        assert listener is not None
+        self.assertEqual(listener.event_type, EventType.TEST_SUCCEED, "Should listen for test success")
+        self.assertEqual(listener.timing_type, TimingType.AFTER, "Should trigger after test")
+        self.assertEqual(listener.test_type, "Traverse", "Should only trigger on Traverse tests")
+        self.assertEqual(listener.source_card_id, wwm.id, "Should have card's ID")
+        self.assertIsNotNone(listener.effect_fn, "Should have an effect function")
+
+
 if __name__ == '__main__':
     unittest.main()

@@ -111,7 +111,7 @@ class GameEngine:
             self.state.add_message(f"Result: {base_effort} + ({mod:d}) = {effort} >= {difficulty}")
             self.state.add_message(f"Test succeeded!")
             action.on_success(self, effort, target_id)
-            self.trigger_listeners(EventType.TEST_SUCCEED, TimingType.AFTER, action)
+            self.trigger_listeners(EventType.TEST_SUCCEED, TimingType.AFTER, action, effort)
 
         else:
             self.state.add_message(f"Result: {base_effort} + ({mod:d}) = {effort} < {difficulty}")
@@ -185,7 +185,7 @@ class GameEngine:
         self.state.path_discard.extend(to_clear)
         return to_clear
     
-    def trigger_listeners(self, event_type: EventType, timing_type: TimingType, action: Action):
+    def trigger_listeners(self, event_type: EventType, timing_type: TimingType, action: Action, effort: int):
         triggered : list[EventListener]= []
         for listener in self.state.listeners:
                 if listener.event_type == event_type and listener.timing_type == timing_type:
@@ -193,7 +193,7 @@ class GameEngine:
                         if action.verb.lower() == listener.test_type.lower():
                             triggered.append(listener)
         for listener in triggered:
-            listener.effect_fn(self)
+            listener.effect_fn(self, effort)
 
 
     #Gamestate manipulation methods

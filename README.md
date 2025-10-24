@@ -1,1 +1,1 @@
-A simple-as-possible, probably-gonna-be-at-least-partially-vibecoded implementation of the Earthborne Rangers board game in text.
+An implementation of the game Earthborne Rangers in text, with the eventual goal of LLM interfacing for benchmarking purposes. Credit to Claude Code for unit tests, some infrastructure, and design advice on what's idiomatic in digital card game software engineering. 
