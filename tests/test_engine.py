@@ -3,7 +3,7 @@ from src.models import *
 from src.engine import GameEngine
 
 
-def fixed_draw(mod : int, sym: Symbol):
+def fixed_draw(mod : int, sym: ChallengeIcon):
     return lambda: (mod, sym)
 
 
@@ -32,7 +32,7 @@ class EngineTests(unittest.TestCase):
                 Zone.PLAYER_AREA: [],
             }
         )
-        eng = GameEngine(state, challenge_drawer=fixed_draw(0, Symbol.SUN))
+        eng = GameEngine(state, challenge_drawer=fixed_draw(0, ChallengeIcon.SUN))
 
 
         # Perform action using the engine API directly
@@ -73,7 +73,7 @@ class EngineTests(unittest.TestCase):
                 Zone.PLAYER_AREA: [],
             }
         )
-        eng = GameEngine(state, challenge_drawer=fixed_draw(0, Symbol.SUN))
+        eng = GameEngine(state, challenge_drawer=fixed_draw(0, ChallengeIcon.SUN))
 
         # Perform action using the engine API directly
         act = Action(
@@ -112,7 +112,7 @@ class EngineTests(unittest.TestCase):
                 Zone.PLAYER_AREA: [],
             }
         )
-        eng = GameEngine(state, challenge_drawer=fixed_draw(0, Symbol.CREST))
+        eng = GameEngine(state, challenge_drawer=fixed_draw(0, ChallengeIcon.CREST))
 
         act = Action(
             id="t2",
@@ -152,7 +152,7 @@ class EngineTests(unittest.TestCase):
                 Zone.PLAYER_AREA: [],
             }
         )
-        eng = GameEngine(state, challenge_drawer=fixed_draw(0, Symbol.SUN))
+        eng = GameEngine(state, challenge_drawer=fixed_draw(0, ChallengeIcon.SUN))
 
         # Perform action that adds exactly enough progress to clear (1 energy + 1 icon = 2 effort)
         act = Action(
@@ -192,7 +192,7 @@ class EngineTests(unittest.TestCase):
                 Zone.PLAYER_AREA: [],
             }
         )
-        eng = GameEngine(state, challenge_drawer=fixed_draw(0, Symbol.SUN))
+        eng = GameEngine(state, challenge_drawer=fixed_draw(0, ChallengeIcon.SUN))
 
         # Perform action that adds exactly enough harm to clear (1 energy + 1 icon = 2 effort = 2 harm)
         act = Action(
@@ -230,7 +230,7 @@ class EngineTests(unittest.TestCase):
                 Zone.PLAYER_AREA: [],
             }
         )
-        eng = GameEngine(state, challenge_drawer=fixed_draw(0, Symbol.SUN))
+        eng = GameEngine(state, challenge_drawer=fixed_draw(0, ChallengeIcon.SUN))
 
         # Add progress that doesn't reach threshold (only 1 effort)
         act = Action(
@@ -276,7 +276,7 @@ class CommonTestsTests(unittest.TestCase):
                 Zone.PLAYER_AREA: [],
             }
         )
-        eng = GameEngine(state, challenge_drawer=fixed_draw(0, Symbol.SUN))
+        eng = GameEngine(state, challenge_drawer=fixed_draw(0, ChallengeIcon.SUN))
 
         # Traverse: FIT + Exploration
         from src.registry import provide_common_tests
@@ -315,7 +315,7 @@ class CommonTestsTests(unittest.TestCase):
                 Zone.PLAYER_AREA: [],
             }
         )
-        eng = GameEngine(state, challenge_drawer=fixed_draw(-1, Symbol.SUN))  # Negative modifier
+        eng = GameEngine(state, challenge_drawer=fixed_draw(-1, ChallengeIcon.SUN))  # Negative modifier
 
         from src.registry import provide_common_tests
         actions = provide_common_tests(state)
@@ -352,7 +352,7 @@ class CommonTestsTests(unittest.TestCase):
                 Zone.PLAYER_AREA: [],
             }
         )
-        eng = GameEngine(state, challenge_drawer=fixed_draw(0, Symbol.SUN))
+        eng = GameEngine(state, challenge_drawer=fixed_draw(0, ChallengeIcon.SUN))
 
         # Connect: SPI + Connection
         from src.registry import provide_common_tests
@@ -390,7 +390,7 @@ class CommonTestsTests(unittest.TestCase):
                 Zone.PLAYER_AREA: [],
             }
         )
-        eng = GameEngine(state, challenge_drawer=fixed_draw(-2, Symbol.SUN))
+        eng = GameEngine(state, challenge_drawer=fixed_draw(-2, ChallengeIcon.SUN))
 
         from src.registry import provide_common_tests
         actions = provide_common_tests(state)
@@ -427,7 +427,7 @@ class CommonTestsTests(unittest.TestCase):
                 Zone.PLAYER_AREA: [],
             }
         )
-        eng = GameEngine(state, challenge_drawer=fixed_draw(0, Symbol.SUN))
+        eng = GameEngine(state, challenge_drawer=fixed_draw(0, ChallengeIcon.SUN))
 
         # Avoid: AWA + Conflict
         from src.registry import provide_common_tests
@@ -465,7 +465,7 @@ class CommonTestsTests(unittest.TestCase):
                 Zone.PLAYER_AREA: [],
             }
         )
-        eng = GameEngine(state, challenge_drawer=fixed_draw(-2, Symbol.SUN))
+        eng = GameEngine(state, challenge_drawer=fixed_draw(-2, ChallengeIcon.SUN))
 
         from src.registry import provide_common_tests
         actions = provide_common_tests(state)
@@ -497,7 +497,7 @@ class CommonTestsTests(unittest.TestCase):
                 Zone.PLAYER_AREA: [],
             }
         )
-        eng = GameEngine(state, challenge_drawer=fixed_draw(0, Symbol.SUN))
+        eng = GameEngine(state, challenge_drawer=fixed_draw(0, ChallengeIcon.SUN))
 
         # Get the Sitka Doe spook action from registry
         from src.registry import provide_card_tests
@@ -534,7 +534,7 @@ class CommonTestsTests(unittest.TestCase):
                 Zone.PLAYER_AREA: [],
             }
         )
-        eng = GameEngine(state, challenge_drawer=fixed_draw(-2, Symbol.SUN))  # Negative modifier to ensure failure
+        eng = GameEngine(state, challenge_drawer=fixed_draw(-2, ChallengeIcon.SUN))  # Negative modifier to ensure failure
 
         # Get the Sitka Doe spook action from registry
         from src.registry import provide_card_tests
@@ -575,7 +575,7 @@ class CommonTestsTests(unittest.TestCase):
             }
         )
         # Draw SUN symbol to trigger sun effect
-        eng = GameEngine(state, challenge_drawer=fixed_draw(0, Symbol.SUN))
+        eng = GameEngine(state, challenge_drawer=fixed_draw(0, ChallengeIcon.SUN))
 
         # Perform any test to trigger challenge resolution
         dummy_action = Action(
@@ -620,7 +620,7 @@ class CommonTestsTests(unittest.TestCase):
         )
         # Draw MOUNTAIN symbol to trigger mountain effect
         # Use deterministic chooser (default picks first option)
-        eng = GameEngine(state, challenge_drawer=fixed_draw(0, Symbol.MOUNTAIN))
+        eng = GameEngine(state, challenge_drawer=fixed_draw(0, ChallengeIcon.MOUNTAIN))
 
         # Verify initial state
         self.assertFalse(wolhund.exhausted, "Wolhund should start active")
@@ -663,7 +663,7 @@ class CommonTestsTests(unittest.TestCase):
             }
         )
         # Draw MOUNTAIN symbol
-        eng = GameEngine(state, challenge_drawer=fixed_draw(0, Symbol.MOUNTAIN))
+        eng = GameEngine(state, challenge_drawer=fixed_draw(0, ChallengeIcon.MOUNTAIN))
 
         # Verify initial state
         self.assertEqual(doe.harm, 0, "Doe should start with 0 harm")
@@ -733,7 +733,7 @@ class WalkWithMeTests(unittest.TestCase):
             return choices[0]
 
         eng = GameEngine(state,
-                        challenge_drawer=fixed_draw(0, Symbol.SUN),
+                        challenge_drawer=fixed_draw(0, ChallengeIcon.SUN),
                         card_chooser=pick_first,
                         response_decider=always_yes)
 
@@ -812,7 +812,7 @@ class WalkWithMeTests(unittest.TestCase):
             return False
 
         eng = GameEngine(state,
-                        challenge_drawer=fixed_draw(0, Symbol.SUN),
+                        challenge_drawer=fixed_draw(0, ChallengeIcon.SUN),
                         response_decider=always_no)
 
         # Register listener
@@ -886,7 +886,7 @@ class WalkWithMeTests(unittest.TestCase):
             return True
 
         eng = GameEngine(state,
-                        challenge_drawer=fixed_draw(0, Symbol.SUN),
+                        challenge_drawer=fixed_draw(0, ChallengeIcon.SUN),
                         response_decider=always_yes)
 
         # Register listener
@@ -953,7 +953,7 @@ class WalkWithMeTests(unittest.TestCase):
             return True
 
         eng = GameEngine(state,
-                        challenge_drawer=fixed_draw(0, Symbol.SUN),
+                        challenge_drawer=fixed_draw(0, ChallengeIcon.SUN),
                         response_decider=always_yes)
 
         # Register listener
@@ -1017,7 +1017,7 @@ class WalkWithMeTests(unittest.TestCase):
             return True
 
         eng = GameEngine(state,
-                        challenge_drawer=fixed_draw(0, Symbol.SUN),
+                        challenge_drawer=fixed_draw(0, ChallengeIcon.SUN),
                         response_decider=always_yes)
 
         # Register listener
@@ -1101,7 +1101,7 @@ class WalkWithMeTests(unittest.TestCase):
             return True
 
         eng = GameEngine(state,
-                        challenge_drawer=fixed_draw(0, Symbol.SUN),
+                        challenge_drawer=fixed_draw(0, ChallengeIcon.SUN),
                         card_chooser=pick_being_b,
                         response_decider=always_yes)
 
@@ -1147,6 +1147,201 @@ class WalkWithMeTests(unittest.TestCase):
         self.assertEqual(listener.test_type, "Traverse", "Should only trigger on Traverse tests")
         self.assertEqual(listener.source_card_id, wwm.id, "Should have card's ID")
         self.assertIsNotNone(listener.effect_fn, "Should have an effect function")
+
+
+class CalypsaRangerMentorTests(unittest.TestCase):
+    """Tests for Calypsa, Ranger Mentor from Valley set"""
+
+    def test_calypsa_mountain_effect_adds_progress(self):
+        """Test that Calypsa's Mountain effect adds 1 progress to chosen path card"""
+        from src.cards import CalypsaRangerMentor
+        calypsa = CalypsaRangerMentor()
+
+        # Add another being/feature to give choices
+        feature = Card(
+            title="Test Feature",
+            id="test-feature",
+            card_types={CardType.PATH, CardType.FEATURE},
+            presence=1,
+            progress_threshold=5
+        )
+
+        ranger = RangerState(
+            name="Ranger",
+            hand=[],
+            deck=[],
+            energy={Aspect.AWA: 3, Aspect.FIT: 2, Aspect.SPI: 2, Aspect.FOC: 1}
+        )
+
+        state = GameState(
+            ranger=ranger,
+            zones={
+                Zone.SURROUNDINGS: [],
+                Zone.ALONG_THE_WAY: [feature],
+                Zone.WITHIN_REACH: [calypsa],
+                Zone.PLAYER_AREA: [],
+            }
+        )
+
+        # Chooser picks the feature
+        def pick_feature(_engine: GameEngine, choices: list[Card]) -> Card:
+            return next(c for c in choices if c.id == "test-feature")
+
+        eng = GameEngine(state,
+                        challenge_drawer=fixed_draw(0, ChallengeIcon.MOUNTAIN),
+                        card_chooser=pick_feature)
+
+        # Perform a test to trigger Mountain challenge
+        dummy_action = Action(
+            id="dummy",
+            name="Dummy Test",
+            aspect=Aspect.FIT,
+            approach=Approach.EXPLORATION,
+            difficulty_fn=lambda _s, _t: 1,
+            on_success=lambda _e, _eff, _t: None,
+        )
+
+        ranger.hand.append(Card(id="e1", title="E+1", approach_icons={Approach.EXPLORATION: 1}))
+
+        eng.perform_action(dummy_action, CommitDecision(energy=1, hand_indices=[0]), target_id=None)
+
+        # Verify feature got 1 progress from Calypsa's Mountain effect
+        self.assertEqual(feature.progress, 1, "Feature should have 1 progress from Calypsa's Mountain effect")
+
+    def test_calypsa_mountain_effect_can_target_self(self):
+        """Test that Calypsa can add progress to herself"""
+        from src.cards import CalypsaRangerMentor
+        calypsa = CalypsaRangerMentor()
+
+        ranger = RangerState(
+            name="Ranger",
+            hand=[],
+            deck=[],
+            energy={Aspect.AWA: 3, Aspect.FIT: 2, Aspect.SPI: 2, Aspect.FOC: 1}
+        )
+
+        state = GameState(
+            ranger=ranger,
+            zones={
+                Zone.SURROUNDINGS: [],
+                Zone.ALONG_THE_WAY: [],
+                Zone.WITHIN_REACH: [calypsa],  # Only Calypsa in play
+                Zone.PLAYER_AREA: [],
+            }
+        )
+
+        # Default chooser picks first (only) option
+        eng = GameEngine(state,
+                        challenge_drawer=fixed_draw(0, ChallengeIcon.MOUNTAIN))
+
+        # Perform a test to trigger Mountain challenge
+        dummy_action = Action(
+            id="dummy",
+            name="Dummy Test",
+            aspect=Aspect.FIT,
+            approach=Approach.EXPLORATION,
+            difficulty_fn=lambda _s, _t: 1,
+            on_success=lambda _e, _eff, _t: None,
+        )
+
+        ranger.hand.append(Card(id="e1", title="E+1", approach_icons={Approach.EXPLORATION: 1}))
+
+        eng.perform_action(dummy_action, CommitDecision(energy=1, hand_indices=[0]), target_id=None)
+
+        # Verify Calypsa got 1 progress
+        self.assertEqual(calypsa.progress, 1, "Calypsa should be able to add progress to herself")
+
+    def test_calypsa_crest_effect_harms_from_predator(self):
+        """Test that Calypsa's Crest effect uses harm_from_predator (same as Sitka Doe)"""
+        from src.cards import CalypsaRangerMentor, ProwlingWolhund
+        calypsa = CalypsaRangerMentor()
+        wolhund = ProwlingWolhund()
+
+        ranger = RangerState(
+            name="Ranger",
+            hand=[],
+            deck=[],
+            energy={Aspect.AWA: 3, Aspect.FIT: 2, Aspect.SPI: 2, Aspect.FOC: 1}
+        )
+
+        state = GameState(
+            ranger=ranger,
+            zones={
+                Zone.SURROUNDINGS: [],
+                Zone.ALONG_THE_WAY: [wolhund],
+                Zone.WITHIN_REACH: [calypsa],
+                Zone.PLAYER_AREA: [],
+            }
+        )
+
+        # Draw CREST symbol to trigger crest effect
+        eng = GameEngine(state,
+                        challenge_drawer=fixed_draw(0, ChallengeIcon.CREST))
+
+        # Verify initial state
+        self.assertFalse(wolhund.exhausted, "Wolhund should start active")
+        self.assertEqual(calypsa.harm, 0, "Calypsa should start with 0 harm")
+
+        # Perform a test to trigger Crest challenge
+        dummy_action = Action(
+            id="dummy",
+            name="Dummy Test",
+            aspect=Aspect.FIT,
+            approach=Approach.EXPLORATION,
+            difficulty_fn=lambda _s, _t: 1,
+            on_success=lambda _e, _eff, _t: None,
+        )
+
+        ranger.hand.append(Card(id="e1", title="E+1", approach_icons={Approach.EXPLORATION: 1}))
+
+        eng.perform_action(dummy_action, CommitDecision(energy=1, hand_indices=[0]), target_id=None)
+
+        # Verify wolhund exhausted and Calypsa took harm equal to wolhund's presence (2)
+        self.assertTrue(wolhund.exhausted, "Wolhund should be exhausted after Crest effect")
+        self.assertEqual(calypsa.harm, 2, "Calypsa should have 2 harm from Wolhund's presence")
+
+    def test_calypsa_crest_effect_no_predators(self):
+        """Test that Calypsa's Crest effect does nothing when no predators are in play"""
+        from src.cards import CalypsaRangerMentor
+        calypsa = CalypsaRangerMentor()
+
+        ranger = RangerState(
+            name="Ranger",
+            hand=[],
+            deck=[],
+            energy={Aspect.AWA: 3, Aspect.FIT: 2, Aspect.SPI: 2, Aspect.FOC: 1}
+        )
+
+        state = GameState(
+            ranger=ranger,
+            zones={
+                Zone.SURROUNDINGS: [],
+                Zone.ALONG_THE_WAY: [],
+                Zone.WITHIN_REACH: [calypsa],
+                Zone.PLAYER_AREA: [],
+            }
+        )
+
+        # Draw CREST symbol
+        eng = GameEngine(state,
+                        challenge_drawer=fixed_draw(0, ChallengeIcon.CREST))
+
+        # Perform a test to trigger Crest challenge
+        dummy_action = Action(
+            id="dummy",
+            name="Dummy Test",
+            aspect=Aspect.FIT,
+            approach=Approach.EXPLORATION,
+            difficulty_fn=lambda _s, _t: 1,
+            on_success=lambda _e, _eff, _t: None,
+        )
+
+        ranger.hand.append(Card(id="e1", title="E+1", approach_icons={Approach.EXPLORATION: 1}))
+
+        eng.perform_action(dummy_action, CommitDecision(energy=1, hand_indices=[0]), target_id=None)
+
+        # Verify Calypsa took no harm
+        self.assertEqual(calypsa.harm, 0, "Calypsa should have no harm when no predators present")
 
 
 if __name__ == '__main__':

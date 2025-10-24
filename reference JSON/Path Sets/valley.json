@@ -442,7 +442,7 @@
       {
         "kind": "challenge",
         "challenge_symbol": "crest",
-        "text": "If there is an active predator, exhaust it. »» Add [harm] to this being equal to thatpredator's presence."
+        "text": "If there is an active predator, exhaust it. »» Add [harm] to this being equal to that predator's presence."
       }
     ],
     "campaign_log_entry": "85"

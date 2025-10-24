@@ -2,6 +2,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Optional, Callable, cast, TYPE_CHECKING
 from enum import Enum
+from .utils import get_display_id
 import uuid
 
 if TYPE_CHECKING:
@@ -18,7 +19,7 @@ class Aspect(str, Enum):
     FOC = "FOC"
 
 
-class Symbol(str, Enum):
+class ChallengeIcon(str, Enum):
     """Challenge deck symbols."""
     SUN = "sun"
     MOUNTAIN = "mountain"
@@ -147,7 +148,7 @@ class Card:
         if self.starting_tokens:
             self.unique_tokens = {self.starting_tokens[0]: self.starting_tokens[1]}
     
-    def get_symbol_handlers(self) -> dict[Symbol, Callable[[GameEngine], None]] | None:
+    def get_symbol_handlers(self) -> dict[ChallengeIcon, Callable[[GameEngine], None]] | None:
         return None
     
     def get_tests(self) -> list[Action] | None:
@@ -200,6 +201,28 @@ class Card:
         else:
             return None
     
+    def harm_from_predator(self, engine: GameEngine, symbol: ChallengeIcon) -> None:
+        predators = engine.state.get_cards_by_trait("Predator")
+        if predators is not None:
+            active_predators = [predator for predator in predators if predator.exhausted == False]
+            if not active_predators:
+                engine.add_message(f"Challenge ({symbol.value}) on {get_display_id(engine.state.all_cards_in_play(), self)}: (no active predators in play)")
+            else:
+                if len(active_predators)==1:
+                    engine.add_message(f"Challenge ({symbol.value}) on {get_display_id(engine.state.all_cards_in_play(), self)}: the active predator in play exhausts itself and harms Sitka Doe:")
+                else:
+                    engine.add_message(f"Challenge ({symbol.value}) on {get_display_id(engine.state.all_cards_in_play(), self)}: Choose a predator that will exhaust itself and harm Sitka Doe:")
+                target_predator = engine.card_chooser(engine, active_predators)
+                target_predator.exhausted = True
+                target_presence = target_predator.get_current_presence()
+                if target_presence is not None:
+                    #this should always happen
+                    self.add_harm(target_presence)
+                    engine.add_message(f"{get_display_id(active_predators, target_predator)} is now exhausted.")
+                    engine.add_message(f"{get_display_id(engine.state.all_cards_in_play(), self)} suffered harm equal to {get_display_id(active_predators, target_predator)}'s presence ({target_presence}).")
+
+        else:
+            engine.add_message(f"Challenge ({symbol.value}) on {get_display_id(engine.state.all_cards_in_play(), self)}: (no predators in play)")
     
         
     #todo: validate inputs on all these setters; amount should always be positive
@@ -300,6 +323,10 @@ class GameState:
         """Get all cards of a specific type"""
         return [card for card in self.all_cards_in_play() if card_type in card.card_types]
     
+    def path_cards_in_play(self) -> list[Card]:
+        """Get all path cards (beings and features) in play"""
+        return self.cards_by_type(CardType.BEING) + self.cards_by_type(CardType.FEATURE)
+
     def beings_in_play(self) -> list[Card]:
         """Get all beings currently in play"""
         return self.cards_by_type(CardType.BEING)

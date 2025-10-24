@@ -13,17 +13,20 @@ A living checklist distilled from our discussion. Grouped by area and roughly pr
   - [ ] Prevent re‑trigger when a card moves into an already‑resolved area during the same test
 
 ## Actions & Behaviors
-- [ ] Introduce behavior registry `card_id -> provider`:
-  - [ ] `build_actions(state, entity) -> List[Action]`
-  - [ ] `build_symbol_effects(state, entity, symbol) -> List[ChallengeEffect]`
-- [ ] Update `provide_card_tests` to consult behavior registry, fallback to current hardcoded actions
-- [ ] Add non‑test “Play” actions for hand cards that become permanents (Feature/Being/Gear/Role/Attribute)
+- [ ] Add non‑test "Play" actions for hand cards that become permanents (Feature/Being/Gear/Role/Attribute)
   - [ ] Enforce aspect requirements and energy costs
   - [ ] On success: spend, remove from hand, create entity, place by `enters_play`, add `enters_play_with` tokens
 - [ ] Hand‑code more card behaviors (tests + symbol effects) for current demo set:
   - [ ] Sunberry Bramble
   - [ ] Midday Sun
 - [ ] Extend common‑test rules as needed (e.g., Disconnected, Obstacle/Dodge later)
+- [ ] Implement keyword system (composition-based):
+  - [ ] Create KeywordBase class with no-op default implementations
+  - [ ] Implement Obstacle keyword (blocks targeting past card, blocks Travel)
+  - [ ] Implement Ambush keyword (fatigue on enter/move to Within Reach)
+  - [ ] Implement Friendly keyword (no interact-past fatigue, can't be targeted by Weapons)
+  - [ ] Add keyword hooks to engine: targeting filters, zone change triggers
+  - [ ] Implement "interact past" fatigue system (for Friendly/Obstacle)
 
 ## Decks & Setup
 - [ ] Path deck: shuffle and reshuffle policy; configurable draw count per round
@@ -41,17 +44,12 @@ A living checklist distilled from our discussion. Grouped by area and roughly pr
 ## View / CLI
 - [ ] Add ordering UI for challenge effects within an area
 - [ ] Expand commit UI to include in‑play sources and indicate exhaust/token costs
-- [ ] Improve non‑interactive/test mode with default choices for automation
 
 ## Testing
-- [ ] Non‑test actions (Rest/Play) behavior
 - [ ] Insufficient energy raises `RuntimeError`
 - [ ] Discard pile transitions on commit
 - [ ] In‑play commits exhaust/spend tokens
 - [ ] Challenge effect ordering and once‑per‑area semantics
 - [ ] Card‑specific behaviors (Bramble/Doe/Thicket/Weather)
 - [ ] End‑to‑end deterministic tests with fixed challenge drawer and effect selecto
-
-## Tooling & Docs
-- [ ] Add short docstrings to core dataclasses and engine methods
 

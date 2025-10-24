@@ -1,8 +1,8 @@
 import random
-from .models import Symbol
+from .models import ChallengeIcon
 
 
-def draw_challenge() -> tuple[int, Symbol]:
+def draw_challenge() -> tuple[int, ChallengeIcon]:
     # Distribution: +1 x6, 0 x10, -1 x7, -2 x1
     modifiers = [
         *([+1] * 6),
@@ -11,6 +11,6 @@ def draw_challenge() -> tuple[int, Symbol]:
         *([-2] * 1),
     ]
     mod = random.choice(modifiers)
-    symbol = random.choice([Symbol.SUN, Symbol.MOUNTAIN, Symbol.CREST])  # uniform
+    symbol = random.choice([ChallengeIcon.SUN, ChallengeIcon.MOUNTAIN, ChallengeIcon.CREST])  # uniform
     return mod, symbol
 

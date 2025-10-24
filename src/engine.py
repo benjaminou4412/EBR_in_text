@@ -1,7 +1,7 @@
 from __future__ import annotations
 from dataclasses import dataclass
 from typing import Callable, Optional
-from .models import GameState, Action, CommitDecision, RangerState, Card, Symbol, Aspect, Approach, Zone, CardType, EventType, TimingType, EventListener, MessageEvent
+from .models import GameState, Action, CommitDecision, RangerState, Card, ChallengeIcon, Aspect, Approach, Zone, CardType, EventType, TimingType, EventListener, MessageEvent
 from .challenge import draw_challenge
 from .utils import get_display_id
 
@@ -11,7 +11,7 @@ class ChallengeOutcome:
     base_effort: int
     modifier: int
     difficulty: int
-    symbol: Symbol
+    symbol: ChallengeIcon
     resulting_effort: int
     success: bool
 
@@ -21,7 +21,7 @@ class ChallengeOutcome:
 class GameEngine:
     def __init__(self,
                   state: GameState,
-                  challenge_drawer: Callable[[], tuple[int, Symbol]] = draw_challenge,
+                  challenge_drawer: Callable[[], tuple[int, ChallengeIcon]] = draw_challenge,
                   card_chooser: Callable[[GameEngine, list[Card]], Card] | None = None,
                   response_decider: Callable[[GameEngine, str],bool] | None = None):
         self.state = state
@@ -77,7 +77,7 @@ class GameEngine:
         # Non-test actions (e.g., Rest) skip challenge + energy
         if not action.is_test:
             action.on_success(self, 0, target_id)
-            return ChallengeOutcome(difficulty=0, base_effort=0, modifier=0, symbol=Symbol.SUN, resulting_effort=0, success=True)
+            return ChallengeOutcome(difficulty=0, base_effort=0, modifier=0, symbol=ChallengeIcon.SUN, resulting_effort=0, success=True)
 
         r = self.state.ranger
 
