@@ -1,21 +1,28 @@
 from __future__ import annotations
-from .models import GameState, Action, ActionTarget, Aspect, Approach, CardType
+from .models import GameState, Action, Aspect, Approach, CardType
 from .engine import GameEngine
 
 
-def _targets_by_type(state: GameState, card_type: CardType) -> list[ActionTarget]:
-    out: list[ActionTarget] = []
-    for zone in state.zones.values():
-        for card in zone:
-            if card_type in card.card_types:
-                out.append(ActionTarget(id=card.id, title=card.title))
-    return out
-
 def provide_common_tests(state: GameState) -> list[Action]:
+    """Provide the four common tests available to all rangers"""
     actions: list[Action] = []
 
-    #todo: actually have it target locations, not just features
     # Traverse: FIT + [Exploration], target Feature or Location, diff X=presence
+    def traverse_success(e: GameEngine, eff: int, tid: str | None) -> None:
+        card = e.state.get_card_by_id(tid)
+        if card and CardType.FEATURE in card.card_types:
+            card.add_progress(eff)
+
+    def traverse_fail(e: GameEngine, _tid: str | None) -> None:  # noqa: ARG001
+        e.state.ranger.injury += 1
+
+    def get_traverse_difficulty(s: GameState, tid: str | None) -> int:
+        card = s.get_card_by_id(tid)
+        if card:
+            presence = card.get_current_presence()
+            return max(1, presence if presence is not None else 1)
+        return 1
+
     actions.append(
         Action(
             id="common-traverse",
@@ -23,16 +30,28 @@ def provide_common_tests(state: GameState) -> list[Action]:
             aspect=Aspect.FIT,
             approach=Approach.EXPLORATION,
             verb="Traverse",
-            target_provider=lambda s: _targets_by_type(s, CardType.FEATURE),
-            difficulty_fn=lambda s, tid: max(1, getattr(s.get_card_by_id(tid), 'presence', 1)),
-            on_success=lambda e, eff, tid: e.state.get_card_by_id(tid).add_progress(eff) if CardType.FEATURE in e.state.get_card_by_id(tid).card_types else None, #type:ignore
-            on_fail=lambda e, _tid: setattr(e.state.ranger, "injury", e.state.ranger.injury + 1),
+            target_provider=lambda s: s.features_in_play(),
+            difficulty_fn=get_traverse_difficulty,
+            on_success=traverse_success,
+            on_fail=traverse_fail,
             source_id="common",
             source_title="Common Test",
         )
     )
 
-    # Connect: SPI + [Connection], target Being, diff X
+    # Connect: SPI + [Connection], target Being, diff X=presence
+    def connect_success(e: GameEngine, eff: int, tid: str | None) -> None:
+        card = e.state.get_card_by_id(tid)
+        if card and CardType.BEING in card.card_types:
+            card.add_progress(eff)
+
+    def get_connect_difficulty(s: GameState, tid: str | None) -> int:
+        card = s.get_card_by_id(tid)
+        if card:
+            presence = card.get_current_presence()
+            return max(1, presence if presence is not None else 1)
+        return 1
+
     actions.append(
         Action(
             id="common-connect",
@@ -40,15 +59,27 @@ def provide_common_tests(state: GameState) -> list[Action]:
             aspect=Aspect.SPI,
             approach=Approach.CONNECTION,
             verb="Connect",
-            target_provider=lambda s: _targets_by_type(s, CardType.BEING),
-            difficulty_fn=lambda s, tid: max(1, getattr(s.get_card_by_id(tid), 'presence', 1)),
-            on_success=lambda e, eff, tid: e.state.get_card_by_id(tid).add_progress(eff) if CardType.BEING in e.state.get_card_by_id(tid).card_types else None, #type:ignore
+            target_provider=lambda s: s.beings_in_play(),
+            difficulty_fn=get_connect_difficulty,
+            on_success=connect_success,
             source_id="common",
             source_title="Common Test",
         )
     )
 
-    # Avoid: AWA + [Conflict], target Being, diff X; on success exhaust
+    # Avoid: AWA + [Conflict], target Being, diff X=presence; on success exhaust
+    def avoid_success(e: GameEngine, _eff: int, tid: str | None) -> None:  # noqa: ARG001
+        card = e.state.get_card_by_id(tid)
+        if card:
+            card.exhausted = True
+
+    def get_avoid_difficulty(s: GameState, tid: str | None) -> int:
+        card = s.get_card_by_id(tid)
+        if card:
+            presence = card.get_current_presence()
+            return max(1, presence if presence is not None else 1)
+        return 1
+
     actions.append(
         Action(
             id="common-avoid",
@@ -56,15 +87,15 @@ def provide_common_tests(state: GameState) -> list[Action]:
             aspect=Aspect.AWA,
             approach=Approach.CONFLICT,
             verb="Avoid",
-            target_provider=lambda s: _targets_by_type(s, CardType.BEING),
-            difficulty_fn=lambda s, tid: max(1, getattr(s.get_card_by_id(tid), 'presence', 1)),
-            on_success=lambda e, _eff, tid: setattr(e.state.get_card_by_id(tid), 'exhausted', True),
+            target_provider=lambda s: s.beings_in_play(),
+            difficulty_fn=get_avoid_difficulty,
+            on_success=avoid_success,
             source_id="common",
             source_title="Common Test",
         )
     )
 
-    # Remember: FOC + [Reason], no target, diff 1.
+    # Remember: FOC + [Reason], no target, diff 1
     actions.append(
         Action(
             id="common-remember",
@@ -74,7 +105,7 @@ def provide_common_tests(state: GameState) -> list[Action]:
             verb="Remember",
             target_provider=None,
             difficulty_fn=lambda _s, _t: 1,
-            on_success=lambda e, eff, _t: None,  # No deck yet; placeholder
+            on_success=lambda e, eff, _t: None,  # No deck manipulation yet; placeholder
             source_id="common",
             source_title="Common Test",
         )

@@ -352,13 +352,6 @@ class GameState:
 # Action system: derived from state; executed by engine.
 
 @dataclass
-class ActionTarget:
-    # An action may or may not require a target. If required, the view will present these.
-    id: str
-    title: str
-
-
-@dataclass
 class Action:
     id: str  # stable identifier for the action option
     name: str  # human-readable label
@@ -366,8 +359,8 @@ class Action:
     approach: Approach | str  # legal approach icons to commit (if is_test), str for non-test actions
     is_test: bool = True
     verb: Optional[str] = None  # action verb (e.g. "Traverse", "Connect", "Hunt") for game effects that care
-    # If the action requires a target, provide candidate targets based on state
-    target_provider: Optional[Callable[[GameState], list[ActionTarget]]] = None
+    # If the action requires a target, provide candidate Card targets based on state
+    target_provider: Optional[Callable[[GameState], list['Card']]] = None
     # Computes difficulty for the chosen target (or state)
     difficulty_fn: Callable[[GameState, Optional[str]], int] = lambda _s, _t: 1
     # Effects

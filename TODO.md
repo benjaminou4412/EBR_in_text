@@ -6,13 +6,11 @@ A living checklist distilled from our discussion. Grouped by area and roughly pr
 ## Engine 
 - [ ] Extend `CommitDecision` to support committing in‑play entities (exhaust/spend tokens)
 - [ ] Update commit/discard flow:
-  - [ ] Hand commits → push to `ranger_discard`
   - [ ] In‑play commits → exhaust entity and/or spend tokens
 - [ ] Replace simple `symbol_handlers` with ordered challenge effects resolver:
   - [ ] Produce `ChallengeEffect` objects via registry for a drawn symbol
   - [ ] Within an area, let active player pick resolution order (view callback)
   - [ ] Prevent re‑trigger when a card moves into an already‑resolved area during the same test
-- [ ] Expose deterministic hooks for tests (injectable chooser for effect ordering)
 
 ## Actions & Behaviors
 - [ ] Introduce behavior registry `card_id -> provider`:

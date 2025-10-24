@@ -176,14 +176,10 @@ def choose_action_target(state: GameState, action: Action, engine: GameEngine) -
 
     all_cards = state.all_cards_in_play()
 
-    for i, t in enumerate(targets, start=1):
-        # Find the actual card to get display ID
-        card = state.get_card_by_id(t.id)
-        if card:
-            display_name = get_display_id(all_cards, card)
-            print(f" {i}. {display_name}")
-        else:
-            print(f" {i}. {t.title}")
+    for i, card in enumerate(targets, start=1):
+        display_name = get_display_id(all_cards, card)
+        print(f" {i}. {display_name}")
+
     try:
         idx = int(input("> ").strip()) - 1
         return targets[idx].id
