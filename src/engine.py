@@ -22,16 +22,22 @@ class GameEngine:
     def __init__(self,
                   state: GameState,
                   challenge_drawer: Callable[[], tuple[int, Symbol]] = draw_challenge,
-                  card_chooser: Callable[[GameState, list[Card]], Card] | None = None):
+                  card_chooser: Callable[[GameState, list[Card]], Card] | None = None,
+                  response_decider: Callable[[GameState, str],bool] | None = None):
         self.state = state
         self.draw_challenge = challenge_drawer
         # challenge symbol effects dispatch (entity-id + symbol -> callable)
         self.symbol_handlers: dict[tuple[str, Symbol], Callable[[GameEngine], None]] = {}
         self.card_chooser = card_chooser if card_chooser is not None else self._default_chooser
+        self.response_decider = response_decider if response_decider is not None else self._default_decider
 
     def _default_chooser(self, _state: GameState, choices: list[Card]) -> Card:  # noqa: ARG002
         """Placeholder default; tests should pass in more sophisticated choosers, runtime should prompt player"""
         return choices[0]
+    
+    def _default_decider(self, _state: GameState, _prompt: str) -> bool:  # noqa: ARG002
+        """Default: always play responses (for tests)"""
+        return True
 
 
     def register_symbol_handler(self, key: tuple[str, Symbol], fn: Callable[[GameEngine], None]):

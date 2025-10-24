@@ -172,6 +172,29 @@ def choose_action_target(state: GameState, action: Action) -> Optional[str]:
     except Exception:
         return None
     
+def choose_response(state: GameState, prompt: str) -> bool:
+    """Prompt a player on whether to activate a response ability or play a response card
+
+    Args:
+        state: GameState for message display
+        prompt: Custom prompt text describing the response opportunity
+
+    Returns:
+        True if player chooses to play the response, False otherwise
+    """
+    display_and_clear_messages(state)
+    print(prompt)
+
+    while True:
+        choice = input("Play this response? (y/n): ").strip().lower()
+
+        if choice in ('y', 'yes'):
+            return True
+        elif choice in ('n', 'no'):
+            return False
+        else:
+            print("Invalid input. Please enter 'y' or 'n'.")
+
 def choose_target(state: GameState, targets: list[Card]) -> Card:
     """Prompt player to choose from among several cards.
 

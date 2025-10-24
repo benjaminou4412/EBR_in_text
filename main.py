@@ -3,7 +3,7 @@ import os
 from src.models import Card, RangerState, GameState, Action, Aspect, Approach, Zone, CardType
 from src.engine import GameEngine
 from src.registry import provide_common_tests, provide_card_tests
-from src.view import render_state, choose_action, choose_action_target, choose_commit, choose_target, display_and_clear_messages, initiate_test
+from src.view import render_state, choose_action, choose_action_target, choose_commit, choose_target, display_and_clear_messages, initiate_test, choose_response
 from src.decks import build_woods_path_deck
 from src.cards import OvergrownThicket, SunberryBramble, SitkaDoe, WalkWithMe, ADearFriend, ProwlingWolhund, SitkaBuck
 
@@ -147,7 +147,7 @@ def menu_and_run(engine: GameEngine) -> None:
 
 def main() -> None:
     state = build_demo_state()
-    engine = GameEngine(state, card_chooser=choose_target)
+    engine = GameEngine(state, card_chooser=choose_target, response_decider=choose_response)
     menu_and_run(engine)
 
 

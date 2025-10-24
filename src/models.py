@@ -264,6 +264,17 @@ class RangerState:
             listener = drawn.enters_hand()
             if listener is not None:
                 state.add_listener(listener)
+    
+    def spend_energy(self, state: GameState, amount: int, aspect: Aspect) -> bool:
+        """Attempt to spend the specified amount of energy from the specified aspect's energy pool.
+        Returns true if energy was successfully spent, returns false if insufficient energy"""
+        curr_energy = self.energy[aspect]
+        if amount > curr_energy:
+            state.add_message(f"Insufficient {aspect.value} energy.")
+            return False
+        else:
+            self.energy[aspect] = self.energy[aspect] - amount
+            return True
 
 
 @dataclass
