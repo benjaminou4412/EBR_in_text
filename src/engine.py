@@ -68,9 +68,25 @@ class GameEngine:
                 valid_indices.append(idx)
         return total, valid_indices
 
+    def discard_from_hand(self, card: Card) -> None:
+        """Move a card from hand to discard pile and clean up its listeners"""
+        if card in self.state.ranger.hand:
+            self.state.ranger.hand.remove(card)
+            self.state.ranger.discard.append(card)
+            # Remove any listeners associated with this card
+            self.remove_listener_by_id(card.id)
+
     def discard_committed(self, ranger: RangerState, committed_indices: list[int]) -> None:
+        """Discard cards committed to a test"""
+        cards_to_discard : list[Card] = []
         for i in sorted(committed_indices, reverse=True):
+            cards_to_discard.append(ranger.hand[i])
             del ranger.hand[i]
+
+        for card in cards_to_discard:
+            ranger.discard.append(card)
+            # Remove any listeners associated with committed cards
+            self.remove_listener_by_id(card.id)
 
     def perform_action(self, action: Action, decision: CommitDecision, target_id: Optional[str]) -> ChallengeOutcome:
         # Non-test actions (e.g., Rest) skip challenge + energy
@@ -188,6 +204,8 @@ class GameEngine:
         self.state.path_discard.extend(to_clear)
         return to_clear
     
+    # Listener management methods
+
     def trigger_listeners(self, event_type: EventType, timing_type: TimingType, action: Action, effort: int):
         triggered : list[EventListener]= []
         for listener in self.listeners:
@@ -197,8 +215,7 @@ class GameEngine:
                             triggered.append(listener)
         for listener in triggered:
             listener.effect_fn(self, effort)
-
-    # Listener management methods
+    
 
     def add_listener(self, listener: EventListener) -> None:
         """Add an event listener to the active listener registry"""

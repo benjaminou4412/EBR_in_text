@@ -98,6 +98,21 @@ def render_state(state: GameState, phase_header: str = "") -> None:
     print(f"Ranger: {r.name} | Energy AWA {r.energy[Aspect.AWA]} FIT {r.energy[Aspect.FIT]} SPI {r.energy[Aspect.SPI]} FOC {r.energy[Aspect.FOC]} | Injury {r.injury}")
     print(f"Remaining deck size: {len(r.deck)} | Discard pile size: {len(r.discard)} | Fatigue stack size: {len(r.fatigue_pile)}")
 
+    # Discard pile contents (top to bottom)
+    if r.discard:
+        terminal_width = shutil.get_terminal_size(fallback=(120, 24)).columns
+        discard_titles = [card.title for card in r.discard]
+        discard_str = ", ".join(discard_titles)
+        print("Discard pile (top to bottom): ", end="")
+        # Word wrap the discard pile listing
+        if len(discard_str) + 30 > terminal_width:  # 30 is length of label
+            wrapped = textwrap.wrap(discard_str, width=terminal_width - 4)
+            print(wrapped[0])
+            for line in wrapped[1:]:
+                print(f"    {line}")
+        else:
+            print(discard_str)
+
     # Hand
     print("\n--- Hand ---")
     if r.hand:

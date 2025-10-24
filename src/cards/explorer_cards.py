@@ -29,9 +29,8 @@ class WalkWithMe(Card):
             if success:
                 engine.add_message(f"Please choose a Being to add {effort} [Progress] to.")
                 target = engine.card_chooser(engine, targets_list)
-                engine.state.ranger.discard.append(self)
-                engine.state.ranger.hand.remove(self)
-                engine.remove_listener_by_id(self.id)
+                # Move Walk With Me to discard and clean up listener
+                engine.discard_from_hand(self)
                 engine.add_message(f"Played Walk With Me, adding {effort} [Progress] to {get_display_id(targets_list, target)}.")
                 target.add_progress(effort)
             elif error:
