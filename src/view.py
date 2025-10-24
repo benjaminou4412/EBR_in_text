@@ -155,10 +155,14 @@ def choose_action(actions: list[Action], state: GameState, engine: GameEngine) -
     raw = input("> ").strip().lower()
     if raw in ("q", "quit"):
         return None
+    if not raw:
+        print("Please choose a valid action.")
+        return None
     try:
         idx = int(raw) - 1
         return actions[idx]
     except Exception:
+        print("Invalid input. Please enter a number.")
         return None
 
 

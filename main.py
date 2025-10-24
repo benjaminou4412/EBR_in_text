@@ -1,5 +1,6 @@
 
 import os
+import random
 from src.models import Card, RangerState, GameState, Action, Aspect, Approach, Zone, CardType
 from src.engine import GameEngine
 from src.registry import provide_common_tests, provide_card_tests
@@ -11,13 +12,26 @@ from src.cards import OvergrownThicket, SunberryBramble, SitkaDoe, WalkWithMe, A
 def pick_demo_cards() -> list[Card]:
 
 
-    walk_with_me_0 = WalkWithMe()
-    a_dear_friend_0 = ADearFriend()
-    exploration_dummy = Card(id="demo-explore-1", title="Demo Explore +1", approach_icons={Approach.EXPLORATION: 1})
-    reason_dummy = Card(id="demo-reason-1", title="Demo Reason +1", approach_icons={Approach.REASON: 1})
-    conflict_dummy = Card(id="demo-conflict-1", title="Demo Conflict +1", approach_icons={Approach.CONFLICT: 1})
+    walk_with_me_0 : Card = WalkWithMe()
+    a_dear_friend_0 : Card= ADearFriend()
+    exploration_dummies : list[Card] = []
+    for _ in range(5):
+        exploration_dummies.append(Card(title="Demo Explore +1", approach_icons={Approach.EXPLORATION: 1}))
+    conflict_dummies : list[Card]  = []
+    for _ in range(5):
+        conflict_dummies.append(Card(title="Demo Conflict +1", approach_icons={Approach.CONFLICT: 1}))
+    reason_dummies : list[Card]  = []
+    for _ in range(5):
+        reason_dummies.append(Card(title="Demo Reason +1", approach_icons={Approach.REASON: 1}))
+    connection_dummies : list[Card]  = []
+    for _ in range(5):
+        connection_dummies.append(Card(title="Demo Connection +1", approach_icons={Approach.CONNECTION: 1}))
 
-    return [walk_with_me_0, a_dear_friend_0, exploration_dummy, reason_dummy, conflict_dummy]
+    deck = exploration_dummies + conflict_dummies + reason_dummies + connection_dummies
+    random.shuffle(deck)
+    top_deck: list[Card] = [walk_with_me_0, a_dear_friend_0]
+
+    return top_deck + deck
 
 
 def clear_screen() -> None:
@@ -56,7 +70,7 @@ def build_demo_state() -> GameState:
         starting_area=Zone.SURROUNDINGS,
     )
 
-    ranger = RangerState(name="Demo Ranger", hand=[], energy={Aspect.AWA: 99, Aspect.FIT: 99, Aspect.SPI: 99, Aspect.FOC: 99}, deck=ranger_deck)
+    ranger = RangerState(name="Demo Ranger", hand=[], aspects={Aspect.AWA: 99, Aspect.FIT: 99, Aspect.SPI: 99, Aspect.FOC: 99}, deck=ranger_deck)
     # Build a simple path deck from woods, excluding the ones already in play
     deck = build_woods_path_deck()
     surroundings : list[Card] = [weather]
@@ -67,7 +81,7 @@ def build_demo_state() -> GameState:
     state = GameState(ranger=ranger, zones=current_zones, round_number=1, path_deck=deck)
     # Note: Cards drawn to hand - listeners will be registered when engine is created
     for _ in range(5):
-        state.ranger.draw_card()
+        _, _, _ = state.ranger.draw_card()  # Ignore return values during setup
     return state
 
 
@@ -82,6 +96,9 @@ def menu_and_run(engine: GameEngine) -> None:
         clear_screen()
         engine.phase1_draw_paths(count=1)
         render_state(engine.state, phase_header=f"Round {engine.state.round_number} — Phase 1: Draw Paths")
+        print("")
+        print("--- Event log ---")
+        display_and_clear_messages(engine)
         input("Press Enter to proceed to Phase 2...")
 
         # Phase 2: Actions until Rest
@@ -105,15 +122,33 @@ def menu_and_run(engine: GameEngine) -> None:
                 is_test=False,
                 on_success=lambda s, _e, _t: None,
             ))
-            act = choose_action(actions, engine.state, engine)
-            if not act:
-                # treat as cancel to end the run
-                return
+            # add system End Day action
+            actions.append(Action(
+                id="system-end-day",
+                name="End the day",
+                verb="End the day",
+                aspect="",
+                approach="",
+                is_test=False,
+                on_success=lambda s, _e, _t: None,
+            ))
+
+            # Keep prompting until we get a valid action
+            act = None
+            while not act:
+                act = choose_action(actions, engine.state, engine)
 
             if act.id == "system-rest":
                 print("\nYou rest and end your turn.")
                 input("Press Enter to proceed to Phase 3...")
                 break
+
+            if act.id == "system-end-day":
+                engine.end_day()
+                display_and_clear_messages(engine)
+                print("\nThe day has ended. Demo complete!")
+                input("Press Enter to exit...")
+                return
 
             target_id = choose_action_target(engine.state, act, engine)
             initiate_test(act, engine.state, target_id)
@@ -127,17 +162,50 @@ def menu_and_run(engine: GameEngine) -> None:
                 continue
 
             display_and_clear_messages(engine)
+
+            # Check if day ended during action (e.g., fatigue from empty deck)
+            if engine.day_has_ended:
+                print("\nThe day has ended. Demo complete!")
+                input("Press Enter to exit...")
+                return
+
             input("Action performed. Press Enter to continue...")
+
+        # Check if day ended during Phase 2
+        if engine.day_has_ended:
+            print("\nThe day has ended. Demo complete!")
+            input("Press Enter to exit...")
+            return
 
         # Phase 3: Travel (skipped)
         clear_screen()
         render_state(engine.state, phase_header=f"Round {engine.state.round_number} — Phase 3: Travel (skipped)")
+        print("")
+        print("--- Event log ---")
+        display_and_clear_messages(engine)
+
+        # Check if day ended during Phase 3
+        if engine.day_has_ended:
+            print("\nThe day has ended. Demo complete!")
+            input("Press Enter to exit...")
+            return
+
         input("Press Enter to proceed to Phase 4...")
 
         # Phase 4: Refresh
         clear_screen()
         engine.phase4_refresh()
         render_state(engine.state, phase_header=f"Round {engine.state.round_number} — Phase 4: Refresh")
+        print("")
+        print("--- Event log ---")
+        display_and_clear_messages(engine)
+
+        # Check if day ended during Phase 4 (e.g., drawing from empty deck)
+        if engine.day_has_ended:
+            print("\nThe day has ended. Demo complete!")
+            input("Press Enter to exit...")
+            return
+
         input("Press Enter to start next round...")
 
         engine.state.round_number += 1

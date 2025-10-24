@@ -17,7 +17,7 @@ class EngineTests(unittest.TestCase):
             presence=1,
             progress_threshold=2
         )
-        ranger = RangerState(name="Ranger", hand=[], energy={Aspect.AWA: 3, Aspect.FIT: 2, Aspect.SPI: 2, Aspect.FOC: 1})
+        ranger = RangerState(name="Ranger", hand=[], aspects={Aspect.AWA: 3, Aspect.FIT: 2, Aspect.SPI: 2, Aspect.FOC: 1})
         # Create two pseudo cards with Exploration+1 each
         ranger.hand = [
             Card(id="c1", title="E+1", approach_icons={Approach.EXPLORATION: 1}),
@@ -63,7 +63,7 @@ class EngineTests(unittest.TestCase):
             presence=1,
             progress_threshold=2
         )
-        ranger = RangerState(name="Ranger", hand=[], energy={Aspect.AWA: 3, Aspect.FIT: 2, Aspect.SPI: 2, Aspect.FOC: 1})
+        ranger = RangerState(name="Ranger", hand=[], aspects={Aspect.AWA: 3, Aspect.FIT: 2, Aspect.SPI: 2, Aspect.FOC: 1})
         state = GameState(
             ranger=ranger,
             zones={
@@ -101,7 +101,7 @@ class EngineTests(unittest.TestCase):
             presence=1,
             progress_threshold=3
         )
-        ranger = RangerState(name="Ranger", hand=[], energy={Aspect.AWA: 3, Aspect.FIT: 2, Aspect.SPI: 2, Aspect.FOC: 1})
+        ranger = RangerState(name="Ranger", hand=[], aspects={Aspect.AWA: 3, Aspect.FIT: 2, Aspect.SPI: 2, Aspect.FOC: 1})
         ranger.hand = [Card(id="e1", title="E+1", approach_icons={Approach.EXPLORATION: 1})]
         state = GameState(
             ranger=ranger,
@@ -141,7 +141,7 @@ class EngineTests(unittest.TestCase):
             presence=1,
             progress_threshold=2,
         )
-        ranger = RangerState(name="Ranger", hand=[], energy={Aspect.AWA: 3, Aspect.FIT: 2, Aspect.SPI: 2, Aspect.FOC: 1})
+        ranger = RangerState(name="Ranger", hand=[], aspects={Aspect.AWA: 3, Aspect.FIT: 2, Aspect.SPI: 2, Aspect.FOC: 1})
         ranger.hand = [Card(id="c1", title="E+1", approach_icons={Approach.EXPLORATION: 1})]
         state = GameState(
             ranger=ranger,
@@ -180,7 +180,7 @@ class EngineTests(unittest.TestCase):
             presence=1,
             harm_threshold=2,
         )
-        ranger = RangerState(name="Ranger", hand=[], energy={Aspect.AWA: 5, Aspect.FIT: 2, Aspect.SPI: 2, Aspect.FOC: 1})
+        ranger = RangerState(name="Ranger", hand=[], aspects={Aspect.AWA: 5, Aspect.FIT: 2, Aspect.SPI: 2, Aspect.FOC: 1})
         # Add a card with +1 Conflict icon so we get 2 total effort (1 energy + 1 icon)
         ranger.hand = [Card(id="c1", title="Conflict+1", approach_icons={Approach.CONFLICT: 1})]
         state = GameState(
@@ -220,7 +220,7 @@ class EngineTests(unittest.TestCase):
             presence=1,
             progress_threshold=3,
         )
-        ranger = RangerState(name="Ranger", hand=[], energy={Aspect.AWA: 3, Aspect.FIT: 2, Aspect.SPI: 2, Aspect.FOC: 1})
+        ranger = RangerState(name="Ranger", hand=[], aspects={Aspect.AWA: 3, Aspect.FIT: 2, Aspect.SPI: 2, Aspect.FOC: 1})
         state = GameState(
             ranger=ranger,
             zones={
@@ -265,7 +265,7 @@ class CommonTestsTests(unittest.TestCase):
         ranger = RangerState(
             name="Ranger",
             hand=[Card(id="e1", title="E+1", approach_icons={Approach.EXPLORATION: 1})],
-            energy={Aspect.AWA: 3, Aspect.FIT: 2, Aspect.SPI: 2, Aspect.FOC: 1}
+            aspects={Aspect.AWA: 3, Aspect.FIT: 2, Aspect.SPI: 2, Aspect.FOC: 1}
         )
         state = GameState(
             ranger=ranger,
@@ -304,7 +304,7 @@ class CommonTestsTests(unittest.TestCase):
         ranger = RangerState(
             name="Ranger",
             hand=[],  # No cards to commit
-            energy={Aspect.AWA: 3, Aspect.FIT: 2, Aspect.SPI: 2, Aspect.FOC: 1}
+            aspects={Aspect.AWA: 3, Aspect.FIT: 2, Aspect.SPI: 2, Aspect.FOC: 1}
         )
         state = GameState(
             ranger=ranger,
@@ -341,7 +341,7 @@ class CommonTestsTests(unittest.TestCase):
         ranger = RangerState(
             name="Ranger",
             hand=[Card(id="c1", title="Conn+1", approach_icons={Approach.CONNECTION: 1})],
-            energy={Aspect.AWA: 3, Aspect.FIT: 2, Aspect.SPI: 2, Aspect.FOC: 1}
+            aspects={Aspect.AWA: 3, Aspect.FIT: 2, Aspect.SPI: 2, Aspect.FOC: 1}
         )
         state = GameState(
             ranger=ranger,
@@ -379,7 +379,7 @@ class CommonTestsTests(unittest.TestCase):
         ranger = RangerState(
             name="Ranger",
             hand=[],
-            energy={Aspect.AWA: 3, Aspect.FIT: 2, Aspect.SPI: 2, Aspect.FOC: 1}
+            aspects={Aspect.AWA: 3, Aspect.FIT: 2, Aspect.SPI: 2, Aspect.FOC: 1}
         )
         state = GameState(
             ranger=ranger,
@@ -416,7 +416,7 @@ class CommonTestsTests(unittest.TestCase):
         ranger = RangerState(
             name="Ranger",
             hand=[Card(id="conf1", title="Conflict+1", approach_icons={Approach.CONFLICT: 1})],
-            energy={Aspect.AWA: 3, Aspect.FIT: 2, Aspect.SPI: 2, Aspect.FOC: 1}
+            aspects={Aspect.AWA: 3, Aspect.FIT: 2, Aspect.SPI: 2, Aspect.FOC: 1}
         )
         state = GameState(
             ranger=ranger,
@@ -454,7 +454,7 @@ class CommonTestsTests(unittest.TestCase):
         ranger = RangerState(
             name="Ranger",
             hand=[],
-            energy={Aspect.AWA: 3, Aspect.FIT: 2, Aspect.SPI: 2, Aspect.FOC: 1}
+            aspects={Aspect.AWA: 3, Aspect.FIT: 2, Aspect.SPI: 2, Aspect.FOC: 1}
         )
         state = GameState(
             ranger=ranger,
@@ -486,7 +486,7 @@ class CommonTestsTests(unittest.TestCase):
         ranger = RangerState(
             name="Ranger",
             hand=[Card(id="conf1", title="Conflict+1", approach_icons={Approach.CONFLICT: 1})],
-            energy={Aspect.AWA: 3, Aspect.FIT: 2, Aspect.SPI: 2, Aspect.FOC: 1}
+            aspects={Aspect.AWA: 3, Aspect.FIT: 2, Aspect.SPI: 2, Aspect.FOC: 1}
         )
         state = GameState(
             ranger=ranger,
@@ -523,7 +523,7 @@ class CommonTestsTests(unittest.TestCase):
         ranger = RangerState(
             name="Ranger",
             hand=[],  # No cards to commit
-            energy={Aspect.AWA: 3, Aspect.FIT: 2, Aspect.SPI: 2, Aspect.FOC: 1}
+            aspects={Aspect.AWA: 3, Aspect.FIT: 2, Aspect.SPI: 2, Aspect.FOC: 1}
         )
         state = GameState(
             ranger=ranger,
@@ -563,7 +563,7 @@ class CommonTestsTests(unittest.TestCase):
         ranger = RangerState(
             name="Ranger",
             hand=[],
-            energy={Aspect.AWA: 3, Aspect.FIT: 2, Aspect.SPI: 2, Aspect.FOC: 1}
+            aspects={Aspect.AWA: 3, Aspect.FIT: 2, Aspect.SPI: 2, Aspect.FOC: 1}
         )
         state = GameState(
             ranger=ranger,
@@ -607,7 +607,7 @@ class CommonTestsTests(unittest.TestCase):
         ranger = RangerState(
             name="Ranger",
             hand=[],
-            energy={Aspect.AWA: 3, Aspect.FIT: 2, Aspect.SPI: 2, Aspect.FOC: 1}
+            aspects={Aspect.AWA: 3, Aspect.FIT: 2, Aspect.SPI: 2, Aspect.FOC: 1}
         )
         state = GameState(
             ranger=ranger,
@@ -651,7 +651,7 @@ class CommonTestsTests(unittest.TestCase):
         ranger = RangerState(
             name="Ranger",
             hand=[],
-            energy={Aspect.AWA: 3, Aspect.FIT: 2, Aspect.SPI: 2, Aspect.FOC: 1}
+            aspects={Aspect.AWA: 3, Aspect.FIT: 2, Aspect.SPI: 2, Aspect.FOC: 1}
         )
         state = GameState(
             ranger=ranger,
@@ -712,7 +712,7 @@ class WalkWithMeTests(unittest.TestCase):
             name="Ranger",
             hand=[wwm],  # Walk With Me in hand
             deck=[],
-            energy={Aspect.AWA: 3, Aspect.FIT: 2, Aspect.SPI: 2, Aspect.FOC: 1}  # Has SPI
+            aspects={Aspect.AWA: 3, Aspect.FIT: 2, Aspect.SPI: 2, Aspect.FOC: 1}  # Has SPI
         )
 
         state = GameState(
@@ -794,7 +794,7 @@ class WalkWithMeTests(unittest.TestCase):
             name="Ranger",
             hand=[wwm],
             deck=[],
-            energy={Aspect.AWA: 3, Aspect.FIT: 2, Aspect.SPI: 2, Aspect.FOC: 1}
+            aspects={Aspect.AWA: 3, Aspect.FIT: 2, Aspect.SPI: 2, Aspect.FOC: 1}
         )
 
         state = GameState(
@@ -868,7 +868,7 @@ class WalkWithMeTests(unittest.TestCase):
             name="Ranger",
             hand=[wwm],
             deck=[],
-            energy={Aspect.AWA: 3, Aspect.FIT: 2, Aspect.SPI: 0, Aspect.FOC: 1}  # NO SPI!
+            aspects={Aspect.AWA: 3, Aspect.FIT: 2, Aspect.SPI: 0, Aspect.FOC: 1}  # NO SPI!
         )
 
         state = GameState(
@@ -935,7 +935,7 @@ class WalkWithMeTests(unittest.TestCase):
             name="Ranger",
             hand=[wwm],
             deck=[],
-            energy={Aspect.AWA: 3, Aspect.FIT: 2, Aspect.SPI: 2, Aspect.FOC: 1}
+            aspects={Aspect.AWA: 3, Aspect.FIT: 2, Aspect.SPI: 2, Aspect.FOC: 1}
         )
 
         state = GameState(
@@ -999,7 +999,7 @@ class WalkWithMeTests(unittest.TestCase):
             name="Ranger",
             hand=[wwm],
             deck=[],
-            energy={Aspect.AWA: 3, Aspect.FIT: 2, Aspect.SPI: 2, Aspect.FOC: 1}
+            aspects={Aspect.AWA: 3, Aspect.FIT: 2, Aspect.SPI: 2, Aspect.FOC: 1}
         )
 
         state = GameState(
@@ -1080,7 +1080,7 @@ class WalkWithMeTests(unittest.TestCase):
             name="Ranger",
             hand=[wwm],
             deck=[],
-            energy={Aspect.AWA: 3, Aspect.FIT: 2, Aspect.SPI: 2, Aspect.FOC: 1}
+            aspects={Aspect.AWA: 3, Aspect.FIT: 2, Aspect.SPI: 2, Aspect.FOC: 1}
         )
 
         state = GameState(
@@ -1170,7 +1170,7 @@ class CalypsaRangerMentorTests(unittest.TestCase):
             name="Ranger",
             hand=[],
             deck=[],
-            energy={Aspect.AWA: 3, Aspect.FIT: 2, Aspect.SPI: 2, Aspect.FOC: 1}
+            aspects={Aspect.AWA: 3, Aspect.FIT: 2, Aspect.SPI: 2, Aspect.FOC: 1}
         )
 
         state = GameState(
@@ -1217,7 +1217,7 @@ class CalypsaRangerMentorTests(unittest.TestCase):
             name="Ranger",
             hand=[],
             deck=[],
-            energy={Aspect.AWA: 3, Aspect.FIT: 2, Aspect.SPI: 2, Aspect.FOC: 1}
+            aspects={Aspect.AWA: 3, Aspect.FIT: 2, Aspect.SPI: 2, Aspect.FOC: 1}
         )
 
         state = GameState(
@@ -1261,7 +1261,7 @@ class CalypsaRangerMentorTests(unittest.TestCase):
             name="Ranger",
             hand=[],
             deck=[],
-            energy={Aspect.AWA: 3, Aspect.FIT: 2, Aspect.SPI: 2, Aspect.FOC: 1}
+            aspects={Aspect.AWA: 3, Aspect.FIT: 2, Aspect.SPI: 2, Aspect.FOC: 1}
         )
 
         state = GameState(
@@ -1309,7 +1309,7 @@ class CalypsaRangerMentorTests(unittest.TestCase):
             name="Ranger",
             hand=[],
             deck=[],
-            energy={Aspect.AWA: 3, Aspect.FIT: 2, Aspect.SPI: 2, Aspect.FOC: 1}
+            aspects={Aspect.AWA: 3, Aspect.FIT: 2, Aspect.SPI: 2, Aspect.FOC: 1}
         )
 
         state = GameState(

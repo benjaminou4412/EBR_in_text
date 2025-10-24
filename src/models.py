@@ -270,22 +270,27 @@ class ValueModifier:
 @dataclass
 class RangerState:
     name: str
+    aspects: dict[Aspect, int]
     deck: list[Card] = field(default_factory=lambda: cast(list[Card], []))
     hand: list[Card] = field(default_factory=lambda: cast(list[Card], []))
     discard: list[Card] = field(default_factory=lambda: cast(list[Card], []))
     fatigue_pile: list[Card] = field(default_factory=lambda: cast(list[Card], []))
-    energy: dict[Aspect, int] = field(default_factory=lambda: {Aspect.AWA: 0, Aspect.FIT: 0, Aspect.SPI: 0, Aspect.FOC: 0})
+    energy: dict[Aspect, int] = field(init=False)
     injury: int = 0
 
-    def draw_card(self) -> EventListener | None:
-        """Draw a card from deck to hand. Returns listener if card creates one, None otherwise."""
+    def __post_init__(self):
+        self.energy = dict(self.aspects)
+
+    def draw_card(self) -> tuple[EventListener | None, str | None, bool]:
+        """Draw a card from deck to hand.
+        Returns (listener, message, should_end_day).
+        If deck is empty, returns (None, error_message, True)."""
         if len(self.deck) == 0:
-            #TODO: attempting to draw from an empty deck should end the day
-            return None
+            return None, "Cannot draw from empty deck - the day must end!", True
         else:
             drawn: Card = self.deck.pop(0)
             self.hand.append(drawn)
-            return drawn.enters_hand()
+            return drawn.enters_hand(), f"You draw a copy of {drawn.title}.", False
 
     def spend_energy(self, amount: int, aspect: Aspect) -> tuple[bool, str | None]:
         """Attempt to spend the specified amount of energy from the specified aspect's energy pool.
@@ -296,7 +301,10 @@ class RangerState:
         else:
             self.energy[aspect] = self.energy[aspect] - amount
             return (True, None)
-
+        
+    def refresh_all_energy(self) -> None:
+        """Reset energy pool to initial amounts dictated by fixed aspects. Excess energy not retained."""
+        self.energy = dict(self.aspects)
 
 @dataclass
 class GameState:

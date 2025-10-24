@@ -31,6 +31,7 @@ class GameEngine:
         # Event listeners and message queue (game engine concerns, not board state)
         self.listeners: list[EventListener] = []
         self.message_queue: list[MessageEvent] = []
+        self.day_has_ended: bool = False
 
     def _default_chooser(self, _engine: 'GameEngine', choices: list[Card]) -> Card:  # noqa: ARG002
         """Placeholder default; tests should pass in more sophisticated choosers, runtime should prompt player"""
@@ -259,12 +260,19 @@ class GameEngine:
 
     def fatigue_ranger(self, amount: int) -> None:
         """Move top amount cards from ranger deck to top of fatigue pile (one at a time)"""
-        cards_to_fatigue = min(amount, len(self.state.ranger.deck))
-        for _ in range(cards_to_fatigue):
+        if amount > len(self.state.ranger.deck):
+            # Can't fatigue more than remaining deck - end the day
+            self.add_message(f"Ranger needs to suffer {amount} fatigue, but only {len(self.state.ranger.deck)} cards remain in deck.")
+            self.add_message("Cannot fatigue from empty deck - the day must end!")
+            self.end_day()
+            return
+
+        for _ in range(amount):
             card = self.state.ranger.deck.pop(0)  # Take from top of deck
             self.state.ranger.fatigue_pile.insert(0, card)  # Insert at top of fatigue pile
-        if cards_to_fatigue > 0:
-            self.add_message(f"Ranger suffers {cards_to_fatigue} fatigue.")
+
+        if amount > 0:
+            self.add_message(f"Ranger suffers {amount} fatigue.")
 
     def soothe_ranger(self, amount: int) -> None:
         """Move top amount cards from fatigue pile to hand"""
@@ -275,21 +283,51 @@ class GameEngine:
         if cards_to_soothe > 0:
             self.add_message(f"Ranger soothes {cards_to_soothe} fatigue.")
 
+    def end_day(self) -> None:
+        """End the current day (game over for this session)"""
+        self.day_has_ended = True
+        self.add_message(f"Day {self.state.day_number} has ended after {self.state.round_number} rounds.")
+        self.add_message("Thank you for playing!")
+
     # Round/Phase helpers
     def phase1_draw_paths(self, count: int = 1):
+        self.add_message(f"Begin Phase 1: Draw Path Cards")
         for _ in range(count):
             if not self.state.path_deck:
+                #TODO: set up path discard, and reshuffle path discard into deck when deck is empty
                 break
             card = self.state.path_deck.pop(0)
             if card.starting_area is not None:
                 self.state.zones[card.starting_area].append(card)
+                self.add_message(f"Drew {get_display_id(self.state.all_cards_in_play(),card)}, which enters play {card.starting_area.value}.")
             else:
                 raise ValueError("Path card drawn is missing a starting area.")
 
 
     def phase4_refresh(self):
-        # Ready exhausted entities
+        self.add_message(f"Begin Phase 4: Refresh")
+        #Step 1: Suffer 1 Fatigue per injury
+        if (self.state.ranger.injury > 0):
+            self.add_message(f"Your ranger is injured, so you suffer fatigue.")
+            self.fatigue_ranger(self.state.ranger.injury)
+        #Step 2: Draw 1 Ranger Card
+        listener, draw_message, should_end_day = self.state.ranger.draw_card()
+        if should_end_day:
+            if draw_message:
+                self.add_message(draw_message)
+            self.end_day()
+            return
+        if listener is not None:
+            self.add_listener(listener)
+        if draw_message is not None:
+            self.add_message(draw_message)
+        #Step 3: Refill energy
+        self.state.ranger.refresh_all_energy()
+        self.add_message("Your energy is restored.")
+        #Step 4: Resolve Refresh effects (TODO)
+        self.add_message("Todo: resolve Refresh abilities.")
+        #Step 5: Ready all cards in play
         for zone in self.state.zones:
             for card in self.state.zones[zone]:
                 card.exhausted = False
-        # Future: refresh ability hooks
+        self.add_message("All cards in play Ready.")
