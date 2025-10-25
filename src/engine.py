@@ -343,6 +343,9 @@ class GameEngine:
             self.state.zones[current_zone].remove(target_card)
             self.state.zones[target_zone].append(target_card)
             self.add_message(f"{get_display_id(self.state.all_cards_in_play(), target_card)} moves to {target_zone.value}.")
+            curr_presence = target_card.get_current_presence()
+            if target_zone == Zone.WITHIN_REACH and Keyword.AMBUSH in target_card.keywords and curr_presence is not None:
+                self.fatigue_ranger(self.state.ranger, curr_presence)
 
     def fatigue_ranger(self, ranger: RangerState, amount: int) -> None:
         """Move top amount cards from ranger deck to top of fatigue pile (one at a time)"""
@@ -385,7 +388,7 @@ class GameEngine:
             card = self.state.path_deck.pop(0)
             if card.starting_area is not None:
                 self.state.zones[card.starting_area].append(card)
-                self.add_message(f"Drew {get_display_id(self.state.all_cards_in_play(),card)}, which enters play {card.starting_area.value}.")
+                card.enters_play(self, card.starting_area)
             else:
                 raise ValueError("Path card drawn is missing a starting area.")
 
@@ -397,16 +400,18 @@ class GameEngine:
             self.add_message(f"Your ranger is injured, so you suffer fatigue.")
             self.fatigue_ranger(self.state.ranger, self.state.ranger.injury)
         #Step 2: Draw 1 Ranger Card
-        listener, draw_message, should_end_day = self.state.ranger.draw_card()
+        card, draw_message, should_end_day = self.state.ranger.draw_card()
         if should_end_day:
             if draw_message:
                 self.add_message(draw_message)
             self.end_day()
             return
-        if listener is not None:
-            self.add_listener(listener)
-        if draw_message is not None:
+        if draw_message:
             self.add_message(draw_message)
+        if card is not None:
+            listener = card.enters_hand(self)
+            if listener is not None:
+                self.add_listener(listener)
         #Step 3: Refill energy
         self.state.ranger.refresh_all_energy()
         self.add_message("Your energy is restored.")

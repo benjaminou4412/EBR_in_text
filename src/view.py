@@ -10,6 +10,14 @@ from .utils import get_display_id
 if TYPE_CHECKING:
     from .engine import GameEngine
 
+# Global config for display options
+_show_art_descriptions = False
+
+def set_show_art_descriptions(show: bool) -> None:
+    """Configure whether to display card art descriptions"""
+    global _show_art_descriptions
+    _show_art_descriptions = show
+
 
 def render_card_detail(card: Card, index: int | None = None, display_id: str | None = None) -> None:
     """Render a single card with full details in multi-line format"""
@@ -33,6 +41,22 @@ def render_card_detail(card: Card, index: int | None = None, display_id: str | N
         print(f"{index}. {card_name} {type_line}")
     else:
         print(f"{card_name} {type_line}")
+
+    # Art description if present and enabled
+    if _show_art_descriptions and card.art_description:
+        terminal_width = shutil.get_terminal_size(fallback=(120, 24)).columns
+        max_art_width = terminal_width - 6
+        if len(card.art_description) > max_art_width:
+            wrapped_lines = textwrap.wrap(card.art_description, width=max_art_width)
+            for line in wrapped_lines:
+                if line == wrapped_lines[0]:
+                    print(f"   {{Art: {line}")
+                elif line == wrapped_lines[len(wrapped_lines)-1]:
+                    print(f"   {line}}}")
+                else:
+                    print(f"   {line}")
+        else:
+            print(f"   {{Art: {card.art_description}}}")
 
     # Cost/Icons line for ranger cards
     if card.energy_cost is not None or card.approach_icons:

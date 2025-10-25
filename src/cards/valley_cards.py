@@ -11,6 +11,12 @@ class CalypsaRangerMentor(Card):
         # Load all common PathCard fields from JSON
         super().__init__(**load_card_fields("Calypsa, Ranger Mentor", "Valley")) #type:ignore
         self.keywords = {Keyword.FRIENDLY}
+        self.art_description = "A mature woman with determined eyes, wearing a form-fitting " \
+        "suit of what almost looks like padded armor, a hooded cloak, a backpack, and a " \
+        "Ranger Badge. The suit is clearly thick enough to offer substantial protection, but her " \
+        "body's musclature and strength is apparent beneath its surface, with muscled arms and a " \
+        "broad chest. She carries a simple walking stick shaped like a shepherd's crook, " \
+        "reinforced by a wrapping around the grip point and what might be bone ornamentation along its hook."
 
     def get_tests(self) -> list[Action]:
         """Returns all tests this card provides"""

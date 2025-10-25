@@ -120,6 +120,7 @@ class Card:
     id: str = ""  # Will be auto-generated in __post_init__ if empty
     card_set: str = ""
     flavor_text: str = ""
+    art_description: str | None = None #textual description of card art for accessibility and LLM context
     card_types: set[CardType] = field(default_factory=lambda: set())
     traits: set[str] = field(default_factory=lambda: set()) #mutable from cards like Trails Markers
     keywords: set[Keyword] = field(default_factory=lambda: set())
@@ -202,10 +203,19 @@ class Card:
         else:
             return None
         
-    def enters_hand(self) -> EventListener | None:
-        """Moments and other cards that establish a listener upon entering hand implement this"""
+    def enters_hand(self, engine: GameEngine) -> EventListener | None:
+        """Called when card enters hand. Shows art description. Override to add listeners."""
+        if self.art_description:
+            engine.add_message(f"   {self.art_description}")
         return None
 
+    def enters_play(self, engine: GameEngine, zone: Zone) -> None:
+        """Called when card enters play. Adds narrative messages and can be overridden for enter-play effects."""
+        from .utils import get_display_id
+        engine.add_message(f"{get_display_id(engine.state.all_cards_in_play(), self)} enters play {zone.value}.")
+        if self.art_description:
+            engine.add_message(f"   {self.art_description}")
+    
     #path card only methods
     def get_current_presence(self) -> int | None:
         if self.presence is not None:
@@ -300,16 +310,17 @@ class RangerState:
     def __post_init__(self):
         self.energy = dict(self.aspects)
 
-    def draw_card(self) -> tuple[EventListener | None, str | None, bool]:
+    def draw_card(self) -> tuple[Card | None, str | None, bool]:
         """Draw a card from deck to hand.
-        Returns (listener, message, should_end_day).
-        If deck is empty, returns (None, error_message, True)."""
+        Returns (card, message, should_end_day).
+        If deck is empty, returns (None, error_message, True).
+        Caller should call card.enters_hand(engine) to handle listeners and art description."""
         if len(self.deck) == 0:
             return None, "Cannot draw from empty deck - the day must end!", True
         else:
             drawn: Card = self.deck.pop(0)
             self.hand.append(drawn)
-            return drawn.enters_hand(), f"You draw a copy of {drawn.title}.", False
+            return drawn, f"You draw a copy of {drawn.title}.", False
 
     def spend_energy(self, amount: int, aspect: Aspect) -> tuple[bool, str | None]:
         """Attempt to spend the specified amount of energy from the specified aspect's energy pool.

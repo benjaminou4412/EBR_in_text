@@ -2,6 +2,22 @@
 
 A living checklist distilled from our discussion. Grouped by area and roughly prioritized.
 
+## Current priorities
+- Implement remaining Woods path cards and at least two other Valley NPCs
+- Implement Refresh abilites
+- Implement Locations and Travel
+- Implement weather-flipping
+- Implement at least one Gear + one non-response Moment + 1 attachment, and the Play action
+- Implement actual challenge cards rather than the current RNG setup
+- Implement Exhaust abilities
+- Implement missions, campaign log entries, clear entries, etc.
+- Implement Day system and save/load/autosave
+- Implement ordering selection:
+  -scouting/remember
+  -challenge effects in the same zone
+  -response abilities at the same timing point
+- Implement...the entire rest of the game.
+
 
 ## Engine 
 - [ ] Extend `CommitDecision` to support committing in‑play entities (exhaust/spend tokens)

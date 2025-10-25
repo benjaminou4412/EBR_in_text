@@ -738,7 +738,7 @@ class WalkWithMeTests(unittest.TestCase):
                         response_decider=always_yes)
 
         # Register listener when card enters hand
-        listener = wwm.enters_hand()
+        listener = wwm.enters_hand(eng)
         self.assertIsNotNone(listener, "Walk With Me should create a listener")
         if listener:  # Type guard for mypy
             eng.add_listener(listener)
@@ -816,7 +816,7 @@ class WalkWithMeTests(unittest.TestCase):
                         response_decider=always_no)
 
         # Register listener
-        listener = wwm.enters_hand()
+        listener = wwm.enters_hand(eng)
         if listener:  # Type guard for mypy
             eng.add_listener(listener)
 
@@ -890,7 +890,7 @@ class WalkWithMeTests(unittest.TestCase):
                         response_decider=always_yes)
 
         # Register listener
-        listener = wwm.enters_hand()
+        listener = wwm.enters_hand(eng)
         if listener:  # Type guard for mypy
             eng.add_listener(listener)
 
@@ -957,7 +957,7 @@ class WalkWithMeTests(unittest.TestCase):
                         response_decider=always_yes)
 
         # Register listener
-        listener = wwm.enters_hand()
+        listener = wwm.enters_hand(eng)
         if listener:  # Type guard for mypy
             eng.add_listener(listener)
 
@@ -1021,7 +1021,7 @@ class WalkWithMeTests(unittest.TestCase):
                         response_decider=always_yes)
 
         # Register listener
-        listener = wwm.enters_hand()
+        listener = wwm.enters_hand(eng)
         if listener:  # Type guard for mypy
             eng.add_listener(listener)
 
@@ -1106,7 +1106,7 @@ class WalkWithMeTests(unittest.TestCase):
                         response_decider=always_yes)
 
         # Register listener
-        listener = wwm.enters_hand()
+        listener = wwm.enters_hand(eng)
         if listener:  # Type guard for mypy
             eng.add_listener(listener)
 
@@ -1137,7 +1137,14 @@ class WalkWithMeTests(unittest.TestCase):
         from src.cards import WalkWithMe
         wwm = WalkWithMe()
 
-        listener = wwm.enters_hand()
+        # Create minimal engine for testing
+        state = GameState(
+            ranger=RangerState(name="Ranger", hand=[], aspects={Aspect.AWA: 1, Aspect.FIT: 1, Aspect.SPI: 1, Aspect.FOC: 1}),
+            zones={Zone.SURROUNDINGS: [], Zone.ALONG_THE_WAY: [], Zone.WITHIN_REACH: [], Zone.PLAYER_AREA: []}
+        )
+        eng = GameEngine(state)
+
+        listener = wwm.enters_hand(eng)
 
         self.assertIsNotNone(listener, "Walk With Me should create a listener")
         # Type assertion for tests - we know it's not None after the check

@@ -1,6 +1,7 @@
 
 import os
 import random
+import argparse
 from src.models import (
     Card, RangerState, GameState, Action, Aspect, Approach, Zone, CardType
 )
@@ -8,7 +9,7 @@ from src.engine import GameEngine
 from src.registry import provide_common_tests, provide_card_tests
 from src.view import (
     render_state, choose_action, choose_action_target, choose_commit,
-    choose_target, display_and_clear_messages, choose_response
+    choose_target, display_and_clear_messages, choose_response, set_show_art_descriptions
 )
 from src.decks import build_woods_path_deck
 from src.cards import (
@@ -92,7 +93,8 @@ def build_demo_state() -> GameState:
     state = GameState(ranger=ranger, zones=current_zones, round_number=1, path_deck=deck)
     # Note: Cards drawn to hand - listeners will be registered when engine is created
     for _ in range(5):
-        _, _, _ = state.ranger.draw_card()  # Ignore return values during setup
+        _, _, _ = state.ranger.draw_card()  # Draw cards during setup
+        # Note: enters_hand() will be called during reconstruct_listeners()
     return state
 
 
@@ -223,6 +225,18 @@ def menu_and_run(engine: GameEngine) -> None:
 
 
 def main() -> None:
+    # Parse command-line arguments
+    parser = argparse.ArgumentParser(description="Earthborne Rangers text-based game demo")
+    parser.add_argument(
+        "--show-art",
+        action="store_true",
+        help="Display card art descriptions during gameplay"
+    )
+    args = parser.parse_args()
+
+    # Configure display options
+    set_show_art_descriptions(args.show_art)
+
     state = build_demo_state()
     engine = GameEngine(state, card_chooser=choose_target, response_decider=choose_response)
     # Reconstruct listeners from cards in hand

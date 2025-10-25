@@ -11,8 +11,13 @@ class WalkWithMe(Card):
     def __init__(self):
         # Load all common RangerCard fields from JSON
         super().__init__(**load_card_fields("Walk With Me", "Explorer")) #type:ignore
+        self.art_description = "A detailed sketch of a canine in a snowy, hilly clearing. The canine looks " \
+        "back, and in the distance you see the small figures of the rest of its pack just exiting a copse " \
+        "of snow-topped firs."
 
-    def enters_hand(self) -> EventListener | None:
+    def enters_hand(self, engine: GameEngine) -> EventListener | None:
+        """Override to add listener. Call super() to show art description."""
+        super().enters_hand(engine)
         return EventListener(EventType.TEST_SUCCEED, self.play, self.id, TimingType.AFTER, "Traverse")
 
     def play(self, engine: GameEngine, effort: int) -> None:
