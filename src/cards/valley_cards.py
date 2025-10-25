@@ -22,7 +22,7 @@ class CalypsaRangerMentor(Card):
         """Returns all tests this card provides"""
         return []
 
-    def get_symbol_handlers(self) -> dict[ChallengeIcon, Callable[[GameEngine], None]] | None:
+    def get_challenge_handlers(self) -> dict[ChallengeIcon, Callable[[GameEngine], bool]] | None:
         """Returns challenge symbol effects for this card"""
         return {
             ChallengeIcon.MOUNTAIN: self._mountain_effect,
@@ -30,13 +30,14 @@ class CalypsaRangerMentor(Card):
         }
             
 
-    def _mountain_effect(self, engine: GameEngine) -> None:
+    def _mountain_effect(self, engine: GameEngine) -> bool:
         """Mountain effect: Add 1[progress] to a path card as Calypsa lends you a hand."""
         path_cards: list[Card] = engine.state.path_cards_in_play() #never empty because Calypsa herself is always a valid target
         engine.add_message(f"Challenge (Mountain) on {self.title}: Calypsa lends you a hand. Choose a path card to add 1 progress to:")
         target: Card = engine.card_chooser(engine,path_cards) 
         target.add_progress(1)
+        return True
 
-    def _crest_effect(self, engine: GameEngine) -> None:
+    def _crest_effect(self, engine: GameEngine) -> bool:
         """If there is an active predator, exhaust it. »» Add [harm] to this being equal to that predator's presence."""
-        self.harm_from_predator(engine, ChallengeIcon.CREST)
+        return self.harm_from_predator(engine, ChallengeIcon.CREST)

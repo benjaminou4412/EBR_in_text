@@ -123,17 +123,20 @@ class GameEngine:
         target_zone : Zone | None = self.state.get_card_zone_by_id(target.id)
         if target_zone is None:
             raise RuntimeError(f"Something went horribly wrong, this target has no zone.")
-        
+
         # TODO:Filter out Friendly cards
+        all_cards = self.state.all_cards_in_play()
         fatiguing_cards = [card for card in cards_between if card.exhausted == False and Keyword.FRIENDLY not in card.keywords]
-        self.add_message(f"Interacting with {get_display_id(self.state.all_cards_in_play(), target)} in {target_zone.value}...")
+        target_display_id = get_display_id(all_cards, target)
+        self.add_message(f"Interacting with {target_display_id} in {target_zone.value}...")
         if not fatiguing_cards:
             self.add_message(f"No cards between you and the target; no interaction fatigue.")
             return
         else:
             self.add_message(f"Each ready, non-Friendly card between you and the target fatigues you:")
             for card in fatiguing_cards:
-                self.add_message(f"    {get_display_id(self.state.all_cards_in_play(), card)} fatigues you.")
+                card_display_id = get_display_id(all_cards, card)
+                self.add_message(f"    {card_display_id} fatigues you.")
                 curr_presence = card.get_current_presence()
                 if curr_presence is not None:
                     self.fatigue_ranger(ranger, curr_presence)
@@ -235,7 +238,7 @@ class GameEngine:
             for card in self.state.zones[zone]:
                 if not card.exhausted:
                     # Get handlers directly from the card (always current)
-                    handlers = card.get_symbol_handlers()
+                    handlers = card.get_challenge_handlers()
                     if handlers and symbol in handlers:
                         nonzero_challenges = True
                         handlers[symbol](self)
@@ -287,7 +290,7 @@ class GameEngine:
         for listener in self.listeners:
                 if listener.event_type == event_type and listener.timing_type == timing_type:
                     if action.verb is not None and listener.test_type is not None:
-                        if action.verb.lower() == listener.test_type.lower():
+                        if action.verb.casefold() == listener.test_type.casefold():
                             triggered.append(listener)
         for listener in triggered:
             listener.effect_fn(self, effort)
@@ -312,7 +315,7 @@ class GameEngine:
 
         # Listeners from cards in hand
         for card in self.state.ranger.hand:
-            listener = card.enters_hand()
+            listener : EventListener | None = card.enters_hand(self)
             if listener:
                 self.listeners.append(listener)
 
@@ -335,17 +338,24 @@ class GameEngine:
 
     #Gamestate manipulation methods
 
-    def move_card(self, card_id : str | None, target_zone : Zone) -> None:
-        """Move a card from its current zone to a target zone"""
+    def move_card(self, card_id : str | None, target_zone : Zone) -> bool:
+        """Move a card from its current zone to a target zone. Returns whether it actually moved."""
         target_card : Card | None = self.state.get_card_by_id(card_id)
         current_zone : Zone | None = self.state.get_card_zone_by_id(card_id)
-        if current_zone is not None and target_card is not None:
-            self.state.zones[current_zone].remove(target_card)
-            self.state.zones[target_zone].append(target_card)
-            self.add_message(f"{get_display_id(self.state.all_cards_in_play(), target_card)} moves to {target_zone.value}.")
-            curr_presence = target_card.get_current_presence()
-            if target_zone == Zone.WITHIN_REACH and Keyword.AMBUSH in target_card.keywords and curr_presence is not None:
-                self.fatigue_ranger(self.state.ranger, curr_presence)
+        if target_card is not None:
+            target_display_id = get_display_id(self.state.all_cards_in_play(), target_card)
+            if target_zone==current_zone:
+                self.add_message(f"{target_display_id} already in {target_zone.value}.")
+                return False
+            if current_zone is not None:
+                self.state.zones[current_zone].remove(target_card)
+                self.state.zones[target_zone].append(target_card)
+                self.add_message(f"{target_display_id} moves to {target_zone.value}.")
+                curr_presence = target_card.get_current_presence()
+                if target_zone == Zone.WITHIN_REACH and Keyword.AMBUSH in target_card.keywords and curr_presence is not None:
+                    self.fatigue_ranger(self.state.ranger, curr_presence)
+                return True
+        return False
 
     def fatigue_ranger(self, ranger: RangerState, amount: int) -> None:
         """Move top amount cards from ranger deck to top of fatigue pile (one at a time)"""
@@ -371,6 +381,31 @@ class GameEngine:
             ranger.hand.append(card)  # Add to hand
         if cards_to_soothe > 0:
             self.add_message(f"Ranger soothes {cards_to_soothe} fatigue.")
+
+    def injure_ranger(self, ranger: RangerState) -> None:
+        """
+        Apply 1 injury to the ranger.
+        - Discard entire fatigue pile
+        - Increment injury counter
+        - If injury reaches 3, end the day
+        TODO: Add Lingering Injury card to deck when taking 3rd injury
+        """
+        # Discard all fatigue
+        fatigue_count = len(ranger.fatigue_pile)
+        if fatigue_count > 0:
+            ranger.discard.extend(ranger.fatigue_pile)
+            ranger.fatigue_pile.clear()
+            self.add_message(f"Ranger discards {fatigue_count} fatigue from injury.")
+
+        # Increment injury counter
+        ranger.injury += 1
+        self.add_message(f"Ranger suffers 1 injury (now at {ranger.injury} injury).")
+
+        # Check for third injury
+        if ranger.injury >= 3:
+            self.add_message("Ranger has taken 3 injuries - the day must end!")
+            # TODO: Add "Lingering Injury" card to ranger's deck permanently
+            self.end_day()
 
     def end_day(self) -> None:
         """End the current day (game over for this session)"""

@@ -178,7 +178,7 @@ def choose_action(actions: list[Action], state: GameState, engine: GameEngine) -
             display = a.name
         print(f" {i}. {display}")
 
-    raw = input("> ").strip().lower()
+    raw = input("> ").strip().casefold()
     if raw in ("q", "quit"):
         return None
     if not raw:
@@ -233,7 +233,7 @@ def choose_response(engine: GameEngine, prompt: str) -> bool:
     print(prompt)
 
     while True:
-        choice = input("Play this response? (y/n): ").strip().lower()
+        choice = input("Play this response? (y/n): ").strip().casefold()
 
         if choice in ('y', 'yes'):
             return True

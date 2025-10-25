@@ -16,6 +16,7 @@ A living checklist distilled from our discussion. Grouped by area and roughly pr
   -scouting/remember
   -challenge effects in the same zone
   -response abilities at the same timing point
+- Implement Challenge effects noting whether or not they have "resolved" for the purposes of other game effects
 - Implement...the entire rest of the game.
 
 

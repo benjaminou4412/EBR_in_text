@@ -168,7 +168,7 @@ class Card:
         if self.starting_tokens:
             self.unique_tokens = {self.starting_tokens[0]: self.starting_tokens[1]}
     
-    def get_symbol_handlers(self) -> dict[ChallengeIcon, Callable[[GameEngine], None]] | None:
+    def get_challenge_handlers(self) -> dict[ChallengeIcon, Callable[[GameEngine], bool]] | None:
         return None
     
     def get_tests(self) -> list[Action] | None:
@@ -211,7 +211,6 @@ class Card:
 
     def enters_play(self, engine: GameEngine, zone: Zone) -> None:
         """Called when card enters play. Adds narrative messages and can be overridden for enter-play effects."""
-        from .utils import get_display_id
         engine.add_message(f"{get_display_id(engine.state.all_cards_in_play(), self)} enters play {zone.value}.")
         if self.art_description:
             engine.add_message(f"   {self.art_description}")
@@ -230,17 +229,19 @@ class Card:
         else:
             return None
     
-    def harm_from_predator(self, engine: GameEngine, symbol: ChallengeIcon) -> None:
+    def harm_from_predator(self, engine: GameEngine, symbol: ChallengeIcon) -> bool:
         predators = engine.state.get_cards_by_trait("Predator")
+        self_display_id = get_display_id(engine.state.all_cards_in_play(), self)
         if predators is not None:
             active_predators = [predator for predator in predators if predator.exhausted == False]
             if not active_predators:
-                engine.add_message(f"Challenge ({symbol.value}) on {get_display_id(engine.state.all_cards_in_play(), self)}: (no active predators in play)")
+                engine.add_message(f"Challenge ({symbol.value}) on {self_display_id}: (no active predators in play)")
+                return False
             else:
                 if len(active_predators)==1:
-                    engine.add_message(f"Challenge ({symbol.value}) on {get_display_id(engine.state.all_cards_in_play(), self)}: the active predator in play exhausts itself and harms Sitka Doe:")
+                    engine.add_message(f"Challenge ({symbol.value}) on {self_display_id}: the active predator in play exhausts itself and harms Sitka Doe:")
                 else:
-                    engine.add_message(f"Challenge ({symbol.value}) on {get_display_id(engine.state.all_cards_in_play(), self)}: Choose a predator that will exhaust itself and harm Sitka Doe:")
+                    engine.add_message(f"Challenge ({symbol.value}) on {self_display_id}: Choose a predator that will exhaust itself and harm Sitka Doe:")
                 target_predator = engine.card_chooser(engine, active_predators)
                 target_predator.exhausted = True
                 target_presence = target_predator.get_current_presence()
@@ -248,10 +249,11 @@ class Card:
                     #this should always happen
                     self.add_harm(target_presence)
                     engine.add_message(f"{get_display_id(active_predators, target_predator)} is now exhausted.")
-                    engine.add_message(f"{get_display_id(engine.state.all_cards_in_play(), self)} suffered harm equal to {get_display_id(active_predators, target_predator)}'s presence ({target_presence}).")
-
+                    engine.add_message(f"{self_display_id} suffered harm equal to {get_display_id(active_predators, target_predator)}'s presence ({target_presence}).")
+                return True
         else:
-            engine.add_message(f"Challenge ({symbol.value}) on {get_display_id(engine.state.all_cards_in_play(), self)}: (no predators in play)")
+            engine.add_message(f"Challenge ({symbol.value}) on {self_display_id}: (no predators in play)")
+            return False
     
         
     #todo: validate inputs on all these setters; amount should always be positive
@@ -403,7 +405,7 @@ class GameState:
         for zone in self.zones:
             for card in self.zones[zone]:
                 for curr_trait in card.traits:
-                    if trait.lower() == curr_trait.lower():
+                    if trait.casefold() == curr_trait.casefold():
                         results.append(card)
                 
         if results:

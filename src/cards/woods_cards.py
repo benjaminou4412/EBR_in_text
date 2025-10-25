@@ -2,6 +2,8 @@
 Woods terrain set card implementations
 """
 from typing import Optional, Callable
+
+from src.models import Zone
 from ..models import *
 from ..json_loader import load_card_fields #type:ignore
 from ..utils import get_display_id
@@ -13,8 +15,60 @@ class ProwlingWolhund(Card):
         self.art_description = "A tense canine being with a distinct mane running from its " \
         "forehead all the way down to join its tail. It steps lightly on the balls of its " \
         "paws, oriented slightly away from you but with its head turned to give you a glare."
+    
+    def enters_play(self, engine: GameEngine, zone: Zone) -> None:
+        """If there is another predator in play, this predator comes into play exhausted"""
+        super().enters_play(engine, zone)
+        predators = engine.state.get_cards_by_trait("Predator")
+        # Check if there's another predator besides this one
+        if predators and any(p.id != self.id for p in predators):
+            self.exhausted = True
+            engine.add_message("   Another predator is present - Prowling Wolhund enters play exhausted.")
+        
+
+    def get_challenge_handlers(self) -> dict[ChallengeIcon, Callable[[GameEngine], bool]] | None:
+        """Returns challenge symbol effects for this card"""
+        return {
+            ChallengeIcon.SUN: self._sun_effect,
+            ChallengeIcon.CREST: self._crest_effect
+        }
+        
+    def _sun_effect(self, engine: GameEngine) -> bool:
+        """Sun effect: Ready another Prowling Wolhund"""
+        self_display_id = get_display_id(engine.state.all_cards_in_play(), self)
+        wolhunds = engine.state.get_cards_by_title("Prowling Wolhund")
+        if wolhunds is None:
+            engine.add_message(f"Challenge (Sun) on {self_display_id}: (no other Wolhunds in play)")
+            return False
+        else:
+            wolhunds_excluding_self = [wol for wol in wolhunds if wol.id != self.id]
+            exhausted_wolhunds = [wol for wol in wolhunds_excluding_self if wol.exhausted==True]
+            if exhausted_wolhunds:
+                #prompt player to pick one to ready
+                engine.add_message(f"Challenge (Sun) on {self_display_id}: Choose another Prowling Wolhund to ready:")
+                target: Card = engine.card_chooser(engine, exhausted_wolhunds)
+                target.exhausted = False
+                return True
+            else:
+                engine.add_message(f"Challenge (Sun) on {self_display_id}: (all other Wolhunds already ready)")
+                return False
+            
+
+    def _crest_effect(self, engine: GameEngine) -> bool:
+        """Crest effect: If you have 3 or more fatigue, exhaust this being >> Suffer 1 injury"""
+        self_display_id = get_display_id(engine.state.all_cards_in_play(), self)
+        enough_fatigue = len(engine.state.ranger.fatigue_pile) >= 3
+        if enough_fatigue:
+            engine.add_message(f"Challenge (Crest) on {self_display_id}: You have {len(engine.state.ranger.fatigue_pile)} fatigue - Prowling Wolhund exhausts itself and you suffer 1 injury!")
+            self.exhausted = True
+            engine.injure_ranger(engine.state.ranger)
+            return True
+        else:
+            engine.add_message(f"Challenge (Crest) on {self_display_id}: (low enough fatigue to avoid injury)")
+            return False
 
 class SitkaBuck(Card):
+
     def __init__(self):
         # Load all common PathCard fields from JSON
         super().__init__(**load_card_fields("Sitka Buck", "woods")) #type:ignore
@@ -53,27 +107,32 @@ class SitkaDoe(Card):
         """Spook test success: move to Along the Way"""
         engine.move_card(self.id, Zone.ALONG_THE_WAY)
 
-    def get_symbol_handlers(self) -> dict[ChallengeIcon, Callable[[GameEngine], None]] | None:
+    def get_challenge_handlers(self) -> dict[ChallengeIcon, Callable[[GameEngine], bool]] | None:
         """Returns challenge symbol effects for this card"""
         return {
             ChallengeIcon.SUN: self._sun_effect,
             ChallengeIcon.MOUNTAIN: self._mountain_effect
         }
 
-    def _sun_effect(self, engine: GameEngine) -> None:
+    def _sun_effect(self, engine: GameEngine) -> bool:
         """Sun effect: If there are 1 or more Sitka Bucks in play >> Move each Sitka Buck within reach"""
         bucks = engine.state.get_cards_by_title("Sitka Buck")
+        self_display_id = get_display_id(engine.state.all_cards_in_play(), self)
         if bucks is None:
-            engine.add_message(f"Challenge (Sun) on {get_display_id(engine.state.all_cards_in_play(), self)}: (no Sitka Buck in play)")
+            engine.add_message(f"Challenge (Sun) on {self_display_id}: (no Sitka Buck in play)")
+            return False
         else:
-            engine.add_message(f"Challenge (Sun) on {get_display_id(engine.state.all_cards_in_play(), self)}: The Sitka Buck are drawn to the doe. They move within reach.")
+            engine.add_message(f"Challenge (Sun) on {self_display_id}: The Sitka Buck are drawn to the doe. They move within reach.")
+            any_moved = False
             for buck in bucks:
-                engine.move_card(buck.id, Zone.WITHIN_REACH)
+                if engine.move_card(buck.id, Zone.WITHIN_REACH):
+                    any_moved = True
+            return any_moved
             
 
-    def _mountain_effect(self, engine: GameEngine) -> None:
+    def _mountain_effect(self, engine: GameEngine) -> bool:
         """Mountain effect: If there is an active predator, exhaust it >> Add harm to this being equal to that predator's presence"""
-        self.harm_from_predator(engine, ChallengeIcon.MOUNTAIN)
+        return self.harm_from_predator(engine, ChallengeIcon.MOUNTAIN)
 
 class CausticMulcher(Card):
     def __init__(self):
@@ -161,19 +220,22 @@ class OvergrownThicket(Card):
         """Hunt test success: add progress equal to effort"""
         self.add_progress(effort)
 
-    def get_symbol_handlers(self) -> dict[ChallengeIcon, Callable[[GameEngine], None]] | None:
+    def get_challenge_handlers(self) -> dict[ChallengeIcon, Callable[[GameEngine], bool]] | None:
         """Returns challenge symbol effects for this card"""
         return {
             ChallengeIcon.MOUNTAIN: self._mountain_effect
         }
 
-    def _mountain_effect(self, engine: GameEngine) -> None:
+    def _mountain_effect(self, engine: GameEngine) -> bool:
         """Mountain effect: discard 1 progress"""
+        self_display_id = get_display_id(engine.state.all_cards_in_play(), self)
         if self.progress > 0:
             self.progress -= 1
-            engine.add_message(f"Challenge (Mountain) on {get_display_id(engine.state.all_cards_in_play(), self)}: discards 1 progress (now {self.progress}).")
+            engine.add_message(f"Challenge (Mountain) on {self_display_id}: discards 1 progress (now {self.progress}).")
             curr_presence = self.get_current_presence()
             if curr_presence is not None:
                 engine.fatigue_ranger(engine.state.ranger, curr_presence)
+            return True
         else:
-            engine.add_message(f"Challenge: (Mountain) on {get_display_id(engine.state.all_cards_in_play(), self)}: (no progress to discard).")
+            engine.add_message(f"Challenge: (Mountain) on {self_display_id}: (no progress to discard).")
+            return False
