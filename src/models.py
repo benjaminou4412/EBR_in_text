@@ -292,7 +292,7 @@ class Card:
     #todo: validate inputs on all these setters; amount should always be positive
     def add_progress(self, amount: int) -> str:
         if not self.progress_forbidden:
-            self.progress = max(0, self.progress + amount) #separate methods for removing progress/harm
+            self.progress = max(0, self.progress + amount)
             return f"Added {amount} progress to {self.title}. Now has {self.progress} progress."
         else:
             return f"Progress cannot be added to {self.title}!"

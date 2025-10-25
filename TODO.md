@@ -3,7 +3,13 @@
 A living checklist distilled from our discussion. Grouped by area and roughly prioritized.
 
 ## Current priorities
-- Implement remaining Woods path cards and at least two other Valley NPCs
+- Get discard piles and "leaves play" behavior working
+- Implement Caustic Mulcher
+  - Attachment system
+  - faceup/facedown cards
+  - ranger tokens
+  - prevent attached beings from readying
+- Implement at least two other Valley NPCs
 - Implement Refresh abilites
 - Implement Locations and Travel
 - Implement weather-flipping
