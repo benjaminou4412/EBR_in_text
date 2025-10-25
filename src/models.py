@@ -82,12 +82,31 @@ class EventType(str, Enum):
     CHALLENGE_DECK_SHUFFLE = "challenge_deck_shuffle"
     DRAW_CHALLENGE_CARD = "draw_challenge_card"
 
+class Keyword(str, Enum):
+    """Keywords that modify card behavior and game rules."""
+    AMBUSH = "Ambush" #fatigues ranger on entering their Within Reach
+    ASPIRATION = "Aspiration" #has an associated reward card; tracks progress towards unlocking it in campaign log
+    CONDUIT = "Conduit" #as an additional cost to play a Manifestation moment, a unique token must be spent off a Conduit gear
+    DANGEROUS = "Dangerous" #if this card fatigues you, take an injury
+    DEPLOYED = "Deployed" #at the start of Phase 2, you may exhaust this gear. Its deployed ability is only active when ready.
+    DISCONNECTED = "Disconnected" #you cannot add progress to this card with the Connect test
+    FATIGUING = "Fatiguing" #during refresh, this card fatigues you. May have a number, which specifies the fatigue amount if present.
+    FRIENDLY = "Friendly" #you don't take fatigue for interacting past this card. Weapon-traited cards cannot affect this card.
+    MANIFESTATION = "Manifestation" #as an additional cost to play a Manifestation moment, a unique token must be spent off a Conduit gear
+    OBSTACLE = "Obstacle" #you cannot interact past this card. you cannot travel if this card is ready during Phase 3: Travel.
+    PERSISTENT = "Persistent" #this card stays in play when you Travel
+    SETUP = "Setup" #At the start of the day after step 1 of setup, you can search your deck for one card with the setup keyword and put it into play for free.
+    UNIQUE = "Unique" #A Ranger cannot have two cards with the unique keyword and with the same name from their deck in play at the same time. If a second copy of the same unique card from your deck enters play, the first one is immediately discarded.
+    UNTRAVERSABLE = "Untraversable" #you cannot add progress to this card with the Traverse test
+
 class TimingType(str, Enum):
     BEFORE_WOULD = "before_would"
     BEFORE = "before"
     WHEN_WOULD = "when_would"
     WHEN = "when"
     AFTER = "after"
+
+
 
 # Core data structures: pure state and card data
 
@@ -103,6 +122,7 @@ class Card:
     flavor_text: str = ""
     card_types: set[CardType] = field(default_factory=lambda: set())
     traits: set[str] = field(default_factory=lambda: set()) #mutable from cards like Trails Markers
+    keywords: set[Keyword] = field(default_factory=lambda: set())
     abilities_text: list[str] = field(default_factory=lambda: cast(list[str], [])) #will be mutable in expansion content (mycileal). includes keywords, tests, rules, and challenge effects
     starting_tokens: tuple[str, int] = field(default_factory=lambda: cast(tuple[str, int], {})) #a card only ever has a single type of starting token
     starting_area: Zone | None = None #None for cards that don't enter play, like moments, attributes, etc. Attachments default to None and use targeting to determine their zone
@@ -131,7 +151,6 @@ class Card:
     #mutable state variables
     exhausted: bool = False
     modifiers : list[ValueModifier] = field(default_factory=lambda:cast(list[ValueModifier],[]))
-    #ranger cards only
     unique_tokens : dict[str, int] = field(default_factory=lambda: cast(dict[str, int], {})) #a card will rarely, but sometimes have a mix of non-progress non-harm tokens
     #path cards only
     progress: int = 0

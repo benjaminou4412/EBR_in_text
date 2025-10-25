@@ -1,7 +1,11 @@
 from __future__ import annotations
 from dataclasses import dataclass
 from typing import Callable, Optional
-from .models import GameState, Action, CommitDecision, RangerState, Card, ChallengeIcon, Aspect, Approach, Zone, CardType, EventType, TimingType, EventListener, MessageEvent
+from .models import (
+    GameState, Action, CommitDecision, RangerState, Card, ChallengeIcon,
+    Aspect, Approach, Zone, CardType, EventType, TimingType, EventListener,
+    MessageEvent, Keyword
+)
 from .challenge import draw_challenge
 from .utils import get_display_id
 
@@ -74,6 +78,45 @@ class GameEngine:
             # Remove any listeners associated with committed cards
             self.remove_listener_by_id(card.id)
     
+    def get_valid_targets(self, action: Action) -> list[Card]:
+        """Get valid targets for an action, respecting Obstacle keyword.
+
+        Applies game rule filters (Obstacle, etc.) to the raw candidate list.
+        """
+        if not action.target_provider:
+            return []
+
+        raw_candidates = action.target_provider(self.state)
+        return self._filter_by_obstacles(raw_candidates)
+
+    def _filter_by_obstacles(self, candidates: list[Card]) -> list[Card]:
+        """Filter candidates to exclude cards past the nearest Obstacle"""
+        from .models import Keyword, Zone
+
+        # Find closest ready Obstacle
+        closest_obstacle_zone = None
+        for zone in [Zone.WITHIN_REACH, Zone.ALONG_THE_WAY, Zone.SURROUNDINGS]:
+            cards_in_zone = self.state.zones[zone]
+            if any(Keyword.OBSTACLE in card.keywords and not card.exhausted
+                   for card in cards_in_zone):
+                closest_obstacle_zone = zone
+                break
+
+        if closest_obstacle_zone is None:
+            return candidates  # No obstacles
+
+        # Determine valid zones (at/before obstacle)
+        valid_zones = {Zone.PLAYER_AREA}
+        if closest_obstacle_zone == Zone.WITHIN_REACH:
+            valid_zones.add(Zone.WITHIN_REACH)
+        elif closest_obstacle_zone == Zone.ALONG_THE_WAY:
+            valid_zones.update([Zone.WITHIN_REACH, Zone.ALONG_THE_WAY])
+        elif closest_obstacle_zone == Zone.SURROUNDINGS:
+            valid_zones.update([Zone.WITHIN_REACH, Zone.ALONG_THE_WAY, Zone.SURROUNDINGS])
+
+        return [card for card in candidates
+                if self.state.get_card_zone_by_id(card.id) in valid_zones]
+
     def interaction_fatigue(self, ranger: RangerState, target: Card) -> None:
         """Apply fatigue from cards between ranger and target"""
         cards_between = self.state.get_cards_between_ranger_and_target(target)
@@ -82,13 +125,13 @@ class GameEngine:
             raise RuntimeError(f"Something went horribly wrong, this target has no zone.")
         
         # TODO:Filter out Friendly cards
-        fatiguing_cards = [card for card in cards_between if card.exhausted == False]
+        fatiguing_cards = [card for card in cards_between if card.exhausted == False and Keyword.FRIENDLY not in card.keywords]
         self.add_message(f"Interacting with {get_display_id(self.state.all_cards_in_play(), target)} in {target_zone.value}...")
         if not fatiguing_cards:
             self.add_message(f"No cards between you and the target; no interaction fatigue.")
             return
         else:
-            self.add_message(f"Each ready card between you and the target fatigues you:")
+            self.add_message(f"Each ready, non-Friendly card between you and the target fatigues you:")
             for card in fatiguing_cards:
                 self.add_message(f"    {get_display_id(self.state.all_cards_in_play(), card)} fatigues you.")
                 curr_presence = card.get_current_presence()

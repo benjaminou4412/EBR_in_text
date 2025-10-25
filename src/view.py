@@ -2,7 +2,9 @@ from __future__ import annotations
 from typing import Optional, TYPE_CHECKING
 import shutil
 import textwrap
-from .models import GameState, Action, CommitDecision, Aspect, Approach, CardType, Zone, Card
+from .models import (
+    GameState, Action, CommitDecision, Aspect, Approach, CardType, Zone, Card
+)
 from .utils import get_display_id
 
 if TYPE_CHECKING:
@@ -170,9 +172,9 @@ def choose_action_target(state: GameState, action: Action, engine: GameEngine) -
     """Prompt player to choose a target for an action"""
     display_and_clear_messages(engine)
 
-    if not action.target_provider:
-        return None
-    targets = action.target_provider(state)
+    # Use engine to get valid targets (includes Obstacle filtering)
+    targets = engine.get_valid_targets(action)
+
     if not targets:
         print("No valid targets.")
         return None

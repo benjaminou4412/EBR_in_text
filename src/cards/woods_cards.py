@@ -107,6 +107,7 @@ class OvergrownThicket(Card):
     def __init__(self):
         # Load all common PathCard fields from JSON
         super().__init__(**load_card_fields("Overgrown Thicket", "woods")) #type:ignore
+        self.keywords = {Keyword.OBSTACLE}
 
     def get_tests(self) -> list[Action] | None:
         """Returns all tests this card provides"""

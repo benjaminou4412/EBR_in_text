@@ -1344,5 +1344,144 @@ class CalypsaRangerMentorTests(unittest.TestCase):
         self.assertEqual(calypsa.harm, 0, "Calypsa should have no harm when no predators present")
 
 
+class KeywordTests(unittest.TestCase):
+    def test_friendly_keyword_prevents_interaction_fatigue(self):
+        """Test that cards with Friendly keyword don't cause interaction fatigue"""
+        from src.cards import CalypsaRangerMentor, SitkaDoe
+
+        calypsa = CalypsaRangerMentor()
+        doe = SitkaDoe()
+
+        # Calypsa should have Friendly keyword
+        self.assertIn(Keyword.FRIENDLY, calypsa.keywords, "Calypsa should have Friendly keyword")
+
+        ranger = RangerState(
+            name="Ranger",
+            hand=[Card(id="e1", title="E+1", approach_icons={Approach.EXPLORATION: 1})],
+            deck=[Card(id=f"deck{i}", title=f"Deck {i}") for i in range(10)],
+            aspects={Aspect.AWA: 3, Aspect.FIT: 2, Aspect.SPI: 2, Aspect.FOC: 1}
+        )
+
+        state = GameState(
+            ranger=ranger,
+            zones={
+                Zone.SURROUNDINGS: [],
+                Zone.ALONG_THE_WAY: [doe],  # Target
+                Zone.WITHIN_REACH: [calypsa],  # Friendly card between ranger and target
+                Zone.PLAYER_AREA: [],
+            }
+        )
+
+        eng = GameEngine(state, challenge_drawer=fixed_draw(0, ChallengeIcon.SUN))
+
+        # Perform a test on the doe (Calypsa is between ranger and doe)
+        spook_action = Action(
+            id="spook",
+            name="Spook Doe",
+            aspect=Aspect.SPI,
+            approach=Approach.CONFLICT,
+            target_provider=lambda _s: [doe],
+            difficulty_fn=lambda _s, _t: 1,
+            on_success=lambda _e, _eff, _t: None,
+        )
+
+        initial_deck_size = len(ranger.deck)
+        eng.initiate_test(spook_action, state, doe.id)
+
+        # Verify no fatigue occurred (Calypsa is Friendly)
+        self.assertEqual(len(ranger.deck), initial_deck_size,
+                        "Deck size should not change - Friendly cards don't cause fatigue")
+        self.assertEqual(len(ranger.fatigue_pile), 0,
+                        "Fatigue pile should be empty - Friendly cards don't cause fatigue")
+
+    def test_obstacle_keyword_blocks_targeting(self):
+        """Test that Obstacle keyword prevents targeting cards beyond it"""
+        from src.cards import OvergrownThicket, SitkaDoe, ProwlingWolhund
+
+        thicket = OvergrownThicket()
+        doe = SitkaDoe()
+        wolhund = ProwlingWolhund()
+
+        # Thicket should have Obstacle keyword
+        self.assertIn(Keyword.OBSTACLE, thicket.keywords, "Overgrown Thicket should have Obstacle keyword")
+
+        state = GameState(
+            ranger=RangerState(
+                name="Ranger",
+                hand=[],
+                aspects={Aspect.AWA: 3, Aspect.FIT: 2, Aspect.SPI: 2, Aspect.FOC: 1}
+            ),
+            zones={
+                Zone.SURROUNDINGS: [wolhund],  # Beyond the obstacle
+                Zone.ALONG_THE_WAY: [doe],  # Beyond the obstacle
+                Zone.WITHIN_REACH: [thicket],  # Obstacle here
+                Zone.PLAYER_AREA: [],
+            }
+        )
+
+        eng = GameEngine(state)
+
+        # Create an action that targets all path cards (beings and features)
+        target_all_path = Action(
+            id="test",
+            name="Target All Path Cards",
+            aspect=Aspect.SPI,
+            approach=Approach.CONFLICT,
+            target_provider=lambda s: s.path_cards_in_play(),
+            difficulty_fn=lambda _s, _t: 1,
+            on_success=lambda _e, _eff, _t: None,
+        )
+
+        # Get valid targets - should be filtered by obstacle
+        valid_targets = eng.get_valid_targets(target_all_path)
+
+        # Should only be able to target thicket (at obstacle), not doe or wolhund (beyond it)
+        self.assertEqual(len(valid_targets), 1, "Should only have 1 valid target due to Obstacle")
+        self.assertIn(thicket, valid_targets, "Thicket (at Obstacle zone) should be targetable")
+        self.assertNotIn(doe, valid_targets, "Doe (beyond Obstacle) should not be targetable")
+        self.assertNotIn(wolhund, valid_targets, "Wolhund (beyond Obstacle) should not be targetable")
+
+    def test_exhausted_obstacle_does_not_block(self):
+        """Test that exhausted Obstacles don't block targeting"""
+        from src.cards import OvergrownThicket, SitkaDoe
+
+        thicket = OvergrownThicket()
+        thicket.exhausted = True  # Exhausted obstacle
+        doe = SitkaDoe()
+
+        state = GameState(
+            ranger=RangerState(
+                name="Ranger",
+                hand=[],
+                aspects={Aspect.AWA: 3, Aspect.FIT: 2, Aspect.SPI: 2, Aspect.FOC: 1}
+            ),
+            zones={
+                Zone.SURROUNDINGS: [],
+                Zone.ALONG_THE_WAY: [doe],  # Beyond the exhausted obstacle
+                Zone.WITHIN_REACH: [thicket],  # Exhausted Obstacle
+                Zone.PLAYER_AREA: [],
+            }
+        )
+
+        eng = GameEngine(state)
+
+        target_all_path = Action(
+            id="test",
+            name="Target All Path Cards",
+            aspect=Aspect.SPI,
+            approach=Approach.CONFLICT,
+            target_provider=lambda s: s.path_cards_in_play(),
+            difficulty_fn=lambda _s, _t: 1,
+            on_success=lambda _e, _eff, _t: None,
+        )
+
+        valid_targets = eng.get_valid_targets(target_all_path)
+
+        # Both should be targetable since obstacle is exhausted
+        self.assertEqual(len(valid_targets), 2, "Both path cards should be targetable when Obstacle is exhausted")
+        self.assertIn(thicket, valid_targets)
+        self.assertIn(doe, valid_targets)
+
+
 if __name__ == '__main__':
     unittest.main()

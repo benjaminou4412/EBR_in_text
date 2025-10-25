@@ -1,12 +1,20 @@
 
 import os
 import random
-from src.models import Card, RangerState, GameState, Action, Aspect, Approach, Zone, CardType
+from src.models import (
+    Card, RangerState, GameState, Action, Aspect, Approach, Zone, CardType
+)
 from src.engine import GameEngine
 from src.registry import provide_common_tests, provide_card_tests
-from src.view import render_state, choose_action, choose_action_target, choose_commit, choose_target, display_and_clear_messages, choose_response
+from src.view import (
+    render_state, choose_action, choose_action_target, choose_commit,
+    choose_target, display_and_clear_messages, choose_response
+)
 from src.decks import build_woods_path_deck
-from src.cards import OvergrownThicket, SunberryBramble, SitkaDoe, WalkWithMe, ADearFriend, ProwlingWolhund, SitkaBuck
+from src.cards import (
+    OvergrownThicket, SunberryBramble, SitkaDoe, WalkWithMe, ADearFriend,
+    ProwlingWolhund, SitkaBuck, CalypsaRangerMentor
+)
 
 
 def pick_demo_cards() -> list[Card]:
@@ -62,6 +70,9 @@ def build_demo_state() -> GameState:
     wol_0 = ProwlingWolhund()
     #wol_1 = ProwlingWolhund()
 
+    # Add Calypsa
+    calypsa = CalypsaRangerMentor()
+
     # Add Midday Sun (Weather)
     weather = Card(
         id="midday-sun-01",
@@ -74,8 +85,8 @@ def build_demo_state() -> GameState:
     # Build a simple path deck from woods, excluding the ones already in play
     deck = build_woods_path_deck()
     surroundings : list[Card] = [weather]
-    along_the_way : list[Card] = [wol_0, buck_0]
-    within_reach : list[Card] = [thicket, bramble, doe]
+    along_the_way : list[Card] = [wol_0, buck_0, bramble]
+    within_reach : list[Card] = [thicket, calypsa, doe]
     player_area : list[Card] = []
     current_zones : dict[Zone,list[Card]]= {Zone.SURROUNDINGS : surroundings, Zone.ALONG_THE_WAY : along_the_way, Zone.WITHIN_REACH : within_reach, Zone.PLAYER_AREA : player_area}
     state = GameState(ranger=ranger, zones=current_zones, round_number=1, path_deck=deck)

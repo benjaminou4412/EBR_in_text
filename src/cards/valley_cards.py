@@ -10,6 +10,7 @@ class CalypsaRangerMentor(Card):
     def __init__(self):
         # Load all common PathCard fields from JSON
         super().__init__(**load_card_fields("Calypsa, Ranger Mentor", "Valley")) #type:ignore
+        self.keywords = {Keyword.FRIENDLY}
 
     def get_tests(self) -> list[Action]:
         """Returns all tests this card provides"""
