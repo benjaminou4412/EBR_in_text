@@ -376,11 +376,13 @@ class GameEngine:
     def soothe_ranger(self, ranger: RangerState, amount: int) -> None:
         """Move top amount cards from fatigue pile to hand"""
         cards_to_soothe = min(amount, len(ranger.fatigue_pile))
+        if cards_to_soothe > 0:
+            self.add_message(f"Ranger soothes {cards_to_soothe} fatigue.")
         for _ in range(cards_to_soothe):
             card = ranger.fatigue_pile.pop(0)  # Take from top of fatigue pile
             ranger.hand.append(card)  # Add to hand
-        if cards_to_soothe > 0:
-            self.add_message(f"Ranger soothes {cards_to_soothe} fatigue.")
+            self.add_message(f"   {card.title} is added to your hand.")
+        
 
     def injure_ranger(self, ranger: RangerState) -> None:
         """
@@ -455,5 +457,5 @@ class GameEngine:
         #Step 5: Ready all cards in play
         for zone in self.state.zones:
             for card in self.state.zones[zone]:
-                card.exhausted = False
+                card.ready()
         self.add_message("All cards in play Ready.")

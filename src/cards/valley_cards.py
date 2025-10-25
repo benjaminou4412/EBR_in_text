@@ -34,10 +34,11 @@ class CalypsaRangerMentor(Card):
         """Mountain effect: Add 1[progress] to a path card as Calypsa lends you a hand."""
         path_cards: list[Card] = engine.state.path_cards_in_play() #never empty because Calypsa herself is always a valid target
         engine.add_message(f"Challenge (Mountain) on {self.title}: Calypsa lends you a hand. Choose a path card to add 1 progress to:")
-        target: Card = engine.card_chooser(engine,path_cards) 
-        target.add_progress(1)
+        target: Card = engine.card_chooser(engine,path_cards)
+        msg = target.add_progress(1)
+        engine.add_message(msg)
         return True
 
     def _crest_effect(self, engine: GameEngine) -> bool:
         """If there is an active predator, exhaust it. »» Add [harm] to this being equal to that predator's presence."""
-        return self.harm_from_predator(engine, ChallengeIcon.CREST)
+        return self.harm_from_predator(engine, ChallengeIcon.CREST, self)

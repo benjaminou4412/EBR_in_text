@@ -11,7 +11,8 @@ def provide_common_tests(state: GameState) -> list[Action]:
     def traverse_success(e: GameEngine, eff: int, tid: str | None) -> None:
         card = e.state.get_card_by_id(tid)
         if card and CardType.FEATURE in card.card_types:
-            card.add_progress(eff)
+            msg = card.add_progress(eff)
+            e.add_message(msg)
 
     def traverse_fail(e: GameEngine, _tid: str | None) -> None:  # noqa: ARG001
         e.state.ranger.injury += 1
@@ -43,7 +44,8 @@ def provide_common_tests(state: GameState) -> list[Action]:
     def connect_success(e: GameEngine, eff: int, tid: str | None) -> None:
         card = e.state.get_card_by_id(tid)
         if card and CardType.BEING in card.card_types:
-            card.add_progress(eff)
+            msg = card.add_progress(eff)
+            e.add_message(msg)
 
     def get_connect_difficulty(s: GameState, tid: str | None) -> int:
         card = s.get_card_by_id(tid)
@@ -71,7 +73,9 @@ def provide_common_tests(state: GameState) -> list[Action]:
     def avoid_success(e: GameEngine, _eff: int, tid: str | None) -> None:  # noqa: ARG001
         card = e.state.get_card_by_id(tid)
         if card:
-            card.exhausted = True
+            e.add_message(card.exhaust())
+        else:
+            raise RuntimeError("Card not found!")
 
     def get_avoid_difficulty(s: GameState, tid: str | None) -> int:
         card = s.get_card_by_id(tid)

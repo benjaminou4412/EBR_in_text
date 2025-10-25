@@ -22,7 +22,7 @@ class ProwlingWolhund(Card):
         predators = engine.state.get_cards_by_trait("Predator")
         # Check if there's another predator besides this one
         if predators and any(p.id != self.id for p in predators):
-            self.exhausted = True
+            self.exhaust()
             engine.add_message("   Another predator is present - Prowling Wolhund enters play exhausted.")
         
 
@@ -47,7 +47,7 @@ class ProwlingWolhund(Card):
                 #prompt player to pick one to ready
                 engine.add_message(f"Challenge (Sun) on {self_display_id}: Choose another Prowling Wolhund to ready:")
                 target: Card = engine.card_chooser(engine, exhausted_wolhunds)
-                target.exhausted = False
+                engine.add_message(target.ready())
                 return True
             else:
                 engine.add_message(f"Challenge (Sun) on {self_display_id}: (all other Wolhunds already ready)")
@@ -60,7 +60,7 @@ class ProwlingWolhund(Card):
         enough_fatigue = len(engine.state.ranger.fatigue_pile) >= 3
         if enough_fatigue:
             engine.add_message(f"Challenge (Crest) on {self_display_id}: You have {len(engine.state.ranger.fatigue_pile)} fatigue - Prowling Wolhund exhausts itself and you suffer 1 injury!")
-            self.exhausted = True
+            self.exhaust()
             engine.injure_ranger(engine.state.ranger)
             return True
         else:
@@ -77,6 +77,76 @@ class SitkaBuck(Card):
         "bushy fur. Its snout resembles a cow's. Its antlers are multi-pronged and symmetrical, " \
         "with both branching in many directions in both smooth curves and sharp angles. If it " \
         "charged antlers-forward, those sharp points would hurt."
+
+    def get_challenge_handlers(self) -> dict[ChallengeIcon, Callable[[GameEngine], bool]] | None:
+        """Returns challenge symbol effects for this card"""
+        return {
+            ChallengeIcon.SUN: self._sun_effect,
+            ChallengeIcon.MOUNTAIN: self._mountain_effect,
+            ChallengeIcon.CREST: self._crest_effect
+        }
+    
+    def _sun_effect(self, engine: GameEngine) -> bool:
+        """If there is another active Sitka Buck, exhaust this being >> Add 2[harm] to both this
+        and the other Sitka Buck."""
+        self_display_id = get_display_id(engine.state.all_cards_in_play(), self)
+        bucks = engine.state.get_cards_by_title("Sitka Buck")
+        if not bucks:
+            raise RuntimeError("This card should count itself as a buck, so we can't get no-bucks-found here.")
+        else:
+            other_active_bucks = [buck for buck in bucks if buck.id != self.id and not buck.exhausted]
+            if other_active_bucks:
+                if len(other_active_bucks)==1:
+                    engine.add_message(f"Challenge (Sun) on {self_display_id}: Only one other active buck; automatically chosen for harm:")
+                else:
+                    engine.add_message(f"Challenge (Sun) on {self_display_id}: Choose another buck to harm:")
+                target_buck = engine.card_chooser(engine, other_active_bucks)
+                engine.add_message(self.exhaust())
+                engine.add_message(self.add_harm(2))
+                engine.add_message(target_buck.add_harm(2))
+                return True
+            else:
+                engine.add_message(f"Challenge (Sun) on {self_display_id}: (no other active Sitka Bucks)")
+                return False
+    
+    def _mountain_effect(self, engine: GameEngine) -> bool:
+        """If there is an active predator, exhaust it >> Add 2 harm to it, then add harm to this
+        being equal to that predator's presence."""
+        self_display_id = get_display_id(engine.state.all_cards_in_play(), self)
+        predators = engine.state.get_cards_by_trait("Predator")
+        if not predators:
+            engine.add_message(f"Challenge (Mountain) on {self_display_id}: (no predators in play)")
+            return False
+        else:
+            active_predators = [predator for predator in predators if predator.exhausted == False]
+            if not active_predators:
+                engine.add_message(f"Challenge (Mountain) on {self_display_id}: (no active predators in play)")
+                return False
+            elif len(active_predators) == 1:
+                engine.add_message(f"Challenge (Mountain) on {self_display_id}: Only one active predator; automatically chosen for harm:")
+            else:
+                engine.add_message(f"Challenge (Mountain) on {self_display_id}: Choose an active predator to harm:")
+            target_predator = engine.card_chooser(engine, active_predators)
+            engine.add_message(target_predator.exhaust())
+            engine.add_message(target_predator.add_harm(2))
+            curr_presence = target_predator.get_current_presence()
+            if curr_presence is not None:
+                engine.add_message(self.add_harm(curr_presence))
+                return True
+            else:
+                raise RuntimeError("A predator should always have a presence value!")
+    
+    def _crest_effect(self, engine: GameEngine) -> bool:
+        """If there is an active Sitka Doe, the buck charges >> Suffer 1 injury."""
+        self_display_id = get_display_id(engine.state.all_cards_in_play(), self)
+        does = engine.state.get_cards_by_title("Sitka Doe")
+        if does and any(not doe.exhausted for doe in does):
+            engine.add_message(f"Challenge (Crest) on {self_display_id}: There is an active Sitka Doe, so the buck charges.")
+            engine.injure_ranger(engine.state.ranger)
+            return True
+        else:
+            engine.add_message(f"Challenge (Crest) on {self_display_id}: (no active Sitka Doe)")
+            return False
 
 class SitkaDoe(Card):
     def __init__(self):
@@ -132,7 +202,7 @@ class SitkaDoe(Card):
 
     def _mountain_effect(self, engine: GameEngine) -> bool:
         """Mountain effect: If there is an active predator, exhaust it >> Add harm to this being equal to that predator's presence"""
-        return self.harm_from_predator(engine, ChallengeIcon.MOUNTAIN)
+        return self.harm_from_predator(engine, ChallengeIcon.MOUNTAIN, self)
 
 class CausticMulcher(Card):
     def __init__(self):
@@ -176,8 +246,8 @@ class SunberryBramble(Card):
 
     def _on_pluck_success(self, engine: GameEngine, effort: int, target_id: Optional[str]) -> None:
         """Pluck test success: add 1 harm"""
-        engine.add_message(f"Target {self.title} takes 1 harm")
-        self.add_harm(1)
+        msg = self.add_harm(1)
+        engine.add_message(msg)
         engine.soothe_ranger(engine.state.ranger, 2)
 
     def _fail_effect(self, engine: GameEngine, message: str | None) -> None:
@@ -187,7 +257,17 @@ class SunberryBramble(Card):
             engine.fatigue_ranger(engine.state.ranger, curr_presence)
 
 
+    def get_challenge_handlers(self) -> dict[ChallengeIcon, Callable[[GameEngine], bool]] | None:
+        """Returns challenge symbol effects for this card"""
+        return {
+            ChallengeIcon.MOUNTAIN: self._mountain_effect
+        }
 
+    def _mountain_effect(self, engine: GameEngine) -> bool:
+        """Mountain effect: If there is an active prey, exhaust it >>
+        Add [progress] to it and [harm] to this feature, both equal to 
+        that prey's presence."""
+        return self.harm_from_prey(engine, ChallengeIcon.MOUNTAIN, self)
             
 
 
@@ -218,7 +298,8 @@ class OvergrownThicket(Card):
 
     def _on_hunt_success(self, engine: GameEngine, effort: int, target_id: Optional[str]) -> None:
         """Hunt test success: add progress equal to effort"""
-        self.add_progress(effort)
+        msg = self.add_progress(effort)
+        engine.add_message(msg)
 
     def get_challenge_handlers(self) -> dict[ChallengeIcon, Callable[[GameEngine], bool]] | None:
         """Returns challenge symbol effects for this card"""
@@ -230,12 +311,12 @@ class OvergrownThicket(Card):
         """Mountain effect: discard 1 progress"""
         self_display_id = get_display_id(engine.state.all_cards_in_play(), self)
         if self.progress > 0:
-            self.progress -= 1
-            engine.add_message(f"Challenge (Mountain) on {self_display_id}: discards 1 progress (now {self.progress}).")
+            engine.add_message(f"Challenge (Mountain) on {self_display_id}: discards 1 progress to fatigue you.")
+            engine.add_message(self.remove_progress(1)[1])
             curr_presence = self.get_current_presence()
             if curr_presence is not None:
                 engine.fatigue_ranger(engine.state.ranger, curr_presence)
             return True
         else:
-            engine.add_message(f"Challenge: (Mountain) on {self_display_id}: (no progress to discard).")
+            engine.add_message(f"Challenge: (Mountain) on {self_display_id}: (no progress to discard; no fatigue).")
             return False

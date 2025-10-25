@@ -1,6 +1,7 @@
 import unittest
 from src.models import *
 from src.engine import GameEngine
+from src.cards import *
 
 
 def fixed_draw(mod : int, sym: ChallengeIcon):
@@ -10,13 +11,7 @@ def fixed_draw(mod : int, sym: ChallengeIcon):
 class EngineTests(unittest.TestCase):
     def test_thicket_progress_and_energy(self):
         # Setup state: one feature (thicket), ranger with two exploration cards in hand
-        thicket = Card(
-            title = "Overgrown Thicket",
-            id="woods-011-overgrown-thicket",
-            card_types={CardType.PATH, CardType.FEATURE},
-            presence=1,
-            progress_threshold=2
-        )
+        thicket = OvergrownThicket()
         ranger = RangerState(name="Ranger", hand=[], aspects={Aspect.AWA: 3, Aspect.FIT: 2, Aspect.SPI: 2, Aspect.FOC: 1})
         # Create two pseudo cards with Exploration+1 each
         ranger.hand = [
@@ -36,33 +31,23 @@ class EngineTests(unittest.TestCase):
 
 
         # Perform action using the engine API directly
-        from src.models import Action
-        act = Action(
-            id="t1",
-            name="thicket",
-            aspect=Aspect.AWA,
-            approach=Approach.EXPLORATION,
-            difficulty_fn=lambda _s, _t: 1,
-            on_success=lambda s, eff, _t: thicket.add_progress(eff),
-        )
-        eng.perform_action(
-            act,
-            decision=CommitDecision(energy=1, hand_indices=[0, 1]),
-            target_id=None)
+        thicket_test = thicket.get_tests()
+        if thicket_test is None:
+            raise RuntimeError(f"Failed to fetch thicket test")
+        else:
+            act = thicket_test[0]
+            eng.perform_action(
+                act,
+                decision=CommitDecision(energy=1, hand_indices=[0, 1]),
+                target_id=None)
 
-        self.assertEqual(state.ranger.energy[Aspect.AWA], 2)
-        self.assertEqual(thicket.progress, 3)
-        self.assertEqual(len(state.ranger.hand), 0)
+            self.assertEqual(state.ranger.energy[Aspect.AWA], 2)
+            self.assertEqual(thicket.progress, 3)
+            self.assertEqual(len(state.ranger.hand), 0)
     
     def test_single_energy(self):
         # Setup state: one feature (thicket), ranger with no cards in hand
-        thicket = Card(
-            title="Overgrown Thicket",
-            id="woods-011-overgrown-thicket",
-            card_types={CardType.PATH, CardType.FEATURE},
-            presence=1,
-            progress_threshold=2
-        )
+        thicket = OvergrownThicket()
         ranger = RangerState(name="Ranger", hand=[], aspects={Aspect.AWA: 3, Aspect.FIT: 2, Aspect.SPI: 2, Aspect.FOC: 1})
         state = GameState(
             ranger=ranger,
@@ -76,22 +61,19 @@ class EngineTests(unittest.TestCase):
         eng = GameEngine(state, challenge_drawer=fixed_draw(0, ChallengeIcon.SUN))
 
         # Perform action using the engine API directly
-        act = Action(
-            id="t1",
-            name="thicket",
-            aspect=Aspect.AWA,
-            approach=Approach.EXPLORATION,
-            difficulty_fn=lambda _s, _t: 1,
-            on_success=lambda s, eff, _t: thicket.add_progress(eff),
-        )
-        eng.perform_action(
-            act,
-            decision=CommitDecision(energy=1, hand_indices=[]),
-            target_id=None)
+        thicket_test = thicket.get_tests()
+        if thicket_test is None:
+            raise RuntimeError(f"Failed to fetch thicket test")
+        else:
+            act = thicket_test[0]
+            eng.perform_action(
+                act,
+                decision=CommitDecision(energy=1, hand_indices=[]),
+                target_id=None)
 
-        self.assertEqual(state.ranger.energy[Aspect.AWA], 2)
-        self.assertEqual(thicket.progress, 1)
-        self.assertEqual(len(state.ranger.hand), 0)
+            self.assertEqual(state.ranger.energy[Aspect.AWA], 2)
+            self.assertEqual(thicket.progress, 1)
+            self.assertEqual(len(state.ranger.hand), 0)
 
     def test_traverse_feature(self):
         feat = Card(
@@ -114,13 +96,16 @@ class EngineTests(unittest.TestCase):
         )
         eng = GameEngine(state, challenge_drawer=fixed_draw(0, ChallengeIcon.CREST))
 
+        def add_progress_callback(_s: GameEngine, eff: int, _t: Optional[str]) -> None:
+            feat.add_progress(eff)
+
         act = Action(
             id="t2",
             name="traverse",
             aspect=Aspect.FIT,
             approach=Approach.EXPLORATION,
             difficulty_fn=lambda _s, _t: max(1, feat.presence if feat.presence is not None else 0),
-            on_success=lambda s, eff, _t: feat.add_progress(eff),
+            on_success=add_progress_callback,
             on_fail=lambda s, _t: setattr(state.ranger, "injury", state.ranger.injury + 1),
         )
         eng.perform_action(
@@ -155,13 +140,16 @@ class EngineTests(unittest.TestCase):
         eng = GameEngine(state, challenge_drawer=fixed_draw(0, ChallengeIcon.SUN))
 
         # Perform action that adds exactly enough progress to clear (1 energy + 1 icon = 2 effort)
+        def add_progress_callback(_s: GameEngine, eff: int, _t: Optional[str]) -> None:
+            feature.add_progress(eff)
+
         act = Action(
             id="test-action",
             name="test",
             aspect=Aspect.AWA,
             approach=Approach.EXPLORATION,
             difficulty_fn=lambda _s, _t: 1,
-            on_success=lambda s, eff, _t: feature.add_progress(eff),
+            on_success=add_progress_callback,
         )
         eng.perform_action(act, decision=CommitDecision(energy=1, hand_indices=[0]), target_id=None)
 
@@ -195,13 +183,16 @@ class EngineTests(unittest.TestCase):
         eng = GameEngine(state, challenge_drawer=fixed_draw(0, ChallengeIcon.SUN))
 
         # Perform action that adds exactly enough harm to clear (1 energy + 1 icon = 2 effort = 2 harm)
+        def add_harm_callback(_s: GameEngine, eff: int, _t: Optional[str]) -> None:
+            being.add_harm(eff)
+
         act = Action(
             id="test-harm",
             name="test harm",
             aspect=Aspect.AWA,
             approach=Approach.CONFLICT,
             difficulty_fn=lambda _s, _t: 1,
-            on_success=lambda s, eff, _t: being.add_harm(eff),
+            on_success=add_harm_callback,
         )
         eng.perform_action(act, decision=CommitDecision(energy=1, hand_indices=[0]), target_id=None)
 
@@ -233,13 +224,16 @@ class EngineTests(unittest.TestCase):
         eng = GameEngine(state, challenge_drawer=fixed_draw(0, ChallengeIcon.SUN))
 
         # Add progress that doesn't reach threshold (only 1 effort)
+        def add_progress_callback(_s: GameEngine, eff: int, _t: Optional[str]) -> None:
+            feature.add_progress(eff)
+
         act = Action(
             id="test-action",
             name="test",
             aspect=Aspect.AWA,
             approach=Approach.EXPLORATION,
             difficulty_fn=lambda _s, _t: 1,
-            on_success=lambda s, eff, _t: feature.add_progress(eff),
+            on_success=add_progress_callback,
         )
         eng.perform_action(act, decision=CommitDecision(energy=1, hand_indices=[]), target_id=None)
 

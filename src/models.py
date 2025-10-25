@@ -229,9 +229,11 @@ class Card:
         else:
             return None
     
-    def harm_from_predator(self, engine: GameEngine, symbol: ChallengeIcon) -> bool:
+    def harm_from_predator(self, engine: GameEngine, symbol: ChallengeIcon, harm_target: Card) -> bool:
+        """Common challenge effect where an active predator exhausts and adds harm to a harm_target (usually this card)"""
         predators = engine.state.get_cards_by_trait("Predator")
         self_display_id = get_display_id(engine.state.all_cards_in_play(), self)
+        harm_target_display_id = get_display_id(engine.state.all_cards_in_play(), harm_target)
         if predators is not None:
             active_predators = [predator for predator in predators if predator.exhausted == False]
             if not active_predators:
@@ -239,47 +241,98 @@ class Card:
                 return False
             else:
                 if len(active_predators)==1:
-                    engine.add_message(f"Challenge ({symbol.value}) on {self_display_id}: the active predator in play exhausts itself and harms Sitka Doe:")
+                    engine.add_message(f"Challenge ({symbol.value}) on {self_display_id}: the active predator in play exhausts itself and harms {harm_target_display_id}:")
                 else:
-                    engine.add_message(f"Challenge ({symbol.value}) on {self_display_id}: Choose a predator that will exhaust itself and harm Sitka Doe:")
+                    engine.add_message(f"Challenge ({symbol.value}) on {self_display_id}: Choose a predator that will exhaust itself and harms {harm_target_display_id}:")
                 target_predator = engine.card_chooser(engine, active_predators)
-                target_predator.exhausted = True
-                target_presence = target_predator.get_current_presence()
-                if target_presence is not None:
+                engine.add_message(target_predator.exhaust())
+                target_predator_presence = target_predator.get_current_presence()
+                if target_predator_presence is not None:
                     #this should always happen
-                    self.add_harm(target_presence)
-                    engine.add_message(f"{get_display_id(active_predators, target_predator)} is now exhausted.")
-                    engine.add_message(f"{self_display_id} suffered harm equal to {get_display_id(active_predators, target_predator)}'s presence ({target_presence}).")
+                    msg = harm_target.add_harm(target_predator_presence)
+                    engine.add_message(f"{target_predator.title}: {msg}")
+                else:
+                    raise RuntimeError("A predator should always have a presence!")
                 return True
         else:
             engine.add_message(f"Challenge ({symbol.value}) on {self_display_id}: (no predators in play)")
             return False
     
+    def harm_from_prey(self, engine: GameEngine, symbol: ChallengeIcon, harm_target: Card) -> bool:
+        """Common challenge effect form where an active prey exhausts and adds harm to a harm_target (usually this card),
+        as well as progress to itself.."""
+        prey_list = engine.state.get_cards_by_trait("Prey")
+        self_display_id = get_display_id(engine.state.all_cards_in_play(), self)
+        harm_target_display_id = get_display_id(engine.state.all_cards_in_play(), harm_target)
+        if prey_list is not None:
+            active_prey = [prey for prey in prey_list if prey.exhausted == False]
+            if not active_prey:
+                engine.add_message(f"Challenge ({symbol.value}) on {self_display_id}: (no active prey in play)")
+                return False
+            else:
+                if len(active_prey)==1:
+                    engine.add_message(f"Challenge ({symbol.value}) on {self_display_id}: the active prey in play exhausts itself and harms {harm_target_display_id}:")
+                else:
+                    engine.add_message(f"Challenge ({symbol.value}) on {self_display_id}: Choose a prey that will exhaust itself and harms {harm_target_display_id}:")
+                target_prey = engine.card_chooser(engine, active_prey)
+                engine.add_message(target_prey.exhaust())
+                target_prey_presence = target_prey.get_current_presence()
+                if target_prey_presence is not None:
+                    #this should always happen
+                    msg = harm_target.add_harm(target_prey_presence)
+                    engine.add_message(f"{target_prey.title}: {msg}")
+                    engine.add_message(target_prey.add_progress(target_prey_presence))
+                else:
+                    raise RuntimeError("A prey should always have a presence!")
+                return True
+        else:
+            engine.add_message(f"Challenge ({symbol.value}) on {self_display_id}: (no prey in play)")
+            return False
         
     #todo: validate inputs on all these setters; amount should always be positive
-    def add_progress(self, amount: int) -> None:
+    def add_progress(self, amount: int) -> str:
         if not self.progress_forbidden:
             self.progress = max(0, self.progress + amount) #separate methods for removing progress/harm
+            return f"Added {amount} progress to {self.title}. Now has {self.progress} progress."
+        else:
+            return f"Progress cannot be added to {self.title}!"
 
-    def add_harm(self, amount: int) -> None:
+    def add_harm(self, amount: int) -> str:
         if not self.harm_forbidden:
             self.harm = max(0, self.harm + amount)
+            return f"Added {amount} harm to {self.title}. Now has {self.harm} harm."
+        else:
+            return f"Harm cannot be added to {self.title}!"
 
-    def remove_progress(self, amount: int) -> int: #amount of tokens actually removed often matters
+    def remove_progress(self, amount: int) -> tuple[int,str]: #amount of tokens actually removed often matters
         if not self.progress_forbidden:
             amount_removed = min(self.progress, amount)
             self.progress = self.progress - amount_removed
-            return amount_removed
+            return amount_removed, f"Removed {amount} progress from {self.title}. Now has {self.progress} progress."
         else:
-            return 0
+            return 0, f"Progress cannot exist on {self.title}!"
 
-    def remove_harm(self, amount: int) -> int: 
+    def remove_harm(self, amount: int) -> tuple[int, str]: 
         if not self.harm_forbidden:
             amount_removed = min(self.harm, amount)
             self.harm = self.harm - amount_removed
-            return amount_removed
+            return amount_removed, f"Removed {amount} harm from {self.title}. Now has {self.harm} harm."
         else:
-            return 0
+            return 0, f"Harm cannot exist on {self.title}!"
+    
+    def exhaust(self) -> str:
+        if self.exhausted:
+            return f"{self.title} is already exhausted."
+        else:
+            self.exhausted = True
+            return f"{self.title} exhausts."
+    
+    def ready(self) -> str:
+        if not self.exhausted:
+            return f"{self.title} is already ready."
+        else:
+            self.exhausted = False
+            return f"{self.title} readies."
         
     def clear_if_threshold(self) -> str | None: 
         if self.progress_threshold is not None and self.progress >= self.progress_threshold:

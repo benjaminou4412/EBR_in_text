@@ -3,7 +3,6 @@ Explorer card implementations
 """
 from ..models import Card, EventListener, EventType, TimingType, Aspect
 from ..engine import GameEngine
-from ..utils import get_display_id
 from ..json_loader import load_card_fields #type:ignore
 
 
@@ -36,7 +35,7 @@ class WalkWithMe(Card):
                 target = engine.card_chooser(engine, targets_list)
                 # Move Walk With Me to discard and clean up listener
                 engine.discard_from_hand(self)
-                engine.add_message(f"Played Walk With Me, adding {effort} [Progress] to {get_display_id(targets_list, target)}.")
-                target.add_progress(effort)
+                msg = target.add_progress(effort)
+                engine.add_message(f"Played Walk With Me: {msg}")
             elif error:
                 engine.add_message(error)
