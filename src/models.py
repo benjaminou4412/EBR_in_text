@@ -334,13 +334,59 @@ class Card:
             self.exhausted = False
             return f"{self.title} readies."
         
-    def clear_if_threshold(self) -> str | None: 
+    def clear_if_threshold(self) -> str | None:
         if self.progress_threshold is not None and self.progress >= self.progress_threshold:
             return "progress"
         if self.harm_threshold is not None and self.harm >= self.harm_threshold:
             return "harm"
         return None
-    
+
+    def discard_from_play(self, engine: GameEngine) -> str:
+        """
+        Remove this card from play and send it to the appropriate discard pile.
+        Handles zone cleanup and determines correct discard pile based on card type.
+
+        Returns:
+            Message describing what happened
+        """
+        # TODO: Handle ranger token if on this card (when ranger token system implemented)
+        # if engine.state.ranger_token_location == self.id:
+        #     engine.move_ranger_token_to_role()
+
+        # TODO: Recursively discard all attached cards (when attachment system implemented)
+        # for attached in self.attached_cards[:]:
+        #     attached.discard_from_play(engine)
+
+        # Remove from zone
+        for zone_cards in engine.state.zones.values():
+            if self in zone_cards:
+                zone_cards.remove(self)
+                break
+
+        # Determine correct discard pile (polymorphism!)
+        if CardType.PATH in self.card_types:
+            engine.state.path_discard.append(self)
+        elif CardType.RANGER in self.card_types:
+            engine.state.ranger.discard.append(self)
+        else:
+            # Weather, location, mission cards might have different discard rules
+            # For now, treat as path cards
+            engine.state.path_discard.append(self)
+
+        # TODO: Clean up attachment state (when attachment system implemented)
+        # self.attached_cards.clear()
+        # self.attached_to_id = None
+
+        # TODO: If this is a facedown placeholder, handle original (when facedown system implemented)
+        # if self.is_facedown():
+        #     original = self.facedown_original
+        #     if CardType.PATH in original.card_types:
+        #         engine.state.path_discard.append(original)
+        #     elif CardType.RANGER in original.card_types:
+        #         engine.state.ranger.discard.append(original)
+
+        return f"{self.title} discarded."
+
 @dataclass
 class ValueModifier:
     target : str = "" #which value field is modified? presence, energy cost, equip slots?

@@ -259,28 +259,35 @@ class GameEngine:
 
         
     
-    #check all in-play cards' clear thresholds and moves them to discard when thresholds are met
-    #return list of cleared entities to display
     def check_and_process_clears(self) -> list[Card]:
-        to_clear : list[Card]= []
-        
+        """
+        Check all in-play cards' clear thresholds and process clearing.
+
+        By default, cleared cards leave play (discard).
+        TODO: Some cards have special clear entries that keep them in play.
+
+        Returns:
+            List of cleared cards (for display messages)
+        """
+        to_clear: list[Card] = []
+
         for zone in self.state.zones:
-            remaining : list[Card] = []
             for card in self.state.zones[zone]:
                 if CardType.PATH in card.card_types:
                     clear_type = card.clear_if_threshold()
                     if clear_type == "progress":
-                        #todo: check for clear-by-progress entry
+                        # TODO: Check for clear-by-progress entry (on_progress_clear_log)
+                        # Some cards might have special effects or stay in play
                         to_clear.append(card)
                     elif clear_type == "harm":
-                        #todo: check for clear-by-harm entry
+                        # TODO: Check for clear-by-harm entry (on_harm_clear_log)
+                        # Some cards might have special effects or stay in play
                         to_clear.append(card)
-                    else:
-                        remaining.append(card)
-                else:
-                    remaining.append(card)
-            self.state.zones[zone] = remaining
-        self.state.path_discard.extend(to_clear)
+
+        # Discard all cleared cards (this removes them from zones)
+        for card in to_clear:
+            card.discard_from_play(self)
+
         return to_clear
     
     # Listener management methods
