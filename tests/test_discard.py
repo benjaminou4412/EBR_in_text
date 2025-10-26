@@ -22,11 +22,11 @@ class DiscardFromPlayTests(unittest.TestCase):
         ranger = RangerState(name="Ranger", aspects={Aspect.AWA: 3, Aspect.FIT: 2, Aspect.SPI: 2, Aspect.FOC: 1})
         state = GameState(
             ranger=ranger,
-            zones={
-                Zone.SURROUNDINGS: [],
-                Zone.ALONG_THE_WAY: [thicket],
-                Zone.WITHIN_REACH: [],
-                Zone.PLAYER_AREA: [],
+            areas={
+                Area.SURROUNDINGS: [],
+                Area.ALONG_THE_WAY: [thicket],
+                Area.WITHIN_REACH: [],
+                Area.PLAYER_AREA: [],
             }
         )
         eng = GameEngine(state, challenge_drawer=fixed_draw(0, ChallengeIcon.SUN))
@@ -36,7 +36,7 @@ class DiscardFromPlayTests(unittest.TestCase):
 
         # Assertions
         self.assertIn("discarded", msg.lower())
-        self.assertNotIn(thicket, state.zones[Zone.ALONG_THE_WAY])
+        self.assertNotIn(thicket, state.areas[Area.ALONG_THE_WAY])
         self.assertIn(thicket, state.path_discard)
 
     def test_discard_ranger_card_from_zone(self):
@@ -51,11 +51,11 @@ class DiscardFromPlayTests(unittest.TestCase):
         ranger = RangerState(name="Ranger", aspects={Aspect.AWA: 3, Aspect.FIT: 2, Aspect.SPI: 2, Aspect.FOC: 1})
         state = GameState(
             ranger=ranger,
-            zones={
-                Zone.SURROUNDINGS: [],
-                Zone.ALONG_THE_WAY: [],
-                Zone.WITHIN_REACH: [],
-                Zone.PLAYER_AREA: [ranger_card],
+            areas={
+                Area.SURROUNDINGS: [],
+                Area.ALONG_THE_WAY: [],
+                Area.WITHIN_REACH: [],
+                Area.PLAYER_AREA: [ranger_card],
             }
         )
         eng = GameEngine(state, challenge_drawer=fixed_draw(0, ChallengeIcon.SUN))
@@ -65,32 +65,32 @@ class DiscardFromPlayTests(unittest.TestCase):
 
         # Assertions
         self.assertIn("discarded", msg.lower())
-        self.assertNotIn(ranger_card, state.zones[Zone.PLAYER_AREA])
+        self.assertNotIn(ranger_card, state.areas[Area.PLAYER_AREA])
         self.assertIn(ranger_card, state.ranger.discard)
         self.assertNotIn(ranger_card, state.path_discard)
 
     def test_discard_card_from_multiple_zones(self):
         """Discard should work regardless of which zone card is in"""
-        for zone in [Zone.SURROUNDINGS, Zone.ALONG_THE_WAY, Zone.WITHIN_REACH]:
+        for zone in [Area.SURROUNDINGS, Area.ALONG_THE_WAY, Area.WITHIN_REACH]:
             bramble = SunberryBramble()
             ranger = RangerState(name="Ranger", aspects={Aspect.AWA: 3, Aspect.FIT: 2, Aspect.SPI: 2, Aspect.FOC: 1})
             state = GameState(
                 ranger=ranger,
-                zones={
-                    Zone.SURROUNDINGS: [],
-                    Zone.ALONG_THE_WAY: [],
-                    Zone.WITHIN_REACH: [],
-                    Zone.PLAYER_AREA: [],
+                areas={
+                    Area.SURROUNDINGS: [],
+                    Area.ALONG_THE_WAY: [],
+                    Area.WITHIN_REACH: [],
+                    Area.PLAYER_AREA: [],
                 }
             )
-            state.zones[zone].append(bramble)
+            state.areas[zone].append(bramble)
             eng = GameEngine(state, challenge_drawer=fixed_draw(0, ChallengeIcon.SUN))
 
             # Discard the bramble
             bramble.discard_from_play(eng)
 
             # Assertions
-            self.assertNotIn(bramble, state.zones[zone], f"Failed for zone {zone}")
+            self.assertNotIn(bramble, state.areas[zone], f"Failed for zone {zone}")
             self.assertIn(bramble, state.path_discard, f"Failed for zone {zone}")
 
 
@@ -105,11 +105,11 @@ class ClearingTests(unittest.TestCase):
         ranger = RangerState(name="Ranger", aspects={Aspect.AWA: 3, Aspect.FIT: 2, Aspect.SPI: 2, Aspect.FOC: 1})
         state = GameState(
             ranger=ranger,
-            zones={
-                Zone.SURROUNDINGS: [],
-                Zone.ALONG_THE_WAY: [thicket],
-                Zone.WITHIN_REACH: [],
-                Zone.PLAYER_AREA: [],
+            areas={
+                Area.SURROUNDINGS: [],
+                Area.ALONG_THE_WAY: [thicket],
+                Area.WITHIN_REACH: [],
+                Area.PLAYER_AREA: [],
             }
         )
         eng = GameEngine(state, challenge_drawer=fixed_draw(0, ChallengeIcon.SUN))
@@ -120,7 +120,7 @@ class ClearingTests(unittest.TestCase):
         # Assertions
         self.assertEqual(len(cleared), 1)
         self.assertIn(thicket, cleared)
-        self.assertNotIn(thicket, state.zones[Zone.ALONG_THE_WAY])
+        self.assertNotIn(thicket, state.areas[Area.ALONG_THE_WAY])
         self.assertIn(thicket, state.path_discard)
 
     def test_card_clears_at_harm_threshold(self):
@@ -131,11 +131,11 @@ class ClearingTests(unittest.TestCase):
         ranger = RangerState(name="Ranger", aspects={Aspect.AWA: 3, Aspect.FIT: 2, Aspect.SPI: 2, Aspect.FOC: 1})
         state = GameState(
             ranger=ranger,
-            zones={
-                Zone.SURROUNDINGS: [],
-                Zone.ALONG_THE_WAY: [],
-                Zone.WITHIN_REACH: [bramble],
-                Zone.PLAYER_AREA: [],
+            areas={
+                Area.SURROUNDINGS: [],
+                Area.ALONG_THE_WAY: [],
+                Area.WITHIN_REACH: [bramble],
+                Area.PLAYER_AREA: [],
             }
         )
         eng = GameEngine(state, challenge_drawer=fixed_draw(0, ChallengeIcon.SUN))
@@ -146,7 +146,7 @@ class ClearingTests(unittest.TestCase):
         # Assertions
         self.assertEqual(len(cleared), 1)
         self.assertIn(bramble, cleared)
-        self.assertNotIn(bramble, state.zones[Zone.WITHIN_REACH])
+        self.assertNotIn(bramble, state.areas[Area.WITHIN_REACH])
         self.assertIn(bramble, state.path_discard)
 
     def test_card_doesnt_clear_below_threshold(self):
@@ -157,11 +157,11 @@ class ClearingTests(unittest.TestCase):
         ranger = RangerState(name="Ranger", aspects={Aspect.AWA: 3, Aspect.FIT: 2, Aspect.SPI: 2, Aspect.FOC: 1})
         state = GameState(
             ranger=ranger,
-            zones={
-                Zone.SURROUNDINGS: [],
-                Zone.ALONG_THE_WAY: [thicket],
-                Zone.WITHIN_REACH: [],
-                Zone.PLAYER_AREA: [],
+            areas={
+                Area.SURROUNDINGS: [],
+                Area.ALONG_THE_WAY: [thicket],
+                Area.WITHIN_REACH: [],
+                Area.PLAYER_AREA: [],
             }
         )
         eng = GameEngine(state, challenge_drawer=fixed_draw(0, ChallengeIcon.SUN))
@@ -171,7 +171,7 @@ class ClearingTests(unittest.TestCase):
 
         # Assertions
         self.assertEqual(len(cleared), 0)
-        self.assertIn(thicket, state.zones[Zone.ALONG_THE_WAY])
+        self.assertIn(thicket, state.areas[Area.ALONG_THE_WAY])
         self.assertNotIn(thicket, state.path_discard)
 
     def test_multiple_cards_clear_simultaneously(self):
@@ -185,11 +185,11 @@ class ClearingTests(unittest.TestCase):
         ranger = RangerState(name="Ranger", aspects={Aspect.AWA: 3, Aspect.FIT: 2, Aspect.SPI: 2, Aspect.FOC: 1})
         state = GameState(
             ranger=ranger,
-            zones={
-                Zone.SURROUNDINGS: [],
-                Zone.ALONG_THE_WAY: [thicket],
-                Zone.WITHIN_REACH: [bramble],
-                Zone.PLAYER_AREA: [],
+            areas={
+                Area.SURROUNDINGS: [],
+                Area.ALONG_THE_WAY: [thicket],
+                Area.WITHIN_REACH: [bramble],
+                Area.PLAYER_AREA: [],
             }
         )
         eng = GameEngine(state, challenge_drawer=fixed_draw(0, ChallengeIcon.SUN))
@@ -201,8 +201,8 @@ class ClearingTests(unittest.TestCase):
         self.assertEqual(len(cleared), 2)
         self.assertIn(thicket, cleared)
         self.assertIn(bramble, cleared)
-        self.assertNotIn(thicket, state.zones[Zone.ALONG_THE_WAY])
-        self.assertNotIn(bramble, state.zones[Zone.WITHIN_REACH])
+        self.assertNotIn(thicket, state.areas[Area.ALONG_THE_WAY])
+        self.assertNotIn(bramble, state.areas[Area.WITHIN_REACH])
         self.assertIn(thicket, state.path_discard)
         self.assertIn(bramble, state.path_discard)
 
@@ -218,11 +218,11 @@ class SeparationOfClearAndDiscardTests(unittest.TestCase):
         ranger = RangerState(name="Ranger", aspects={Aspect.AWA: 3, Aspect.FIT: 2, Aspect.SPI: 2, Aspect.FOC: 1})
         state = GameState(
             ranger=ranger,
-            zones={
-                Zone.SURROUNDINGS: [],
-                Zone.ALONG_THE_WAY: [thicket],
-                Zone.WITHIN_REACH: [],
-                Zone.PLAYER_AREA: [],
+            areas={
+                Area.SURROUNDINGS: [],
+                Area.ALONG_THE_WAY: [thicket],
+                Area.WITHIN_REACH: [],
+                Area.PLAYER_AREA: [],
             }
         )
         eng = GameEngine(state, challenge_drawer=fixed_draw(0, ChallengeIcon.SUN))
@@ -241,11 +241,11 @@ class SeparationOfClearAndDiscardTests(unittest.TestCase):
         ranger = RangerState(name="Ranger", aspects={Aspect.AWA: 3, Aspect.FIT: 2, Aspect.SPI: 2, Aspect.FOC: 1})
         state = GameState(
             ranger=ranger,
-            zones={
-                Zone.SURROUNDINGS: [],
-                Zone.ALONG_THE_WAY: [],
-                Zone.WITHIN_REACH: [buck],
-                Zone.PLAYER_AREA: [],
+            areas={
+                Area.SURROUNDINGS: [],
+                Area.ALONG_THE_WAY: [],
+                Area.WITHIN_REACH: [buck],
+                Area.PLAYER_AREA: [],
             }
         )
         eng = GameEngine(state, challenge_drawer=fixed_draw(0, ChallengeIcon.SUN))
@@ -254,7 +254,7 @@ class SeparationOfClearAndDiscardTests(unittest.TestCase):
         buck.discard_from_play(eng)
 
         # Card should be discarded even though it didn't clear
-        self.assertNotIn(buck, state.zones[Zone.WITHIN_REACH])
+        self.assertNotIn(buck, state.areas[Area.WITHIN_REACH])
         self.assertIn(buck, state.path_discard)
 
 

@@ -3,7 +3,7 @@ import os
 import random
 import argparse
 from src.models import (
-    Card, RangerState, GameState, Action, Aspect, Approach, Zone, CardType
+    Card, RangerState, GameState, Action, Aspect, Approach, Area, CardType
 )
 from src.engine import GameEngine
 from src.registry import provide_common_tests, provide_card_tests
@@ -80,7 +80,7 @@ def build_demo_state() -> GameState:
         id="midday-sun-01",
         title="Midday Sun",
         card_types={CardType.WEATHER},
-        starting_area=Zone.SURROUNDINGS,
+        starting_area=Area.SURROUNDINGS,
     )
 
     ranger = RangerState(name="Demo Ranger", hand=[], aspects={Aspect.AWA: 99, Aspect.FIT: 99, Aspect.SPI: 99, Aspect.FOC: 99}, deck=ranger_deck, fatigue_pile=ranger_fatigue)
@@ -90,8 +90,8 @@ def build_demo_state() -> GameState:
     along_the_way : list[Card] = [wol_0, buck_0, bramble]
     within_reach : list[Card] = [thicket, calypsa, doe]
     player_area : list[Card] = []
-    current_zones : dict[Zone,list[Card]]= {Zone.SURROUNDINGS : surroundings, Zone.ALONG_THE_WAY : along_the_way, Zone.WITHIN_REACH : within_reach, Zone.PLAYER_AREA : player_area}
-    state = GameState(ranger=ranger, zones=current_zones, round_number=1, path_deck=deck)
+    current_areas : dict[Area,list[Card]]= {Area.SURROUNDINGS : surroundings, Area.ALONG_THE_WAY : along_the_way, Area.WITHIN_REACH : within_reach, Area.PLAYER_AREA : player_area}
+    state = GameState(ranger=ranger, areas=current_areas, round_number=1, path_deck=deck)
     # Note: Cards drawn to hand - listeners will be registered when engine is created
     for _ in range(5):
         _, _, _ = state.ranger.draw_card()  # Draw cards during setup

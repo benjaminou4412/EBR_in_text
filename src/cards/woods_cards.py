@@ -3,7 +3,7 @@ Woods terrain set card implementations
 """
 from typing import Optional, Callable
 
-from src.models import Zone
+from src.models import Area
 from ..models import *
 from ..json_loader import load_card_fields #type:ignore
 from ..utils import get_display_id
@@ -16,9 +16,9 @@ class ProwlingWolhund(Card):
         "forehead all the way down to join its tail. It steps lightly on the balls of its " \
         "paws, oriented slightly away from you but with its head turned to give you a glare."
     
-    def enters_play(self, engine: GameEngine, zone: Zone) -> None:
+    def enters_play(self, engine: GameEngine, area: Area) -> None:
         """If there is another predator in play, this predator comes into play exhausted"""
-        super().enters_play(engine, zone)
+        super().enters_play(engine, area)
         predators = engine.state.get_cards_by_trait("Predator")
         # Check if there's another predator besides this one
         if predators and any(p.id != self.id for p in predators):
@@ -175,7 +175,7 @@ class SitkaDoe(Card):
 
     def _on_spook_success(self, engine: GameEngine, effort: int, target_id: Optional[str]) -> None:
         """Spook test success: move to Along the Way"""
-        engine.move_card(self.id, Zone.ALONG_THE_WAY)
+        engine.move_card(self.id, Area.ALONG_THE_WAY)
 
     def get_challenge_handlers(self) -> dict[ChallengeIcon, Callable[[GameEngine], bool]] | None:
         """Returns challenge symbol effects for this card"""
@@ -195,7 +195,7 @@ class SitkaDoe(Card):
             engine.add_message(f"Challenge (Sun) on {self_display_id}: The Sitka Buck are drawn to the doe. They move within reach.")
             any_moved = False
             for buck in bucks:
-                if engine.move_card(buck.id, Zone.WITHIN_REACH):
+                if engine.move_card(buck.id, Area.WITHIN_REACH):
                     any_moved = True
             return any_moved
             

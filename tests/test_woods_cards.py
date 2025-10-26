@@ -24,17 +24,17 @@ class ProwlingWolhundTests(unittest.TestCase):
         ranger = RangerState(name="Ranger", aspects={Aspect.AWA: 3, Aspect.FIT: 2, Aspect.SPI: 2, Aspect.FOC: 1})
         state = GameState(
             ranger=ranger,
-            zones={
-                Zone.SURROUNDINGS: [],
-                Zone.ALONG_THE_WAY: [],
-                Zone.WITHIN_REACH: [],
-                Zone.PLAYER_AREA: [],
+            areas={
+                Area.SURROUNDINGS: [],
+                Area.ALONG_THE_WAY: [],
+                Area.WITHIN_REACH: [],
+                Area.PLAYER_AREA: [],
             }
         )
         eng = GameEngine(state, challenge_drawer=fixed_draw(0, ChallengeIcon.SUN))
 
         # Manually call enters_play
-        wolhund.enters_play(eng, Zone.WITHIN_REACH)
+        wolhund.enters_play(eng, Area.WITHIN_REACH)
 
         # Should NOT be exhausted
         self.assertFalse(wolhund.exhausted)
@@ -46,17 +46,17 @@ class ProwlingWolhundTests(unittest.TestCase):
         ranger = RangerState(name="Ranger", aspects={Aspect.AWA: 3, Aspect.FIT: 2, Aspect.SPI: 2, Aspect.FOC: 1})
         state = GameState(
             ranger=ranger,
-            zones={
-                Zone.SURROUNDINGS: [],
-                Zone.ALONG_THE_WAY: [],
-                Zone.WITHIN_REACH: [wolhund1],  # First predator already in play
-                Zone.PLAYER_AREA: [],
+            areas={
+                Area.SURROUNDINGS: [],
+                Area.ALONG_THE_WAY: [],
+                Area.WITHIN_REACH: [wolhund1],  # First predator already in play
+                Area.PLAYER_AREA: [],
             }
         )
         eng = GameEngine(state, challenge_drawer=fixed_draw(0, ChallengeIcon.SUN))
 
         # Second wolhund enters play
-        wolhund2.enters_play(eng, Zone.WITHIN_REACH)
+        wolhund2.enters_play(eng, Area.WITHIN_REACH)
 
         # Second wolhund should be exhausted
         self.assertTrue(wolhund2.exhausted)
@@ -72,11 +72,11 @@ class ProwlingWolhundTests(unittest.TestCase):
         ranger = RangerState(name="Ranger", aspects={Aspect.AWA: 3, Aspect.FIT: 2, Aspect.SPI: 2, Aspect.FOC: 1})
         state = GameState(
             ranger=ranger,
-            zones={
-                Zone.SURROUNDINGS: [],
-                Zone.ALONG_THE_WAY: [],
-                Zone.WITHIN_REACH: [wolhund1, wolhund2],
-                Zone.PLAYER_AREA: [],
+            areas={
+                Area.SURROUNDINGS: [],
+                Area.ALONG_THE_WAY: [],
+                Area.WITHIN_REACH: [wolhund1, wolhund2],
+                Area.PLAYER_AREA: [],
             }
         )
 
@@ -99,11 +99,11 @@ class ProwlingWolhundTests(unittest.TestCase):
         ranger = RangerState(name="Ranger", aspects={Aspect.AWA: 3, Aspect.FIT: 2, Aspect.SPI: 2, Aspect.FOC: 1})
         state = GameState(
             ranger=ranger,
-            zones={
-                Zone.SURROUNDINGS: [],
-                Zone.ALONG_THE_WAY: [],
-                Zone.WITHIN_REACH: [wolhund],
-                Zone.PLAYER_AREA: [],
+            areas={
+                Area.SURROUNDINGS: [],
+                Area.ALONG_THE_WAY: [],
+                Area.WITHIN_REACH: [wolhund],
+                Area.PLAYER_AREA: [],
             }
         )
         eng = GameEngine(state, challenge_drawer=fixed_draw(0, ChallengeIcon.SUN))
@@ -122,11 +122,11 @@ class ProwlingWolhundTests(unittest.TestCase):
         ranger = RangerState(name="Ranger", aspects={Aspect.AWA: 3, Aspect.FIT: 2, Aspect.SPI: 2, Aspect.FOC: 1})
         state = GameState(
             ranger=ranger,
-            zones={
-                Zone.SURROUNDINGS: [],
-                Zone.ALONG_THE_WAY: [],
-                Zone.WITHIN_REACH: [wolhund1, wolhund2],
-                Zone.PLAYER_AREA: [],
+            areas={
+                Area.SURROUNDINGS: [],
+                Area.ALONG_THE_WAY: [],
+                Area.WITHIN_REACH: [wolhund1, wolhund2],
+                Area.PLAYER_AREA: [],
             }
         )
         eng = GameEngine(state, challenge_drawer=fixed_draw(0, ChallengeIcon.SUN))
@@ -148,11 +148,11 @@ class ProwlingWolhundTests(unittest.TestCase):
 
         state = GameState(
             ranger=ranger,
-            zones={
-                Zone.SURROUNDINGS: [],
-                Zone.ALONG_THE_WAY: [],
-                Zone.WITHIN_REACH: [wolhund],
-                Zone.PLAYER_AREA: [],
+            areas={
+                Area.SURROUNDINGS: [],
+                Area.ALONG_THE_WAY: [],
+                Area.WITHIN_REACH: [wolhund],
+                Area.PLAYER_AREA: [],
             }
         )
         eng = GameEngine(state, challenge_drawer=fixed_draw(0, ChallengeIcon.CREST))
@@ -177,11 +177,11 @@ class ProwlingWolhundTests(unittest.TestCase):
 
         state = GameState(
             ranger=ranger,
-            zones={
-                Zone.SURROUNDINGS: [],
-                Zone.ALONG_THE_WAY: [],
-                Zone.WITHIN_REACH: [wolhund],
-                Zone.PLAYER_AREA: [],
+            areas={
+                Area.SURROUNDINGS: [],
+                Area.ALONG_THE_WAY: [],
+                Area.WITHIN_REACH: [wolhund],
+                Area.PLAYER_AREA: [],
             }
         )
         eng = GameEngine(state, challenge_drawer=fixed_draw(0, ChallengeIcon.CREST))
@@ -207,11 +207,11 @@ class SitkaBuckTests(unittest.TestCase):
         ranger = RangerState(name="Ranger", aspects={Aspect.AWA: 3, Aspect.FIT: 2, Aspect.SPI: 2, Aspect.FOC: 1})
         state = GameState(
             ranger=ranger,
-            zones={
-                Zone.SURROUNDINGS: [],
-                Zone.ALONG_THE_WAY: [],
-                Zone.WITHIN_REACH: [buck1, buck2],
-                Zone.PLAYER_AREA: [],
+            areas={
+                Area.SURROUNDINGS: [],
+                Area.ALONG_THE_WAY: [],
+                Area.WITHIN_REACH: [buck1, buck2],
+                Area.PLAYER_AREA: [],
             }
         )
 
@@ -237,11 +237,11 @@ class SitkaBuckTests(unittest.TestCase):
         ranger = RangerState(name="Ranger", aspects={Aspect.AWA: 3, Aspect.FIT: 2, Aspect.SPI: 2, Aspect.FOC: 1})
         state = GameState(
             ranger=ranger,
-            zones={
-                Zone.SURROUNDINGS: [],
-                Zone.ALONG_THE_WAY: [],
-                Zone.WITHIN_REACH: [buck1, buck2],
-                Zone.PLAYER_AREA: [],
+            areas={
+                Area.SURROUNDINGS: [],
+                Area.ALONG_THE_WAY: [],
+                Area.WITHIN_REACH: [buck1, buck2],
+                Area.PLAYER_AREA: [],
             }
         )
         eng = GameEngine(state, challenge_drawer=fixed_draw(0, ChallengeIcon.SUN))
@@ -261,11 +261,11 @@ class SitkaBuckTests(unittest.TestCase):
         ranger = RangerState(name="Ranger", aspects={Aspect.AWA: 3, Aspect.FIT: 2, Aspect.SPI: 2, Aspect.FOC: 1})
         state = GameState(
             ranger=ranger,
-            zones={
-                Zone.SURROUNDINGS: [],
-                Zone.ALONG_THE_WAY: [],
-                Zone.WITHIN_REACH: [buck, wolhund],
-                Zone.PLAYER_AREA: [],
+            areas={
+                Area.SURROUNDINGS: [],
+                Area.ALONG_THE_WAY: [],
+                Area.WITHIN_REACH: [buck, wolhund],
+                Area.PLAYER_AREA: [],
             }
         )
 
@@ -289,11 +289,11 @@ class SitkaBuckTests(unittest.TestCase):
         ranger = RangerState(name="Ranger", aspects={Aspect.AWA: 3, Aspect.FIT: 2, Aspect.SPI: 2, Aspect.FOC: 1})
         state = GameState(
             ranger=ranger,
-            zones={
-                Zone.SURROUNDINGS: [],
-                Zone.ALONG_THE_WAY: [],
-                Zone.WITHIN_REACH: [buck],
-                Zone.PLAYER_AREA: [],
+            areas={
+                Area.SURROUNDINGS: [],
+                Area.ALONG_THE_WAY: [],
+                Area.WITHIN_REACH: [buck],
+                Area.PLAYER_AREA: [],
             }
         )
         eng = GameEngine(state, challenge_drawer=fixed_draw(0, ChallengeIcon.MOUNTAIN))
@@ -311,11 +311,11 @@ class SitkaBuckTests(unittest.TestCase):
         ranger = RangerState(name="Ranger", aspects={Aspect.AWA: 3, Aspect.FIT: 2, Aspect.SPI: 2, Aspect.FOC: 1})
         state = GameState(
             ranger=ranger,
-            zones={
-                Zone.SURROUNDINGS: [],
-                Zone.ALONG_THE_WAY: [],
-                Zone.WITHIN_REACH: [buck, doe],
-                Zone.PLAYER_AREA: [],
+            areas={
+                Area.SURROUNDINGS: [],
+                Area.ALONG_THE_WAY: [],
+                Area.WITHIN_REACH: [buck, doe],
+                Area.PLAYER_AREA: [],
             }
         )
         eng = GameEngine(state, challenge_drawer=fixed_draw(0, ChallengeIcon.CREST))
@@ -335,11 +335,11 @@ class SitkaBuckTests(unittest.TestCase):
         ranger = RangerState(name="Ranger", aspects={Aspect.AWA: 3, Aspect.FIT: 2, Aspect.SPI: 2, Aspect.FOC: 1})
         state = GameState(
             ranger=ranger,
-            zones={
-                Zone.SURROUNDINGS: [],
-                Zone.ALONG_THE_WAY: [],
-                Zone.WITHIN_REACH: [buck, doe],
-                Zone.PLAYER_AREA: [],
+            areas={
+                Area.SURROUNDINGS: [],
+                Area.ALONG_THE_WAY: [],
+                Area.WITHIN_REACH: [buck, doe],
+                Area.PLAYER_AREA: [],
             }
         )
         eng = GameEngine(state, challenge_drawer=fixed_draw(0, ChallengeIcon.CREST))
@@ -360,11 +360,11 @@ class SitkaDoeTests(unittest.TestCase):
         ranger = RangerState(name="Ranger", aspects={Aspect.AWA: 3, Aspect.FIT: 2, Aspect.SPI: 2, Aspect.FOC: 1})
         state = GameState(
             ranger=ranger,
-            zones={
-                Zone.SURROUNDINGS: [],
-                Zone.ALONG_THE_WAY: [],
-                Zone.WITHIN_REACH: [doe],
-                Zone.PLAYER_AREA: [],
+            areas={
+                Area.SURROUNDINGS: [],
+                Area.ALONG_THE_WAY: [],
+                Area.WITHIN_REACH: [doe],
+                Area.PLAYER_AREA: [],
             }
         )
         eng = GameEngine(state, challenge_drawer=fixed_draw(0, ChallengeIcon.SUN))
@@ -373,8 +373,8 @@ class SitkaDoeTests(unittest.TestCase):
         doe._on_spook_success(eng, 1, None)
 
         # Doe should have moved
-        self.assertNotIn(doe, state.zones[Zone.WITHIN_REACH])
-        self.assertIn(doe, state.zones[Zone.ALONG_THE_WAY])
+        self.assertNotIn(doe, state.areas[Area.WITHIN_REACH])
+        self.assertIn(doe, state.areas[Area.ALONG_THE_WAY])
 
     def test_sun_effect_moves_all_bucks(self):
         """Sun effect should move all bucks to Within Reach"""
@@ -385,11 +385,11 @@ class SitkaDoeTests(unittest.TestCase):
         ranger = RangerState(name="Ranger", aspects={Aspect.AWA: 3, Aspect.FIT: 2, Aspect.SPI: 2, Aspect.FOC: 1})
         state = GameState(
             ranger=ranger,
-            zones={
-                Zone.SURROUNDINGS: [buck1],
-                Zone.ALONG_THE_WAY: [buck2],
-                Zone.WITHIN_REACH: [doe],
-                Zone.PLAYER_AREA: [],
+            areas={
+                Area.SURROUNDINGS: [buck1],
+                Area.ALONG_THE_WAY: [buck2],
+                Area.WITHIN_REACH: [doe],
+                Area.PLAYER_AREA: [],
             }
         )
         eng = GameEngine(state, challenge_drawer=fixed_draw(0, ChallengeIcon.SUN))
@@ -399,8 +399,8 @@ class SitkaDoeTests(unittest.TestCase):
 
         self.assertTrue(resolved)
         # Both bucks should be Within Reach
-        self.assertIn(buck1, state.zones[Zone.WITHIN_REACH])
-        self.assertIn(buck2, state.zones[Zone.WITHIN_REACH])
+        self.assertIn(buck1, state.areas[Area.WITHIN_REACH])
+        self.assertIn(buck2, state.areas[Area.WITHIN_REACH])
 
     def test_sun_effect_no_bucks(self):
         """Sun effect should not resolve if no bucks exist"""
@@ -409,11 +409,11 @@ class SitkaDoeTests(unittest.TestCase):
         ranger = RangerState(name="Ranger", aspects={Aspect.AWA: 3, Aspect.FIT: 2, Aspect.SPI: 2, Aspect.FOC: 1})
         state = GameState(
             ranger=ranger,
-            zones={
-                Zone.SURROUNDINGS: [],
-                Zone.ALONG_THE_WAY: [],
-                Zone.WITHIN_REACH: [doe],
-                Zone.PLAYER_AREA: [],
+            areas={
+                Area.SURROUNDINGS: [],
+                Area.ALONG_THE_WAY: [],
+                Area.WITHIN_REACH: [doe],
+                Area.PLAYER_AREA: [],
             }
         )
         eng = GameEngine(state, challenge_drawer=fixed_draw(0, ChallengeIcon.SUN))
@@ -431,11 +431,11 @@ class SitkaDoeTests(unittest.TestCase):
         ranger = RangerState(name="Ranger", aspects={Aspect.AWA: 3, Aspect.FIT: 2, Aspect.SPI: 2, Aspect.FOC: 1})
         state = GameState(
             ranger=ranger,
-            zones={
-                Zone.SURROUNDINGS: [],
-                Zone.ALONG_THE_WAY: [],
-                Zone.WITHIN_REACH: [doe, buck],  # Buck already here
-                Zone.PLAYER_AREA: [],
+            areas={
+                Area.SURROUNDINGS: [],
+                Area.ALONG_THE_WAY: [],
+                Area.WITHIN_REACH: [doe, buck],  # Buck already here
+                Area.PLAYER_AREA: [],
             }
         )
         eng = GameEngine(state, challenge_drawer=fixed_draw(0, ChallengeIcon.SUN))
@@ -453,11 +453,11 @@ class SitkaDoeTests(unittest.TestCase):
         ranger = RangerState(name="Ranger", aspects={Aspect.AWA: 3, Aspect.FIT: 2, Aspect.SPI: 2, Aspect.FOC: 1})
         state = GameState(
             ranger=ranger,
-            zones={
-                Zone.SURROUNDINGS: [],
-                Zone.ALONG_THE_WAY: [],
-                Zone.WITHIN_REACH: [doe, wolhund],
-                Zone.PLAYER_AREA: [],
+            areas={
+                Area.SURROUNDINGS: [],
+                Area.ALONG_THE_WAY: [],
+                Area.WITHIN_REACH: [doe, wolhund],
+                Area.PLAYER_AREA: [],
             }
         )
 
@@ -490,11 +490,11 @@ class SunberryBrambleTests(unittest.TestCase):
 
         state = GameState(
             ranger=ranger,
-            zones={
-                Zone.SURROUNDINGS: [],
-                Zone.ALONG_THE_WAY: [],
-                Zone.WITHIN_REACH: [bramble],
-                Zone.PLAYER_AREA: [],
+            areas={
+                Area.SURROUNDINGS: [],
+                Area.ALONG_THE_WAY: [],
+                Area.WITHIN_REACH: [bramble],
+                Area.PLAYER_AREA: [],
             }
         )
         eng = GameEngine(state, challenge_drawer=fixed_draw(0, ChallengeIcon.SUN))
@@ -517,11 +517,11 @@ class SunberryBrambleTests(unittest.TestCase):
 
         state = GameState(
             ranger=ranger,
-            zones={
-                Zone.SURROUNDINGS: [],
-                Zone.ALONG_THE_WAY: [],
-                Zone.WITHIN_REACH: [bramble],
-                Zone.PLAYER_AREA: [],
+            areas={
+                Area.SURROUNDINGS: [],
+                Area.ALONG_THE_WAY: [],
+                Area.WITHIN_REACH: [bramble],
+                Area.PLAYER_AREA: [],
             }
         )
         eng = GameEngine(state, challenge_drawer=fixed_draw(0, ChallengeIcon.SUN))
@@ -540,11 +540,11 @@ class SunberryBrambleTests(unittest.TestCase):
         ranger = RangerState(name="Ranger", aspects={Aspect.AWA: 3, Aspect.FIT: 2, Aspect.SPI: 2, Aspect.FOC: 1})
         state = GameState(
             ranger=ranger,
-            zones={
-                Zone.SURROUNDINGS: [],
-                Zone.ALONG_THE_WAY: [],
-                Zone.WITHIN_REACH: [bramble, buck],
-                Zone.PLAYER_AREA: [],
+            areas={
+                Area.SURROUNDINGS: [],
+                Area.ALONG_THE_WAY: [],
+                Area.WITHIN_REACH: [bramble, buck],
+                Area.PLAYER_AREA: [],
             }
         )
 
@@ -568,11 +568,11 @@ class SunberryBrambleTests(unittest.TestCase):
         ranger = RangerState(name="Ranger", aspects={Aspect.AWA: 3, Aspect.FIT: 2, Aspect.SPI: 2, Aspect.FOC: 1})
         state = GameState(
             ranger=ranger,
-            zones={
-                Zone.SURROUNDINGS: [],
-                Zone.ALONG_THE_WAY: [],
-                Zone.WITHIN_REACH: [bramble],
-                Zone.PLAYER_AREA: [],
+            areas={
+                Area.SURROUNDINGS: [],
+                Area.ALONG_THE_WAY: [],
+                Area.WITHIN_REACH: [bramble],
+                Area.PLAYER_AREA: [],
             }
         )
         eng = GameEngine(state, challenge_drawer=fixed_draw(0, ChallengeIcon.MOUNTAIN))
@@ -592,11 +592,11 @@ class OvergrownThicketTests(unittest.TestCase):
         ranger = RangerState(name="Ranger", aspects={Aspect.AWA: 3, Aspect.FIT: 2, Aspect.SPI: 2, Aspect.FOC: 1})
         state = GameState(
             ranger=ranger,
-            zones={
-                Zone.SURROUNDINGS: [],
-                Zone.ALONG_THE_WAY: [thicket],
-                Zone.WITHIN_REACH: [],
-                Zone.PLAYER_AREA: [],
+            areas={
+                Area.SURROUNDINGS: [],
+                Area.ALONG_THE_WAY: [thicket],
+                Area.WITHIN_REACH: [],
+                Area.PLAYER_AREA: [],
             }
         )
         eng = GameEngine(state, challenge_drawer=fixed_draw(0, ChallengeIcon.SUN))
@@ -619,11 +619,11 @@ class OvergrownThicketTests(unittest.TestCase):
 
         state = GameState(
             ranger=ranger,
-            zones={
-                Zone.SURROUNDINGS: [],
-                Zone.ALONG_THE_WAY: [thicket],
-                Zone.WITHIN_REACH: [],
-                Zone.PLAYER_AREA: [],
+            areas={
+                Area.SURROUNDINGS: [],
+                Area.ALONG_THE_WAY: [thicket],
+                Area.WITHIN_REACH: [],
+                Area.PLAYER_AREA: [],
             }
         )
         eng = GameEngine(state, challenge_drawer=fixed_draw(0, ChallengeIcon.MOUNTAIN))
@@ -644,11 +644,11 @@ class OvergrownThicketTests(unittest.TestCase):
         ranger = RangerState(name="Ranger", aspects={Aspect.AWA: 3, Aspect.FIT: 2, Aspect.SPI: 2, Aspect.FOC: 1})
         state = GameState(
             ranger=ranger,
-            zones={
-                Zone.SURROUNDINGS: [],
-                Zone.ALONG_THE_WAY: [thicket],
-                Zone.WITHIN_REACH: [],
-                Zone.PLAYER_AREA: [],
+            areas={
+                Area.SURROUNDINGS: [],
+                Area.ALONG_THE_WAY: [thicket],
+                Area.WITHIN_REACH: [],
+                Area.PLAYER_AREA: [],
             }
         )
         eng = GameEngine(state, challenge_drawer=fixed_draw(0, ChallengeIcon.MOUNTAIN))
@@ -676,28 +676,28 @@ class WoodsCardInteractionTests(unittest.TestCase):
         ranger = RangerState(name="Ranger", aspects={Aspect.AWA: 3, Aspect.FIT: 2, Aspect.SPI: 2, Aspect.FOC: 1})
         state = GameState(
             ranger=ranger,
-            zones={
-                Zone.SURROUNDINGS: [],
-                Zone.ALONG_THE_WAY: [],
-                Zone.WITHIN_REACH: [],
-                Zone.PLAYER_AREA: [],
+            areas={
+                Area.SURROUNDINGS: [],
+                Area.ALONG_THE_WAY: [],
+                Area.WITHIN_REACH: [],
+                Area.PLAYER_AREA: [],
             }
         )
         eng = GameEngine(state, challenge_drawer=fixed_draw(0, ChallengeIcon.SUN))
 
         # First wolhund enters play
-        state.zones[Zone.WITHIN_REACH].append(wolhund1)
-        wolhund1.enters_play(eng, Zone.WITHIN_REACH)
+        state.areas[Area.WITHIN_REACH].append(wolhund1)
+        wolhund1.enters_play(eng, Area.WITHIN_REACH)
         self.assertFalse(wolhund1.exhausted)
 
         # Second wolhund enters play
-        state.zones[Zone.WITHIN_REACH].append(wolhund2)
-        wolhund2.enters_play(eng, Zone.WITHIN_REACH)
+        state.areas[Area.WITHIN_REACH].append(wolhund2)
+        wolhund2.enters_play(eng, Area.WITHIN_REACH)
         self.assertTrue(wolhund2.exhausted)
 
         # Third wolhund enters play
-        state.zones[Zone.WITHIN_REACH].append(wolhund3)
-        wolhund3.enters_play(eng, Zone.WITHIN_REACH)
+        state.areas[Area.WITHIN_REACH].append(wolhund3)
+        wolhund3.enters_play(eng, Area.WITHIN_REACH)
         self.assertTrue(wolhund3.exhausted)
 
     def test_buck_and_doe_interaction(self):
@@ -709,11 +709,11 @@ class WoodsCardInteractionTests(unittest.TestCase):
         ranger = RangerState(name="Ranger", aspects={Aspect.AWA: 3, Aspect.FIT: 2, Aspect.SPI: 2, Aspect.FOC: 1})
         state = GameState(
             ranger=ranger,
-            zones={
-                Zone.SURROUNDINGS: [buck1, buck2],
-                Zone.ALONG_THE_WAY: [],
-                Zone.WITHIN_REACH: [doe],
-                Zone.PLAYER_AREA: [],
+            areas={
+                Area.SURROUNDINGS: [buck1, buck2],
+                Area.ALONG_THE_WAY: [],
+                Area.WITHIN_REACH: [doe],
+                Area.PLAYER_AREA: [],
             }
         )
         eng = GameEngine(state, challenge_drawer=fixed_draw(0, ChallengeIcon.SUN))
@@ -722,8 +722,8 @@ class WoodsCardInteractionTests(unittest.TestCase):
         handlers[ChallengeIcon.SUN](eng)
 
         # Both bucks should be Within Reach with doe
-        self.assertIn(buck1, state.zones[Zone.WITHIN_REACH])
-        self.assertIn(buck2, state.zones[Zone.WITHIN_REACH])
+        self.assertIn(buck1, state.areas[Area.WITHIN_REACH])
+        self.assertIn(buck2, state.areas[Area.WITHIN_REACH])
 
     def test_buck_crest_with_exhausted_doe(self):
         """Test that buck's crest effect doesn't trigger with exhausted doe"""
@@ -734,11 +734,11 @@ class WoodsCardInteractionTests(unittest.TestCase):
         ranger = RangerState(name="Ranger", aspects={Aspect.AWA: 3, Aspect.FIT: 2, Aspect.SPI: 2, Aspect.FOC: 1})
         state = GameState(
             ranger=ranger,
-            zones={
-                Zone.SURROUNDINGS: [],
-                Zone.ALONG_THE_WAY: [],
-                Zone.WITHIN_REACH: [buck, doe],
-                Zone.PLAYER_AREA: [],
+            areas={
+                Area.SURROUNDINGS: [],
+                Area.ALONG_THE_WAY: [],
+                Area.WITHIN_REACH: [buck, doe],
+                Area.PLAYER_AREA: [],
             }
         )
         eng = GameEngine(state, challenge_drawer=fixed_draw(0, ChallengeIcon.CREST))
@@ -757,11 +757,11 @@ class WoodsCardInteractionTests(unittest.TestCase):
         ranger = RangerState(name="Ranger", aspects={Aspect.AWA: 3, Aspect.FIT: 2, Aspect.SPI: 2, Aspect.FOC: 1})
         state = GameState(
             ranger=ranger,
-            zones={
-                Zone.SURROUNDINGS: [],
-                Zone.ALONG_THE_WAY: [],
-                Zone.WITHIN_REACH: [buck, wolhund],
-                Zone.PLAYER_AREA: [],
+            areas={
+                Area.SURROUNDINGS: [],
+                Area.ALONG_THE_WAY: [],
+                Area.WITHIN_REACH: [buck, wolhund],
+                Area.PLAYER_AREA: [],
             }
         )
 

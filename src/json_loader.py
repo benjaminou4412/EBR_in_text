@@ -4,7 +4,7 @@ Utility functions for loading card data from JSON files
 
 import json
 from pathlib import Path
-from .models import Aspect, Approach, Zone, CardType
+from .models import Aspect, Approach, Area, CardType
 
 #Gonna be a lot of type-ignore in this file because JSON's wonky
 
@@ -46,7 +46,7 @@ def load_card_fields(title: str, card_set: str) -> dict: # type: ignore
     traits = set(parse_traits(data))
     abilities = parse_card_abilities(data)
     starting_tokens = parse_starting_tokens(data)
-    starting_area = parse_zone(data.get("enters_play"), card_types) #type:ignore
+    starting_area = parse_area(data.get("enters_play"), card_types) #type:ignore
     aspect_tuple = parse_aspect_requirement(data)
     energy_cost = parse_energy_cost(data)
     approach_icons = parse_approach_icons(data)
@@ -305,23 +305,23 @@ def parse_threshold_value(value) -> tuple[int | None, bool]: #type:ignore
     return (int(s) if s else None, False)
 
 
-def parse_zone(enters_play: str | None, card_types: set[CardType]) -> Zone | None:
-    """Parse enters_play field to Zone enum"""
+def parse_area(enters_play: str | None, card_types: set[CardType]) -> Area | None:
+    """Parse enters_play field to Area enum"""
     if enters_play is None:
         return None
 
     if CardType.WEATHER in card_types or CardType.LOCATION in card_types or CardType.MISSION in card_types:
-        return Zone.SURROUNDINGS
+        return Area.SURROUNDINGS
     elif CardType.GEAR in card_types:
-        return Zone.PLAYER_AREA
+        return Area.PLAYER_AREA
     elif CardType.MOMENT in card_types or CardType.ATTRIBUTE in card_types or CardType.ATTACHMENT in card_types:
         return None
     else:
         enters_play_cleaned = enters_play.lower().replace(" ", "").replace("_", "").replace("-", "") #type:ignore
         if enters_play_cleaned == "withinreach":
-            return Zone.WITHIN_REACH
+            return Area.WITHIN_REACH
         elif enters_play_cleaned == "alongtheway":
-            return Zone.ALONG_THE_WAY
+            return Area.ALONG_THE_WAY
         else:
             return None  # Default
 

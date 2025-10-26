@@ -61,11 +61,11 @@ class CardCreationTests(unittest.TestCase):
             id="test-4",
             title="Test Being",
             harm_threshold=5,
-            starting_area=Zone.ALONG_THE_WAY,
+            starting_area=Area.ALONG_THE_WAY,
             presence=3
         )
         self.assertEqual(being.harm_threshold, 5)
-        self.assertEqual(being.starting_area, Zone.ALONG_THE_WAY)
+        self.assertEqual(being.starting_area, Area.ALONG_THE_WAY)
         self.assertEqual(being.presence, 3)
         self.assertEqual(being.progress_threshold, None)  # Default
         self.assertEqual(being.harm_forbidden, False)  # Default
@@ -174,7 +174,7 @@ class CardLoadingTests(unittest.TestCase):
         self.assertEqual(ot.progress_threshold, 2)  # "2R" parsed to 2 for solo
         self.assertFalse(ot.harm_forbidden)
         self.assertFalse(ot.progress_forbidden)
-        self.assertEqual(ot.starting_area, Zone.ALONG_THE_WAY)
+        self.assertEqual(ot.starting_area, Area.ALONG_THE_WAY)
         self.assertEqual(len(ot.abilities_text), 3)
         self.assertIn("Obstacle", ot.abilities_text[0])
         self.assertIn("AWA + [exploration]", ot.abilities_text[1])
@@ -215,7 +215,7 @@ class CardLoadingTests(unittest.TestCase):
         self.assertEqual(sb.progress_threshold, 5)
         self.assertFalse(sb.harm_forbidden)
         self.assertFalse(sb.progress_forbidden)
-        self.assertEqual(sb.starting_area, Zone.WITHIN_REACH)
+        self.assertEqual(sb.starting_area, Area.WITHIN_REACH)
         self.assertEqual(len(sb.abilities_text), 3)  # 3 challenge effects
         self.assertIn("sun:", sb.abilities_text[0])
         self.assertIn("mountain:", sb.abilities_text[1])
@@ -256,7 +256,7 @@ class CardLoadingTests(unittest.TestCase):
         self.assertEqual(sd.progress_threshold, 4)
         self.assertFalse(sd.harm_forbidden)
         self.assertFalse(sd.progress_forbidden)
-        self.assertEqual(sd.starting_area, Zone.WITHIN_REACH)
+        self.assertEqual(sd.starting_area, Area.WITHIN_REACH)
         self.assertEqual(len(sd.abilities_text), 3)  # 1 test + 2 challenge effects
         self.assertIn("SPI + [conflict]:", sd.abilities_text[0])
         self.assertIn("sun:", sd.abilities_text[1])
@@ -297,7 +297,7 @@ class CardLoadingTests(unittest.TestCase):
         self.assertEqual(sbb.progress_threshold, 3)
         self.assertFalse(sbb.harm_forbidden)
         self.assertFalse(sbb.progress_forbidden)
-        self.assertEqual(sbb.starting_area, Zone.WITHIN_REACH)
+        self.assertEqual(sbb.starting_area, Area.WITHIN_REACH)
         self.assertEqual(len(sbb.abilities_text), 2)  # 1 test + 1 challenge effect
         self.assertIn("AWA + [reason]:", sbb.abilities_text[0])
         self.assertIn("mountain:", sbb.abilities_text[1])

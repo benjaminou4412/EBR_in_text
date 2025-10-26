@@ -33,7 +33,7 @@ class Approach(str, Enum):
     REASON = "Reason"
     CONNECTION = "Connection"
 
-class Zone(str, Enum):
+class Area(str, Enum):
     SURROUNDINGS = "Surroundings"
     ALONG_THE_WAY = "Along the Way"
     WITHIN_REACH = "Within Reach"
@@ -126,7 +126,7 @@ class Card:
     keywords: set[Keyword] = field(default_factory=lambda: set())
     abilities_text: list[str] = field(default_factory=lambda: cast(list[str], [])) #will be mutable in expansion content (mycileal). includes keywords, tests, rules, and challenge effects
     starting_tokens: tuple[str, int] = field(default_factory=lambda: cast(tuple[str, int], {})) #a card only ever has a single type of starting token
-    starting_area: Zone | None = None #None for cards that don't enter play, like moments, attributes, etc. Attachments default to None and use targeting to determine their zone
+    starting_area: Area | None = None #None for cards that don't enter play, like moments, attributes, etc. Attachments default to None and use targeting to determine their area
     #ranger cards only
     aspect: Aspect | None = None
     requirement: int = 0 #required aspect level to be legal for deckbuilding; 1-3 are valid values, 0 is null
@@ -209,9 +209,9 @@ class Card:
             engine.add_message(f"   {self.art_description}")
         return None
 
-    def enters_play(self, engine: GameEngine, zone: Zone) -> None:
+    def enters_play(self, engine: GameEngine, area: Area) -> None:
         """Called when card enters play. Adds narrative messages and can be overridden for enter-play effects."""
-        engine.add_message(f"{get_display_id(engine.state.all_cards_in_play(), self)} enters play {zone.value}.")
+        engine.add_message(f"{get_display_id(engine.state.all_cards_in_play(), self)} enters play {area.value}.")
         if self.art_description:
             engine.add_message(f"   {self.art_description}")
     
@@ -344,7 +344,7 @@ class Card:
     def discard_from_play(self, engine: GameEngine) -> str:
         """
         Remove this card from play and send it to the appropriate discard pile.
-        Handles zone cleanup and determines correct discard pile based on card type.
+        Handles area cleanup and determines correct discard pile based on card type.
 
         Returns:
             Message describing what happened
@@ -357,10 +357,10 @@ class Card:
         # for attached in self.attached_cards[:]:
         #     attached.discard_from_play(engine)
 
-        # Remove from zone
-        for zone_cards in engine.state.zones.values():
-            if self in zone_cards:
-                zone_cards.remove(self)
+        # Remove from area
+        for area_cards in engine.state.areas.values():
+            if self in area_cards:
+                area_cards.remove(self)
                 break
 
         # Determine correct discard pile (polymorphism!)
@@ -440,10 +440,10 @@ class RangerState:
 @dataclass
 class GameState:
     ranger: RangerState
-    zones: dict[Zone, list[Card]] = field(
+    areas: dict[Area, list[Card]] = field(
         default_factory=lambda: cast(
-            dict[Zone, list[Card]], 
-            {zone: [] for zone in Zone}
+            dict[Area, list[Card]], 
+            {area: [] for area in Area}
         )
     )
     day_number: int = 1
@@ -451,12 +451,13 @@ class GameState:
     # Path deck for Phase 1 draws
     path_deck: list[Card] = field(default_factory=lambda: cast(list[Card], []))
     path_discard: list[Card] = field(default_factory=lambda: cast(list[Card], []))
+    ranger_token_location: str | None = None  #card_id
 
     #Card getter methods
 
     def all_cards_in_play(self) -> list[Card]:
-        """Get all cards across all zones"""
-        return [card for cards in self.zones.values() for card in cards]
+        """Get all cards across all areas"""
+        return [card for cards in self.areas.values() for card in cards]
     
     def cards_by_type(self, card_type: CardType) -> list[Card]:
         """Get all cards of a specific type"""
@@ -478,19 +479,19 @@ class GameState:
         """Get a specific card by its instance ID"""
         return next((c for c in self.all_cards_in_play() if c.id == card_id), None)
     
-    def get_card_zone_by_id(self, card_id: str | None) -> Zone | None:
-        """Get a card's current zone by its instance ID"""
-        for zone in self.zones:
-            for card in self.zones[zone]:
+    def get_card_area_by_id(self, card_id: str | None) -> Area | None:
+        """Get a card's current area by its instance ID"""
+        for area in self.areas:
+            for card in self.areas[area]:
                 if card.id == card_id:
-                    return zone
+                    return area
         return None
     
     def get_cards_by_title(self, title: str) -> list[Card] | None:
         """Get all in-play cards of a given title"""
         results: list[Card] = []
-        for zone in self.zones:
-            for card in self.zones[zone]:
+        for area in self.areas:
+            for card in self.areas[area]:
                 if card.title == title:
                     results.append(card)
         if results:
@@ -501,8 +502,8 @@ class GameState:
     def get_cards_by_trait(self, trait: str) -> list[Card] | None:
         """Get all in-play cards with a given trait"""
         results: list[Card] = []
-        for zone in self.zones:
-            for card in self.zones[zone]:
+        for area in self.areas:
+            for card in self.areas[area]:
                 for curr_trait in card.traits:
                     if trait.casefold() == curr_trait.casefold():
                         results.append(card)
@@ -513,24 +514,24 @@ class GameState:
             return None
 
     def get_cards_between_ranger_and_target(self, target: Card) -> list[Card]:
-        """Get all cards that are 'between' the ranger and a target in the given zone.
+        """Get all cards that are 'between' the ranger and a target in the given area.
         Returns cards in order from closest to farthest."""
         between: list[Card] = []
-        target_zone = self.get_card_zone_by_id(target.id)
+        target_area = self.get_card_area_by_id(target.id)
         
-        # Cards attached to role are ALWAYS between (all zones)
+        # Cards attached to role are ALWAYS between (all areas)
         # TODO: When we have attachments, add them here
         
-        if target_zone == Zone.WITHIN_REACH:
+        if target_area == Area.WITHIN_REACH:
             # Only role attachments (already added above)
             pass
-        elif target_zone == Zone.ALONG_THE_WAY:
+        elif target_area == Area.ALONG_THE_WAY:
             # Role attachments + Within Reach
-            between.extend(self.zones[Zone.WITHIN_REACH])
-        elif target_zone == Zone.SURROUNDINGS:
+            between.extend(self.areas[Area.WITHIN_REACH])
+        elif target_area == Area.SURROUNDINGS:
             # Role attachments + Within Reach + Along the Way
-            between.extend(self.zones[Zone.WITHIN_REACH])
-            between.extend(self.zones[Zone.ALONG_THE_WAY])
+            between.extend(self.areas[Area.WITHIN_REACH])
+            between.extend(self.areas[Area.ALONG_THE_WAY])
         
         return between
 

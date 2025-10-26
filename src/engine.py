@@ -3,7 +3,7 @@ from dataclasses import dataclass
 from typing import Callable, Optional
 from .models import (
     GameState, Action, CommitDecision, RangerState, Card, ChallengeIcon,
-    Aspect, Approach, Zone, CardType, EventType, TimingType, EventListener,
+    Aspect, Approach, Area, CardType, EventType, TimingType, EventListener,
     MessageEvent, Keyword
 )
 from .challenge import draw_challenge
@@ -91,44 +91,44 @@ class GameEngine:
 
     def _filter_by_obstacles(self, candidates: list[Card]) -> list[Card]:
         """Filter candidates to exclude cards past the nearest Obstacle"""
-        from .models import Keyword, Zone
+        from .models import Keyword, Area
 
         # Find closest ready Obstacle
-        closest_obstacle_zone = None
-        for zone in [Zone.WITHIN_REACH, Zone.ALONG_THE_WAY, Zone.SURROUNDINGS]:
-            cards_in_zone = self.state.zones[zone]
+        closest_obstacle_area = None
+        for area in [Area.WITHIN_REACH, Area.ALONG_THE_WAY, Area.SURROUNDINGS]:
+            cards_in_area = self.state.areas[area]
             if any(Keyword.OBSTACLE in card.keywords and not card.exhausted
-                   for card in cards_in_zone):
-                closest_obstacle_zone = zone
+                   for card in cards_in_area):
+                closest_obstacle_area = area
                 break
 
-        if closest_obstacle_zone is None:
+        if closest_obstacle_area is None:
             return candidates  # No obstacles
 
-        # Determine valid zones (at/before obstacle)
-        valid_zones = {Zone.PLAYER_AREA}
-        if closest_obstacle_zone == Zone.WITHIN_REACH:
-            valid_zones.add(Zone.WITHIN_REACH)
-        elif closest_obstacle_zone == Zone.ALONG_THE_WAY:
-            valid_zones.update([Zone.WITHIN_REACH, Zone.ALONG_THE_WAY])
-        elif closest_obstacle_zone == Zone.SURROUNDINGS:
-            valid_zones.update([Zone.WITHIN_REACH, Zone.ALONG_THE_WAY, Zone.SURROUNDINGS])
+        # Determine valid areas (at/before obstacle)
+        valid_areas = {Area.PLAYER_AREA}
+        if closest_obstacle_area == Area.WITHIN_REACH:
+            valid_areas.add(Area.WITHIN_REACH)
+        elif closest_obstacle_area == Area.ALONG_THE_WAY:
+            valid_areas.update([Area.WITHIN_REACH, Area.ALONG_THE_WAY])
+        elif closest_obstacle_area == Area.SURROUNDINGS:
+            valid_areas.update([Area.WITHIN_REACH, Area.ALONG_THE_WAY, Area.SURROUNDINGS])
 
         return [card for card in candidates
-                if self.state.get_card_zone_by_id(card.id) in valid_zones]
+                if self.state.get_card_area_by_id(card.id) in valid_areas]
 
     def interaction_fatigue(self, ranger: RangerState, target: Card) -> None:
         """Apply fatigue from cards between ranger and target"""
         cards_between = self.state.get_cards_between_ranger_and_target(target)
-        target_zone : Zone | None = self.state.get_card_zone_by_id(target.id)
-        if target_zone is None:
-            raise RuntimeError(f"Something went horribly wrong, this target has no zone.")
+        target_area : Area | None = self.state.get_card_area_by_id(target.id)
+        if target_area is None:
+            raise RuntimeError(f"Something went horribly wrong, this target has no area.")
 
         # TODO:Filter out Friendly cards
         all_cards = self.state.all_cards_in_play()
         fatiguing_cards = [card for card in cards_between if card.exhausted == False and Keyword.FRIENDLY not in card.keywords]
         target_display_id = get_display_id(all_cards, target)
-        self.add_message(f"Interacting with {target_display_id} in {target_zone.value}...")
+        self.add_message(f"Interacting with {target_display_id} in {target_area.value}...")
         if not fatiguing_cards:
             self.add_message(f"No cards between you and the target; no interaction fatigue.")
             return
@@ -222,20 +222,20 @@ class GameEngine:
         cleared.clear()
         # Step 5:  Resolve Challenge effects (dynamically from active cards)
         # TODO: Future challenge resolution features:
-        #   - When multiple cards in the same zone have challenge effects, player chooses the order
+        #   - When multiple cards in the same area have challenge effects, player chooses the order
         #   - If new cards enter play during challenge resolution, their effects should trigger
-        #   - If cards move zones during challenge resolution and become active, their effects should trigger
+        #   - If cards move areas during challenge resolution and become active, their effects should trigger
         self.add_message(f"Step 5: Resolve [{symbol.upper()}] challenge effects, if any.")
-        challenge_zones : list[Zone] = [
-            Zone.SURROUNDINGS,     # Weather, Location, Mission
-            Zone.ALONG_THE_WAY,    # TODO: player chooses order within zone
-            Zone.WITHIN_REACH,     # TODO: player chooses order within zone
-            Zone.PLAYER_AREA,      # TODO: player chooses order within zone
+        challenge_areas : list[Area] = [
+            Area.SURROUNDINGS,     # Weather, Location, Mission
+            Area.ALONG_THE_WAY,    # TODO: player chooses order within area
+            Area.WITHIN_REACH,     # TODO: player chooses order within area
+            Area.PLAYER_AREA,      # TODO: player chooses order within area
         ]
 
         nonzero_challenges = False
-        for zone in challenge_zones:
-            for card in self.state.zones[zone]:
+        for area in challenge_areas:
+            for card in self.state.areas[area]:
                 if not card.exhausted:
                     # Get handlers directly from the card (always current)
                     handlers = card.get_challenge_handlers()
@@ -271,8 +271,8 @@ class GameEngine:
         """
         to_clear: list[Card] = []
 
-        for zone in self.state.zones:
-            for card in self.state.zones[zone]:
+        for area in self.state.areas:
+            for card in self.state.areas[area]:
                 if CardType.PATH in card.card_types:
                     clear_type = card.clear_if_threshold()
                     if clear_type == "progress":
@@ -284,7 +284,7 @@ class GameEngine:
                         # Some cards might have special effects or stay in play
                         to_clear.append(card)
 
-        # Discard all cleared cards (this removes them from zones)
+        # Discard all cleared cards (this removes them from areas)
         for card in to_clear:
             card.discard_from_play(self)
 
@@ -345,21 +345,21 @@ class GameEngine:
 
     #Gamestate manipulation methods
 
-    def move_card(self, card_id : str | None, target_zone : Zone) -> bool:
-        """Move a card from its current zone to a target zone. Returns whether it actually moved."""
+    def move_card(self, card_id : str | None, target_area : Area) -> bool:
+        """Move a card from its current area to a target area. Returns whether it actually moved."""
         target_card : Card | None = self.state.get_card_by_id(card_id)
-        current_zone : Zone | None = self.state.get_card_zone_by_id(card_id)
+        current_area : Area | None = self.state.get_card_area_by_id(card_id)
         if target_card is not None:
             target_display_id = get_display_id(self.state.all_cards_in_play(), target_card)
-            if target_zone==current_zone:
-                self.add_message(f"{target_display_id} already in {target_zone.value}.")
+            if target_area==current_area:
+                self.add_message(f"{target_display_id} already in {target_area.value}.")
                 return False
-            if current_zone is not None:
-                self.state.zones[current_zone].remove(target_card)
-                self.state.zones[target_zone].append(target_card)
-                self.add_message(f"{target_display_id} moves to {target_zone.value}.")
+            if current_area is not None:
+                self.state.areas[current_area].remove(target_card)
+                self.state.areas[target_area].append(target_card)
+                self.add_message(f"{target_display_id} moves to {target_area.value}.")
                 curr_presence = target_card.get_current_presence()
-                if target_zone == Zone.WITHIN_REACH and Keyword.AMBUSH in target_card.keywords and curr_presence is not None:
+                if target_area == Area.WITHIN_REACH and Keyword.AMBUSH in target_card.keywords and curr_presence is not None:
                     self.fatigue_ranger(self.state.ranger, curr_presence)
                 return True
         return False
@@ -431,7 +431,7 @@ class GameEngine:
                 break
             card = self.state.path_deck.pop(0)
             if card.starting_area is not None:
-                self.state.zones[card.starting_area].append(card)
+                self.state.areas[card.starting_area].append(card)
                 card.enters_play(self, card.starting_area)
             else:
                 raise ValueError("Path card drawn is missing a starting area.")
@@ -462,7 +462,7 @@ class GameEngine:
         #Step 4: Resolve Refresh effects (TODO)
         self.add_message("Todo: resolve Refresh abilities.")
         #Step 5: Ready all cards in play
-        for zone in self.state.zones:
-            for card in self.state.zones[zone]:
+        for area in self.state.areas:
+            for card in self.state.areas[area]:
                 card.ready()
         self.add_message("All cards in play Ready.")

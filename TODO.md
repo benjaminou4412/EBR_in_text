@@ -3,11 +3,11 @@
 A living checklist distilled from our discussion. Grouped by area and roughly prioritized.
 
 ## Current priorities
-- Get discard piles and "leaves play" behavior working
+- Implement exhaust abilities and Peerless Pathfinder
 - Implement Caustic Mulcher
   - Attachment system
   - faceup/facedown cards
-  - ranger tokens
+  - ranger tokens + prevent ranger token from moving
   - prevent attached beings from readying
 - Implement at least two other Valley NPCs
 - Implement Refresh abilites
@@ -15,7 +15,6 @@ A living checklist distilled from our discussion. Grouped by area and roughly pr
 - Implement weather-flipping
 - Implement at least one Gear + one non-response Moment + 1 attachment, and the Play action
 - Implement actual challenge cards rather than the current RNG setup
-- Implement Exhaust abilities
 - Implement missions, campaign log entries, clear entries, etc.
 - Implement Day system and save/load/autosave
 - Implement ordering selection:

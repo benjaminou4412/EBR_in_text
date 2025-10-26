@@ -3,7 +3,7 @@ from typing import Optional, TYPE_CHECKING
 import shutil
 import textwrap
 from .models import (
-    GameState, Action, CommitDecision, Aspect, Approach, CardType, Zone, Card
+    GameState, Action, CommitDecision, Aspect, Approach, CardType, Area, Card
 )
 from .utils import get_display_id
 
@@ -107,17 +107,17 @@ def render_state(state: GameState, phase_header: str = "") -> None:
     if phase_header:
         print(f"=== {phase_header} ===")
 
-    # Zones
+    # Areas
     all_cards = state.all_cards_in_play()
-    for zone in [Zone.SURROUNDINGS, Zone.ALONG_THE_WAY, Zone.WITHIN_REACH, Zone.PLAYER_AREA]:
-        print(f"\n--- {zone.value} ---")
-        cards = state.zones.get(zone, [])
+    for area in [Area.SURROUNDINGS, Area.ALONG_THE_WAY, Area.WITHIN_REACH, Area.PLAYER_AREA]:
+        print(f"\n--- {area.value} ---")
+        cards = state.areas.get(area, [])
         if cards:
             for card in cards:
                 display_id = get_display_id(all_cards, card)
                 render_card_detail(card, display_id=display_id)
         else:
-            print("[No cards currently in this zone]")
+            print("[No cards currently in this area]")
 
     print("")
     # Ranger status line
