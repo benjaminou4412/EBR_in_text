@@ -98,7 +98,7 @@ class GameEngine:
         closest_obstacle_area = None
         for area in [Area.WITHIN_REACH, Area.ALONG_THE_WAY, Area.SURROUNDINGS]:
             cards_in_area = self.state.areas[area]
-            if any(Keyword.OBSTACLE in card.keywords and card.is_ready()
+            if any(card.has_keyword(Keyword.OBSTACLE) and card.is_ready()
                    for card in cards_in_area):
                 closest_obstacle_area = area
                 break
@@ -127,7 +127,7 @@ class GameEngine:
 
         # TODO:Filter out Friendly cards
         all_cards = self.state.all_cards_in_play()
-        fatiguing_cards = [card for card in cards_between if card.is_ready() and Keyword.FRIENDLY not in card.keywords]
+        fatiguing_cards = [card for card in cards_between if card.is_ready() and not card.has_keyword(Keyword.FRIENDLY)]
         target_display_id = get_display_id(all_cards, target)
         self.add_message(f"Interacting with {target_display_id} in {target_area.value}...")
         if not fatiguing_cards:
@@ -360,7 +360,7 @@ class GameEngine:
                 self.state.areas[target_area].append(target_card)
                 self.add_message(f"{target_display_id} moves to {target_area.value}.")
                 curr_presence = target_card.get_current_presence()
-                if target_area == Area.WITHIN_REACH and Keyword.AMBUSH in target_card.keywords and curr_presence is not None:
+                if target_area == Area.WITHIN_REACH and target_card.has_keyword(Keyword.AMBUSH) and curr_presence is not None:
                     self.fatigue_ranger(self.state.ranger, curr_presence)
                 return True
         return False

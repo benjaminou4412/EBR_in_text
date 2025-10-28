@@ -73,7 +73,10 @@ def render_card_detail(card: Card, index: int | None = None, display_id: str | N
     if card.presence is not None or card.progress_threshold is not None or card.harm_threshold is not None:
         parts = []
         if card.presence is not None:
-            parts.append(f"Presence: {card.presence}")
+            if card.presence == card.get_current_presence():
+                parts.append(f"Presence: {card.get_current_presence()}")
+            else:
+                parts.append(f"Printed Presence: {card.presence}; Current Presence: {card.get_current_presence()}")
         if card.progress_threshold is not None:
             parts.append(f"Progress: {card.progress}/{card.progress_threshold}")
         if card.harm_threshold is not None:

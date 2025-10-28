@@ -179,6 +179,10 @@ class Card:
     
     def is_ready(self) -> bool:
         return not self.exhausted
+    
+    def has_keyword(self, keyword: Keyword) -> bool:
+        return keyword in self.keywords
+
 
     #todo: methods for adding/removing unique tokens
 
