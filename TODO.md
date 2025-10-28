@@ -3,7 +3,6 @@
 A living checklist. Roughly prioritized.
 
 
-- target_id refactor?
 - Implement exhaust abilities and Peerless Pathfinder (i.e. ranger token system)
 - Implement ConstantAbilities
 - Implement attachment system

@@ -548,3 +548,245 @@ def render_card_detail(card: Card, display_id: str = None):
 - Multiple nested attachments
 - Role attachment during interaction
 - Refresh phase with attached beings
+
+---
+
+## 10. Double-Sided Cards (Weather)
+
+### Key Difference from Attachment Facedown Cards
+
+The face-up/down system described above handles **cards flipping to blank placeholders** (attachments). However, **Weather cards** are different - they are **double-sided cards** where each side is a complete, fully-defined card with its own abilities, traits, and effects.
+
+| Card Type | When Flipped | Result |
+|-----------|--------------|--------|
+| **Attached card** | Flips facedown | Becomes blank placeholder; original preserved off-board |
+| **Weather card** | Flips to other side | Swaps to different complete card with full properties |
+
+### Design Approach: Two Card Objects
+
+Weather cards should be modeled as **two separate Card objects** that reference each other:
+
+```python
+@dataclass
+class Card:
+    # ... existing fields ...
+
+    # Double-sided card support
+    other_side_id: str | None = None  # ID of the other side of this card (for double-sided cards)
+```
+
+### Weather Card Initialization
+
+When loading Weather cards from JSON:
+
+```python
+# In json_loader.py or similar
+def create_weather_card(data: dict) -> tuple[Card, Card]:
+    """
+    Create both sides of a weather card.
+    Returns (fair_side, inclement_side)
+    """
+    fair_side = Card(
+        id=f"{data['name']}-fair",
+        title=data['fair_title'],
+        traits=data['fair_traits'],
+        abilities_text=data['fair_abilities'],
+        # ... other fair-side properties ...
+    )
+
+    inclement_side = Card(
+        id=f"{data['name']}-inclement",
+        title=data['inclement_title'],
+        traits=data['inclement_traits'],
+        abilities_text=data['inclement_abilities'],
+        # ... other inclement-side properties ...
+    )
+
+    # Link them
+    fair_side.other_side_id = inclement_side.id
+    inclement_side.other_side_id = fair_side.id
+
+    return fair_side, inclement_side
+```
+
+### Weather Card Storage
+
+Both sides should be stored in the collection/card pool:
+
+```python
+@dataclass
+class GameState:
+    # ... existing fields ...
+
+    # Weather card pool (both sides available)
+    weather_cards: dict[str, Card] = field(default_factory=dict)
+    # Key = weather set name, Value = currently active side
+```
+
+### Flipping Weather Cards
+
+Weather flips are **zone swaps**, not placeholder creation:
+
+```python
+# In GameEngine
+def flip_weather_card(self, current_side: Card) -> Card:
+    """
+    Flip a weather card to its other side.
+    This is a SWAP, not a placeholder creation.
+
+    Args:
+        current_side: The currently active weather card side
+
+    Returns:
+        The other side (now active)
+    """
+    if not current_side.other_side_id:
+        raise ValueError(f"{current_side.title} is not a double-sided card!")
+
+    # Get the other side
+    other_side = self.state.get_card_by_id(current_side.other_side_id)
+    if not other_side:
+        # If not in play, it should be in the weather card pool
+        other_side = self.state.weather_cards.get(current_side.other_side_id)
+        if not other_side:
+            raise RuntimeError(f"Cannot find other side of {current_side.title}")
+
+    # Tokens transfer to new side (weather doesn't have thresholds, but other double-sided cards might)
+    other_side.progress = current_side.progress
+    other_side.harm = current_side.harm
+    other_side.unique_tokens = current_side.unique_tokens.copy()
+
+    # Clear old side
+    current_side.progress = 0
+    current_side.harm = 0
+    current_side.unique_tokens.clear()
+
+    # Swap in zones
+    for zone, cards in self.state.areas.items():
+        if current_side in cards:
+            idx = cards.index(current_side)
+            cards[idx] = other_side
+            self.add_message(f"Weather flipped to: {other_side.title}")
+
+            # Trigger enters_play for new side
+            other_side.enters_play(self, zone)
+            return other_side
+
+    raise RuntimeError(f"{current_side.title} not found in any zone!")
+```
+
+### Key Differences: Placeholder vs Double-Sided
+
+| Feature | Facedown Placeholder (Attachments) | Double-Sided (Weather) |
+|---------|-----------------------------------|------------------------|
+| **Original card** | Preserved off-board, not in play | Not applicable - both sides are "real" cards |
+| **Replacement card** | Minimal blank placeholder | Complete card with full properties |
+| **Tokens** | Cleared from original before flip | Transfer to new side |
+| **In play?** | Facedown attached = not in play | Both sides are "in play" cards (just one active) |
+| **References** | `facedown_original` points to hidden card | `other_side_id` points to linked card |
+| **Use case** | Attached beings (Caustic Mulcher) | Weather, potentially other double-sided cards |
+
+### Weather-Specific Rules
+
+From the EBR rules, weather cards:
+1. **Start on Fair side** at game start
+2. **Flip to Inclement** via specific triggers (time of day, card effects, mission rules)
+3. **Flip back to Fair** similarly via triggers
+4. **Always exactly one weather card** in Surroundings
+5. **Never leave play** - just flip between sides
+6. **Global effects** - affect all rangers
+
+### Implementation Notes
+
+#### When to Use Each System:
+
+**Use `facedown_original` placeholder system for:**
+- Cards that attach facedown (per attachment rules)
+- Cards explicitly flipped "facedown" as blank cards
+- A Dear Friend, Caustic Mulcher attachments
+
+**Use `other_side_id` double-sided system for:**
+- Weather cards
+- Any future double-sided cards (if expansion adds them)
+- Cards that transform between two complete states
+
+#### Can They Coexist?
+
+**Yes!** A card could theoretically have both:
+```python
+# Hypothetical: A double-sided card that gets attached facedown
+card.other_side_id = "card-side-b"  # Has another side
+card.facedown_original = None       # Currently faceup
+
+# Later, when attached facedown:
+placeholder = flip_card_facedown(card)
+# placeholder.other_side_id would still reference the other side
+# But the original (and its other side) are both off-board now
+```
+
+### Weather JSON Structure
+
+Weather cards in JSON might look like:
+
+```json
+{
+  "name": "clear-skies",
+  "fair": {
+    "title": "Clear Skies",
+    "traits": ["Fair"],
+    "abilities": [
+      "Refresh: Each ranger soothes 1.",
+      "Sun: Add 1 progress to the location."
+    ]
+  },
+  "inclement": {
+    "title": "Pouring Rain",
+    "traits": ["Inclement", "Rain"],
+    "abilities": [
+      "Refresh: Each ranger suffers 1 fatigue.",
+      "Mountain: Add 1 harm to each ready being."
+    ]
+  }
+}
+```
+
+### Comparison Table: Three Card State Systems
+
+| System | Field | Purpose | Creates New Object? | Original Location |
+|--------|-------|---------|-------------------|-------------------|
+| **Normal** | N/A | Default card state | N/A | In zone |
+| **Facedown Placeholder** | `facedown_original` | Blank attached card | Yes (placeholder) | Off-board (preserved) |
+| **Double-Sided** | `other_side_id` | Transform to other face | No (swap existing) | Off-board or in collection |
+
+### Phase Implementation Plan Update
+
+Adding Weather support would fit into the existing phases:
+
+**Phase 2.5: Double-Sided Cards (Weather)**
+1. Add `other_side_id` field to Card
+2. Implement `flip_weather_card()` in GameEngine (zone swap + token transfer)
+3. Create weather JSON loading (create both sides, link them)
+4. Add weather card pool to GameState
+5. Implement weather arrival setup (place initial Fair side)
+6. Test weather flipping without implementing all weather abilities
+
+**Phase 6: Full Weather System** (much later)
+1. Implement all weather abilities and effects
+2. Implement weather flipping triggers (time of day, effects)
+3. Test weather integration with path deck, locations, missions
+
+### Design Philosophy
+
+The facedown/faceup system has **two distinct mechanisms** because they serve **two distinct purposes**:
+
+1. **Placeholder System** (`facedown_original`):
+   - For cards that **lose their identity** when flipped
+   - Original must be preserved because it's coming back
+   - Used for attachment rules compliance
+
+2. **Double-Sided System** (`other_side_id`):
+   - For cards with **two permanent identities**
+   - Both sides are real cards that exist in the game
+   - Used for weather and potential future mechanics
+
+This separation keeps the code clean and makes each system's purpose explicit.
