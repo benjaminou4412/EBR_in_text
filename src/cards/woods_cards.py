@@ -1,7 +1,7 @@
 """
 Woods terrain set card implementations
 """
-from typing import Optional, Callable
+from typing import Callable
 
 from src.models import Area
 from ..models import *
@@ -173,7 +173,7 @@ class SitkaDoe(Card):
             )
         ]
 
-    def _on_spook_success(self, engine: GameEngine, effort: int, target_id: Optional[str]) -> None:
+    def _on_spook_success(self, engine: GameEngine, effort: int, card: Card | None) -> None:
         """Spook test success: move to Along the Way"""
         engine.move_card(self.id, Area.ALONG_THE_WAY)
 
@@ -244,13 +244,13 @@ class SunberryBramble(Card):
             )
         ]
 
-    def _on_pluck_success(self, engine: GameEngine, effort: int, target_id: Optional[str]) -> None:
+    def _on_pluck_success(self, engine: GameEngine, effort: int, card: Card | None) -> None:
         """Pluck test success: add 1 harm"""
         msg = self.add_harm(1)
         engine.add_message(msg)
         engine.soothe_ranger(engine.state.ranger, 2)
 
-    def _fail_effect(self, engine: GameEngine, message: str | None) -> None:
+    def _fail_effect(self, engine: GameEngine, effort: int, card: Card | None) -> None:
         engine.add_message(f"Target {self.title} fatigues you.")
         curr_presence = self.get_current_presence()
         if curr_presence is not None:
@@ -296,7 +296,7 @@ class OvergrownThicket(Card):
             )
         ]
 
-    def _on_hunt_success(self, engine: GameEngine, effort: int, target_id: Optional[str]) -> None:
+    def _on_hunt_success(self, engine: GameEngine, effort: int, card: Card | None) -> None:
         """Hunt test success: add progress equal to effort"""
         msg = self.add_progress(effort)
         engine.add_message(msg)

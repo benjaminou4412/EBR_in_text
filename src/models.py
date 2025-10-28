@@ -576,10 +576,10 @@ class Action:
     # If the action requires a target, provide candidate Card targets based on state
     target_provider: Optional[Callable[[GameState], list['Card']]] = None
     # Computes difficulty for the chosen target (or state)
-    difficulty_fn: Callable[[GameState, Optional[str]], int] = lambda _s, _t: 1
+    difficulty_fn: Callable[[GameState, Optional[Card]], int] = lambda _s, _t: 1
     # Effects
-    on_success: Callable[[GameEngine, int, Optional[str]], None] = lambda _s, _e, _t: None
-    on_fail: Optional[Callable[[GameEngine, Optional[str]], None]] = None
+    on_success: Callable[[GameEngine, int, Optional[Card]], None] = lambda _s, _e, _t: None
+    on_fail: Optional[Callable[[GameEngine, int, Optional[Card]], None]] = lambda _s, _e, _t: None
     # Source metadata (for display/tracking)
     source_id: Optional[str] = None  # card/entity id or "common"
     source_title: Optional[str] = None

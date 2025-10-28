@@ -527,7 +527,7 @@ class SunberryBrambleTests(unittest.TestCase):
         eng = GameEngine(state, challenge_drawer=fixed_draw(0, ChallengeIcon.SUN))
 
         # Invoke fail effect
-        bramble._fail_effect(eng, None)
+        bramble._fail_effect(eng, 0, None)
 
         self.assertEqual(len(ranger.fatigue_pile), 1)  # Presence is 1
         self.assertEqual(len(ranger.deck), 1)

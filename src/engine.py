@@ -146,13 +146,14 @@ class GameEngine:
                     
     def initiate_test(self, action: Action, state: GameState, target_id: str | None):
         """Show player relevant information before decisions are made during a test"""
+        target_card = self.state.get_card_by_id(target_id)
         # Get display strings for aspect/approach
         aspect_str = action.aspect.value if isinstance(action.aspect, Aspect) else action.aspect
         approach_str = action.approach.value if isinstance(action.approach, Approach) else action.approach  
 
         # Show player Test Step 1 information
         self.add_message(f"[{action.verb}] test initiated of aspect [{aspect_str}] and approach [{approach_str}].")
-        self.add_message(f"This test is of difficulty {action.difficulty_fn(state,target_id)}.")
+        self.add_message(f"This test is of difficulty {action.difficulty_fn(state,target_card)}.")
         self.add_message(f"Step 1: You suffer fatigue from each ready card between you and your interaction target.")
         if target_id is not None:
             target = self.state.get_card_by_id(target_id)
@@ -166,8 +167,10 @@ class GameEngine:
 
     def perform_action(self, action: Action, decision: CommitDecision, target_id: Optional[str]) -> ChallengeOutcome:
         # Non-test actions (e.g., Rest) skip challenge + energy
+        target_card: Card | None = self.state.get_card_by_id(target_id)
+
         if not action.is_test:
-            action.on_success(self, 0, target_id)
+            action.on_success(self, 0, target_card)
             return ChallengeOutcome(difficulty=0, base_effort=0, modifier=0, symbol=ChallengeIcon.SUN, resulting_effort=0, success=True)
 
         r = self.state.ranger        
@@ -190,7 +193,7 @@ class GameEngine:
 
         mod, symbol = self.draw_challenge()
         effort = max(0, base_effort + mod)
-        difficulty = action.difficulty_fn(self.state, target_id)
+        difficulty = action.difficulty_fn(self.state, target_card)
         self.add_message(f"Step 3: Draw a challenge card and apply modifiers.")
         self.add_message(f"You drew: [{aspect.value}]{mod:+d}, symbol [{symbol.upper()}]")
 
@@ -205,14 +208,14 @@ class GameEngine:
         if success:
             self.add_message(f"Result: {base_effort} + ({mod:d}) = {effort} >= {difficulty}")
             self.add_message(f"Test succeeded!")
-            action.on_success(self, effort, target_id)
+            action.on_success(self, effort, target_card)
             self.trigger_listeners(EventType.TEST_SUCCEED, TimingType.AFTER, action, effort)
 
         else:
             self.add_message(f"Result: {base_effort} + ({mod:d}) = {effort} < {difficulty}")
             self.add_message(f"Test failed!")
             if action.on_fail:
-                action.on_fail(self, target_id)
+                action.on_fail(self, effort, target_card)
 
         cleared : list[Card]= []
         cleared.extend(self.check_and_process_clears())

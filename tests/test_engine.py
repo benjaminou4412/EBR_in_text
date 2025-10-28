@@ -2,6 +2,7 @@ import unittest
 from src.models import *
 from src.engine import GameEngine
 from src.cards import *
+from src.registry import *
 
 
 def fixed_draw(mod : int, sym: ChallengeIcon):
@@ -96,22 +97,12 @@ class EngineTests(unittest.TestCase):
         )
         eng = GameEngine(state, challenge_drawer=fixed_draw(0, ChallengeIcon.CREST))
 
-        def add_progress_callback(_s: GameEngine, eff: int, _t: Optional[str]) -> None:
-            feat.add_progress(eff)
-
-        act = Action(
-            id="t2",
-            name="traverse",
-            aspect=Aspect.FIT,
-            approach=Approach.EXPLORATION,
-            difficulty_fn=lambda _s, _t: max(1, feat.presence if feat.presence is not None else 0),
-            on_success=add_progress_callback,
-            on_fail=lambda s, _t: setattr(state.ranger, "injury", state.ranger.injury + 1),
-        )
+        tests = provide_common_tests(state)
+        act = tests[0]
         eng.perform_action(
             act,
             decision=CommitDecision(energy=1, hand_indices=[0]),
-            target_id=None)
+            target_id=feat.id)
 
         self.assertEqual(state.ranger.energy[Aspect.FIT], 1)
         self.assertEqual(feat.progress, 2)
@@ -140,7 +131,7 @@ class EngineTests(unittest.TestCase):
         eng = GameEngine(state, challenge_drawer=fixed_draw(0, ChallengeIcon.SUN))
 
         # Perform action that adds exactly enough progress to clear (1 energy + 1 icon = 2 effort)
-        def add_progress_callback(_s: GameEngine, eff: int, _t: Optional[str]) -> None:
+        def add_progress_callback(_s: GameEngine, eff: int, _t: Card | None) -> None:
             feature.add_progress(eff)
 
         act = Action(
@@ -183,7 +174,7 @@ class EngineTests(unittest.TestCase):
         eng = GameEngine(state, challenge_drawer=fixed_draw(0, ChallengeIcon.SUN))
 
         # Perform action that adds exactly enough harm to clear (1 energy + 1 icon = 2 effort = 2 harm)
-        def add_harm_callback(_s: GameEngine, eff: int, _t: Optional[str]) -> None:
+        def add_harm_callback(_s: GameEngine, eff: int, _t: Card | None) -> None:
             being.add_harm(eff)
 
         act = Action(
@@ -224,7 +215,7 @@ class EngineTests(unittest.TestCase):
         eng = GameEngine(state, challenge_drawer=fixed_draw(0, ChallengeIcon.SUN))
 
         # Add progress that doesn't reach threshold (only 1 effort)
-        def add_progress_callback(_s: GameEngine, eff: int, _t: Optional[str]) -> None:
+        def add_progress_callback(_s: GameEngine, eff: int, _t: Card | None) -> None:
             feature.add_progress(eff)
 
         act = Action(

@@ -2,8 +2,7 @@
 
 A living checklist. Roughly prioritized.
 
-- reshuffle when drawing from empty path deck
-- Implement getter for checking a card's exhausted/ready state () (there are Constant Abilities that ask you to "treat a card as exhausted")
+
 - target_id refactor?
 - Implement exhaust abilities and Peerless Pathfinder (i.e. ranger token system)
 - Implement ConstantAbilities
