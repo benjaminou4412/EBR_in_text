@@ -78,9 +78,9 @@ def render_card_detail(card: Card, index: int | None = None, display_id: str | N
             else:
                 parts.append(f"Printed Presence: {card.presence}; Current Presence: {card.get_current_presence()}")
         if card.progress_threshold is not None:
-            parts.append(f"Progress: {card.progress}/{card.progress_threshold}")
+            parts.append(f"Progress: {card.progress}/{card.get_progress_threshold()}")
         if card.harm_threshold is not None:
-            parts.append(f"Harm: {card.harm}/{card.harm_threshold}")
+            parts.append(f"Harm: {card.harm}/{card.get_harm_threshold()}")
         if card.is_exhausted():
             parts.append("(EXHAUSTED)")
         if parts:

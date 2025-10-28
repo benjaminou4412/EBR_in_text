@@ -175,13 +175,28 @@ class Card:
         return None
     
     def is_exhausted(self) -> bool:
+        #TODO: take into account stuff that says to "Treat cards as exhausted"
         return self.exhausted
     
     def is_ready(self) -> bool:
+        #TODO: take into account stuff that says to "Treat cards as ready"
         return not self.exhausted
     
     def has_keyword(self, keyword: Keyword) -> bool:
+        #TODO: take into account added keywords
         return keyword in self.keywords
+    
+    def has_trait(self, trait: str) -> bool:
+        #TODO: take into account added traits from stuff like Trail Makers
+        return trait in self.traits
+    
+    def get_progress_threshold(self) -> int | None:
+        #TODO: take into account progress threshold modifiers
+        return self.progress_threshold
+    
+    def get_harm_threshold(self) -> int | None:
+        #TODO: take into account harm threshold modifiers
+        return self.harm_threshold
 
 
     #todo: methods for adding/removing unique tokens
@@ -345,9 +360,11 @@ class Card:
             return f"{self.title} readies."
         
     def clear_if_threshold(self) -> str | None:
-        if self.progress_threshold is not None and self.progress >= self.progress_threshold:
+        prog_threshold = self.get_progress_threshold()
+        harm_threshold = self.get_harm_threshold()
+        if prog_threshold is not None and self.progress >= prog_threshold:
             return "progress"
-        if self.harm_threshold is not None and self.harm >= self.harm_threshold:
+        if harm_threshold is not None and self.harm >= harm_threshold:
             return "harm"
         return None
 
@@ -514,7 +531,7 @@ class GameState:
         results: list[Card] = []
         for area in self.areas:
             for card in self.areas[area]:
-                for curr_trait in card.traits:
+                for curr_trait in card.traits: #TODO: take into account added traits from cards like Trail Marker
                     if trait.casefold() == curr_trait.casefold():
                         results.append(card)
                 
