@@ -33,37 +33,69 @@ Exhaust abilities are "testless" actions that can be activated by exhausting a c
 
 ## 1. Data Model
 
-### ExhaustAbility Class
+### Reusing the Action Class
 
-Instead of using `Action`, create a dedicated class for exhaust abilities:
+Exhaust abilities will reuse the existing `Action` class with a new `is_exhaust` flag. This keeps the codebase simple and leverages existing infrastructure for display and selection.
+
+#### Why Reuse Action?
+
+**Pragmatic Benefits:**
+- ✅ Homogeneous display - everything is still `list[Action]`
+- ✅ Existing infrastructure - view.py already handles Actions
+- ✅ Precedent exists - Rest and End Day already use Action with `is_test=False`
+- ✅ Simpler integration - no new class to wire into selection logic
+
+**Pattern Already Exists:**
+```python
+# Rest action (current codebase)
+Action(
+    id="rest",
+    name="Rest",
+    is_test=False,
+    on_success=lambda e, eff, t: e.rest_ranger(),
+)
+```
+
+**Potential Future Use Case:**
+Some abilities might both exhaust AND perform a test (e.g., "Exhaust: Perform a FOC+Reason test"). Having both `is_test` and `is_exhaust` as independent flags supports this.
+
+#### Action Class Changes
+
+Add `is_exhaust` field to the existing Action dataclass:
 
 ```python
 @dataclass
-class ExhaustAbility:
-    """Represents an exhaust ability on a card"""
-    id: str  # Unique identifier
-    card_id: str  # Card this ability comes from
-    name: str  # Display name
-    description: str  # What the ability does
-    handler: Callable[[GameEngine, str | None], None]  # (engine, target_id) -> None
-    target_provider: Callable[[GameState], list[Card]] | None = None  # Optional targeting
-    requires_target: bool = False  # Whether this ability needs a target
+class Action:
+    # ... existing fields ...
+    is_test: bool = True
+    is_exhaust: bool = False  # NEW: marks exhaust abilities
 
-    def can_activate(self, engine: GameEngine) -> bool:
-        """Check if this ability can be activated (card must be ready)"""
-        card = engine.state.get_card_by_id(self.card_id)
-        return card is not None and not card.exhausted
+    # Note: Both can be true! (exhaust AND test)
+    # Both false = phase action (Rest, End Day)
 ```
 
-### Why Not Action?
+#### Exhaust Abilities as Actions
 
-`Action` is designed for tests:
-- Has `difficulty_fn` (not needed for exhaust abilities)
-- Has `on_success` and `on_fail` (no success/fail for exhaust abilities)
-- Has `approach` and `aspect` (exhaust abilities don't test aspects)
-- Implies challenge resolution
+```python
+# Example exhaust ability action
+Action(
+    id="peerless-pathfinder-exhaust",
+    name="Move Ranger Token to Feature",
+    verb="Move Ranger Token",  # For display
+    is_test=False,
+    is_exhaust=True,  # NEW FLAG
+    target_provider=lambda state: state.features_in_play(),
+    on_success=lambda engine, effort, target: move_token_handler(engine, target),
+    source_id="peerless-pathfinder-role-id",
+    source_title="Peerless Pathfinder",
+)
+```
 
-`ExhaustAbility` is simpler and more explicit.
+**Unused Fields:**
+- `difficulty_fn` - Not called when `is_test=False`
+- `on_fail` - Not called when `is_test=False`
+- `aspect`/`approach` - Can be `None` for non-tests
+- These are sentinel values meaning "not applicable"
 
 ---
 
@@ -72,13 +104,13 @@ class ExhaustAbility:
 ### Add to Card class:
 
 ```python
-def get_exhaust_abilities(self) -> list[ExhaustAbility] | None:
+def get_exhaust_abilities(self) -> list[Action] | None:
     """
-    Returns exhaust abilities this card provides.
+    Returns exhaust abilities this card provides as Actions.
     Override in subclasses that have exhaust abilities.
 
     Returns:
-        List of ExhaustAbility objects, or None if no exhaust abilities
+        List of Action objects with is_exhaust=True, or None if no exhaust abilities
     """
     return None
 ```
@@ -112,36 +144,36 @@ class PeerlessPathfinder(Card):
         # Role cards have no cost, no aspect requirement
         # They start in play and never leave
 
-    def get_exhaust_abilities(self) -> list[ExhaustAbility]:
+    def get_exhaust_abilities(self) -> list[Action]:
         """Exhaust: Move ranger token to feature, that feature fatigues you"""
         return [
-            ExhaustAbility(
+            Action(
                 id=f"exhaust-{self.id}",
-                card_id=self.id,
                 name="Move Ranger Token to Feature",
-                description="Move your ranger token to a feature. That feature fatigues you.",
-                handler=self._move_token_to_feature,
+                verb="Move Ranger Token",
+                is_test=False,
+                is_exhaust=True,
                 target_provider=lambda state: state.features_in_play(),
-                requires_target=True
+                on_success=self._move_token_to_feature,
+                source_id=self.id,
+                source_title=self.title,
             )
         ]
 
-    def _move_token_to_feature(self, engine: GameEngine, target_id: str | None) -> None:
+    def _move_token_to_feature(self, engine: GameEngine, effort: int, target: Card | None) -> None:
         """Handler for the exhaust ability"""
-        if target_id is None:
+        if target is None:
             engine.add_message("No target selected for ranger token movement.")
             return
 
-        target_card = engine.state.get_card_by_id(target_id)
-        if target_card is None:
-            engine.add_message("Invalid target for ranger token movement.")
-            return
+        # Exhaust this role card as the cost
+        engine.add_message(self.exhaust())
 
         # Move ranger token to the target feature
-        engine.move_ranger_token_to_card(target_card)
+        engine.move_ranger_token_to_card(target)
 
         # Target feature fatigues you
-        presence = target_card.get_current_presence()
+        presence = target.get_current_presence()
         if presence is not None and presence > 0:
             engine.fatigue_ranger(engine.state.ranger, presence)
 ```
@@ -152,19 +184,21 @@ class PeerlessPathfinder(Card):
 
 ### Collecting Available Exhaust Abilities
 
+Exhaust abilities are collected as Actions with `is_exhaust=True`:
+
 ```python
-def get_available_exhaust_abilities(self) -> list[ExhaustAbility]:
+def get_available_exhaust_abilities(self) -> list[Action]:
     """
     Collect all exhaust abilities from ready cards in play.
 
     Returns:
-        List of ExhaustAbility objects that can currently be activated
+        List of Action objects with is_exhaust=True that can currently be activated
     """
     abilities = []
 
     # Check all cards in play (including role card in Player Area)
     for card in self.state.all_cards_in_play():
-        if not card.exhausted:
+        if not card.is_exhausted():  # Use getter to check exhaustion
             card_abilities = card.get_exhaust_abilities()
             if card_abilities:
                 abilities.extend(card_abilities)
@@ -174,34 +208,49 @@ def get_available_exhaust_abilities(self) -> list[ExhaustAbility]:
 
 ### Turn Action Selection
 
-During a turn, the player can choose from:
-1. **Tests** (from common tests + card-specific tests)
-2. **Exhaust abilities** (from ready cards)
-3. **Rest** (special action to end phase)
+During a turn, the player can choose from a unified list of Actions:
 
 ```python
-def get_available_turn_actions(self) -> dict[str, list]:
+def get_available_turn_actions(self) -> list[Action]:
     """
     Get all available actions for the current turn.
-
-    Returns:
-        Dictionary with keys: 'tests', 'exhaust_abilities', 'rest'
+    Returns a single flat list of Actions (tests, exhaust abilities, and phase actions).
     """
-    return {
-        'tests': self.get_available_tests(),
-        'exhaust_abilities': self.get_available_exhaust_abilities(),
-        'rest': [self.create_rest_action()]  # Always available
-    }
+    actions = []
+
+    # Add tests (is_test=True, is_exhaust=False)
+    actions.extend(self.get_available_tests())
+
+    # Add exhaust abilities (is_test=False, is_exhaust=True)
+    actions.extend(self.get_available_exhaust_abilities())
+
+    # Add phase actions (is_test=False, is_exhaust=False)
+    actions.append(self.create_rest_action())
+
+    return actions
 ```
+
+**Note:** All actions are now in a single homogeneous list. The view layer can use `is_test` and `is_exhaust` flags to format display differently if desired.
 
 ### UI Display
 
+The view can optionally group by action type:
+
 ```
 Available Actions:
-  Test: Traverse (FIT + Exploration) [X=presence] -> Overgrown Thicket A
-  Test: Hunt for a way through the dense foliage -> Overgrown Thicket A
-  Exhaust: Move Ranger Token to Feature (Peerless Pathfinder)
-  Rest: End your turn and refresh
+  1. [Test] Traverse (FIT + Exploration) -> Overgrown Thicket A
+  2. [Test] Hunt for a way through -> Overgrown Thicket A
+  3. [Exhaust] Move Ranger Token to Feature (Peerless Pathfinder)
+  4. Rest
+```
+
+Or display as a flat list (current approach):
+```
+Available Actions:
+  1. Traverse
+  2. Hunt for a way through
+  3. Move Ranger Token to Feature
+  4. Rest
 ```
 
 ---
@@ -210,43 +259,42 @@ Available Actions:
 
 ### Activation Flow
 
+Exhaust abilities use the same `perform_action()` flow as tests and other actions:
+
 ```python
-def activate_exhaust_ability(self, ability: ExhaustAbility, target_id: str | None = None) -> None:
-    """
-    Activate an exhaust ability.
+# In perform_action()
+def perform_action(self, action: Action, decision: CommitDecision, target_id: Optional[str]) -> ChallengeOutcome:
+    # Resolve target once
+    target_card: Card | None = self.state.get_card_by_id(target_id) if target_id else None
 
-    Args:
-        ability: The ExhaustAbility to activate
-        target_id: Optional target for the ability
-    """
-    # Verify ability can still be activated
-    if not ability.can_activate(self):
-        self.add_message(f"Cannot activate {ability.name} - card is exhausted or unavailable.")
-        return
+    # For exhaust abilities, exhaust the source card first
+    if action.is_exhaust and action.source_id:
+        source_card = self.state.get_card_by_id(action.source_id)
+        if source_card:
+            if source_card.is_exhausted():
+                self.add_message(f"Cannot activate - {source_card.title} is already exhausted.")
+                return ChallengeOutcome(difficulty=0, base_effort=0, modifier=0,
+                                       symbol=ChallengeIcon.SUN, resulting_effort=0, success=False)
+            self.add_message(source_card.exhaust())
 
-    # Get the card and exhaust it (cost paid upfront)
-    card = self.state.get_card_by_id(ability.card_id)
-    if card is None:
-        return
+    # Non-test actions (exhaust abilities, Rest, End Day) skip challenge resolution
+    if not action.is_test:
+        action.on_success(self, 0, target_card)
+        return ChallengeOutcome(difficulty=0, base_effort=0, modifier=0,
+                               symbol=ChallengeIcon.SUN, resulting_effort=0, success=True)
 
-    self.add_message(f"Exhausting {card.title} to activate: {ability.name}")
-    card.exhausted = True
-
-    # If ability requires a target, ensure one is provided
-    if ability.requires_target and target_id is None:
-        # This shouldn't happen if UI is correct, but handle gracefully
-        self.add_message("Error: Ability requires a target but none provided.")
-        return
-
-    # Execute the ability handler
-    ability.handler(self, target_id)
-
-    # No challenge resolution, no test - just done!
+    # ... rest of test logic ...
 ```
+
+**Key Points:**
+- Exhaust abilities have `is_exhaust=True` and `is_test=False`
+- Source card is exhausted **before** executing the ability
+- No challenge resolution, just execute `on_success` handler directly
+- Uses the same unified flow as Rest/End Day
 
 ### Key Differences from Tests
 
-**Tests:**
+**Tests (`is_test=True`):**
 1. Choose action
 2. Choose commit
 3. Draw challenge
@@ -254,13 +302,20 @@ def activate_exhaust_ability(self, ability: ExhaustAbility, target_id: str | Non
 5. Check success/fail
 6. Apply consequences
 
-**Exhaust Abilities:**
+**Exhaust Abilities (`is_test=False`, `is_exhaust=True`):**
 1. Choose ability (and target if needed)
-2. Exhaust card (cost paid)
-3. Execute handler
+2. Exhaust source card (cost paid)
+3. Execute `on_success` handler
 4. Done!
 
 Much simpler, much faster.
+
+**Phase Actions (`is_test=False`, `is_exhaust=False`):**
+1. Choose action (Rest, End Day)
+2. Execute `on_success` handler
+3. Done!
+
+No exhaustion cost, no test.
 
 ---
 
