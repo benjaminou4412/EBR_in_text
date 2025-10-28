@@ -1,4 +1,5 @@
 from __future__ import annotations
+import random
 from dataclasses import dataclass
 from typing import Callable, Optional
 from .models import (
@@ -422,19 +423,26 @@ class GameEngine:
         self.add_message(f"Day {self.state.day_number} has ended after {self.state.round_number} rounds.")
         self.add_message("Thank you for playing!")
 
+    def draw_path_card(self) -> None:
+        """Draw one path card and put it into play, reshuffling path discard if necessary"""
+        if not self.state.path_deck:
+            self.add_message(f"Path deck empty; shuffling in path discard.")
+            random.shuffle(self.state.path_discard)
+            self.state.path_deck.extend(self.state.path_discard)
+            self.state.path_discard.clear()
+        card = self.state.path_deck.pop(0)
+        if card.starting_area is not None:
+                self.state.areas[card.starting_area].append(card)
+                card.enters_play(self, card.starting_area)
+        else:
+            raise AttributeError("Path card drawn is missing a starting area.")
+
+
     # Round/Phase helpers
     def phase1_draw_paths(self, count: int = 1):
         self.add_message(f"Begin Phase 1: Draw Path Cards")
         for _ in range(count):
-            if not self.state.path_deck:
-                #TODO: set up path discard, and reshuffle path discard into deck when deck is empty
-                break
-            card = self.state.path_deck.pop(0)
-            if card.starting_area is not None:
-                self.state.areas[card.starting_area].append(card)
-                card.enters_play(self, card.starting_area)
-            else:
-                raise ValueError("Path card drawn is missing a starting area.")
+            self.draw_path_card()
 
 
     def phase4_refresh(self):
