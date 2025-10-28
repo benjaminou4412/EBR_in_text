@@ -98,7 +98,7 @@ class GameEngine:
         closest_obstacle_area = None
         for area in [Area.WITHIN_REACH, Area.ALONG_THE_WAY, Area.SURROUNDINGS]:
             cards_in_area = self.state.areas[area]
-            if any(Keyword.OBSTACLE in card.keywords and not card.exhausted
+            if any(Keyword.OBSTACLE in card.keywords and card.is_ready()
                    for card in cards_in_area):
                 closest_obstacle_area = area
                 break
@@ -127,7 +127,7 @@ class GameEngine:
 
         # TODO:Filter out Friendly cards
         all_cards = self.state.all_cards_in_play()
-        fatiguing_cards = [card for card in cards_between if card.exhausted == False and Keyword.FRIENDLY not in card.keywords]
+        fatiguing_cards = [card for card in cards_between if card.is_ready() and Keyword.FRIENDLY not in card.keywords]
         target_display_id = get_display_id(all_cards, target)
         self.add_message(f"Interacting with {target_display_id} in {target_area.value}...")
         if not fatiguing_cards:
@@ -237,7 +237,7 @@ class GameEngine:
         nonzero_challenges = False
         for area in challenge_areas:
             for card in self.state.areas[area]:
-                if not card.exhausted:
+                if card.is_ready():
                     # Get handlers directly from the card (always current)
                     handlers = card.get_challenge_handlers()
                     if handlers and symbol in handlers:

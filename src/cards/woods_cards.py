@@ -42,7 +42,7 @@ class ProwlingWolhund(Card):
             return False
         else:
             wolhunds_excluding_self = [wol for wol in wolhunds if wol.id != self.id]
-            exhausted_wolhunds = [wol for wol in wolhunds_excluding_self if wol.exhausted==True]
+            exhausted_wolhunds = [wol for wol in wolhunds_excluding_self if wol.is_exhausted()]
             if exhausted_wolhunds:
                 #prompt player to pick one to ready
                 engine.add_message(f"Challenge (Sun) on {self_display_id}: Choose another Prowling Wolhund to ready:")
@@ -94,7 +94,7 @@ class SitkaBuck(Card):
         if not bucks:
             raise RuntimeError("This card should count itself as a buck, so we can't get no-bucks-found here.")
         else:
-            other_active_bucks = [buck for buck in bucks if buck.id != self.id and not buck.exhausted]
+            other_active_bucks = [buck for buck in bucks if buck.id != self.id and buck.is_ready()]
             if other_active_bucks:
                 if len(other_active_bucks)==1:
                     engine.add_message(f"Challenge (Sun) on {self_display_id}: Only one other active buck; automatically chosen for harm:")
@@ -118,7 +118,7 @@ class SitkaBuck(Card):
             engine.add_message(f"Challenge (Mountain) on {self_display_id}: (no predators in play)")
             return False
         else:
-            active_predators = [predator for predator in predators if predator.exhausted == False]
+            active_predators = [predator for predator in predators if predator.is_ready()]
             if not active_predators:
                 engine.add_message(f"Challenge (Mountain) on {self_display_id}: (no active predators in play)")
                 return False
@@ -140,7 +140,7 @@ class SitkaBuck(Card):
         """If there is an active Sitka Doe, the buck charges >> Suffer 1 injury."""
         self_display_id = get_display_id(engine.state.all_cards_in_play(), self)
         does = engine.state.get_cards_by_title("Sitka Doe")
-        if does and any(not doe.exhausted for doe in does):
+        if does and any(doe.is_ready() for doe in does):
             engine.add_message(f"Challenge (Crest) on {self_display_id}: There is an active Sitka Doe, so the buck charges.")
             engine.injure_ranger(engine.state.ranger)
             return True

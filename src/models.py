@@ -173,6 +173,12 @@ class Card:
     
     def get_tests(self) -> list[Action] | None:
         return None
+    
+    def is_exhausted(self) -> bool:
+        return self.exhausted
+    
+    def is_ready(self) -> bool:
+        return not self.exhausted
 
     #todo: methods for adding/removing unique tokens
 
@@ -235,7 +241,7 @@ class Card:
         self_display_id = get_display_id(engine.state.all_cards_in_play(), self)
         harm_target_display_id = get_display_id(engine.state.all_cards_in_play(), harm_target)
         if predators is not None:
-            active_predators = [predator for predator in predators if predator.exhausted == False]
+            active_predators = [predator for predator in predators if predator.is_ready()]
             if not active_predators:
                 engine.add_message(f"Challenge ({symbol.value}) on {self_display_id}: (no active predators in play)")
                 return False
@@ -265,7 +271,7 @@ class Card:
         self_display_id = get_display_id(engine.state.all_cards_in_play(), self)
         harm_target_display_id = get_display_id(engine.state.all_cards_in_play(), harm_target)
         if prey_list is not None:
-            active_prey = [prey for prey in prey_list if prey.exhausted == False]
+            active_prey = [prey for prey in prey_list if prey.is_ready()]
             if not active_prey:
                 engine.add_message(f"Challenge ({symbol.value}) on {self_display_id}: (no active prey in play)")
                 return False
@@ -321,14 +327,14 @@ class Card:
             return 0, f"Harm cannot exist on {self.title}!"
     
     def exhaust(self) -> str:
-        if self.exhausted:
+        if self.is_exhausted():
             return f"{self.title} is already exhausted."
         else:
             self.exhausted = True
             return f"{self.title} exhausts."
     
     def ready(self) -> str:
-        if not self.exhausted:
+        if self.is_ready():
             return f"{self.title} is already ready."
         else:
             self.exhausted = False

@@ -78,7 +78,7 @@ def render_card_detail(card: Card, index: int | None = None, display_id: str | N
             parts.append(f"Progress: {card.progress}/{card.progress_threshold}")
         if card.harm_threshold is not None:
             parts.append(f"Harm: {card.harm}/{card.harm_threshold}")
-        if card.exhausted:
+        if card.is_exhausted():
             parts.append("(EXHAUSTED)")
         if parts:
             print(f"   {' | '.join(parts)}")
