@@ -3,7 +3,6 @@
 A living checklist. Roughly prioritized.
 
 
-- Implement exhaust abilities and Peerless Pathfinder (i.e. ranger token system)
 - Implement ConstantAbilities
 - Implement attachment system
 - Implement faceup/facedown cards

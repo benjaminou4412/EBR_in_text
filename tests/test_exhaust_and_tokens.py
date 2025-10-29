@@ -391,6 +391,174 @@ class PeerlessPathfinderTests(unittest.TestCase):
         self.assertEqual(state.ranger.ranger_token_location, feature2.id)
 
 
+class RangerTokenClearingTests(unittest.TestCase):
+    """Tests for ranger token clearing by progress/harm"""
+
+    def test_progress_clears_by_ranger_token(self):
+        """Card with progress_clears_by_ranger_tokens should clear when token placed on it"""
+        role = PeerlessPathfinder()
+        feature = Card(
+            title="Token-Clearing Feature",
+            card_types={CardType.FEATURE},
+            presence=2,
+            progress_clears_by_ranger_tokens=True
+        )
+
+        ranger = RangerState(
+            name="Test Ranger",
+            aspects={Aspect.AWA: 2, Aspect.FIT: 2, Aspect.SPI: 2, Aspect.FOC: 2},
+            deck=[Card(title=f"Card {i}") for i in range(10)]
+        )
+        state = GameState(
+            ranger=ranger,
+            role_card=role,
+            areas={
+                Area.SURROUNDINGS: [],
+                Area.ALONG_THE_WAY: [],
+                Area.WITHIN_REACH: [feature],
+                Area.PLAYER_AREA: [role]
+            }
+        )
+        engine = GameEngine(state)
+
+        # Token starts on role
+        self.assertEqual(state.ranger.ranger_token_location, role.id)
+
+        # Move token to feature
+        engine.move_ranger_token_to_card(feature)
+        self.assertEqual(state.ranger.ranger_token_location, feature.id)
+
+        # Check if feature clears by ranger token
+        clear_type = feature.clear_if_threshold(state)
+        self.assertEqual(clear_type, "progress")
+
+    def test_harm_clears_by_ranger_token(self):
+        """Card with harm_clears_by_ranger_tokens should clear when token placed on it"""
+        role = PeerlessPathfinder()
+        feature = Card(
+            title="Harm-Token-Clearing Feature",
+            card_types={CardType.FEATURE},
+            presence=1,
+            harm_clears_by_ranger_tokens=True
+        )
+
+        ranger = RangerState(
+            name="Test Ranger",
+            aspects={Aspect.AWA: 2, Aspect.FIT: 2, Aspect.SPI: 2, Aspect.FOC: 2}
+        )
+        state = GameState(
+            ranger=ranger,
+            role_card=role,
+            areas={
+                Area.SURROUNDINGS: [],
+                Area.ALONG_THE_WAY: [],
+                Area.WITHIN_REACH: [feature],
+                Area.PLAYER_AREA: [role]
+            }
+        )
+        engine = GameEngine(state)
+
+        # Move token to feature
+        engine.move_ranger_token_to_card(feature)
+
+        # Check if feature clears by ranger token
+        clear_type = feature.clear_if_threshold(state)
+        self.assertEqual(clear_type, "harm")
+
+    def test_peerless_pathfinder_clears_feature_and_returns_token(self):
+        """Full flow: Pathfinder moves token to feature → feature clears → token returns to role"""
+        role = PeerlessPathfinder()
+        feature = Card(
+            title="Auto-Clearing Feature",
+            card_types={CardType.FEATURE, CardType.PATH},
+            presence=2,
+            progress_clears_by_ranger_tokens=True
+        )
+
+        ranger = RangerState(
+            name="Test Ranger",
+            aspects={Aspect.AWA: 2, Aspect.FIT: 2, Aspect.SPI: 2, Aspect.FOC: 2},
+            deck=[Card(title=f"Card {i}") for i in range(10)]
+        )
+        state = GameState(
+            ranger=ranger,
+            role_card=role,
+            areas={
+                Area.SURROUNDINGS: [],
+                Area.ALONG_THE_WAY: [],
+                Area.WITHIN_REACH: [feature],
+                Area.PLAYER_AREA: [role]
+            }
+        )
+        engine = GameEngine(state)
+
+        # Initial state
+        self.assertEqual(state.ranger.ranger_token_location, role.id)
+        self.assertIn(feature, state.areas[Area.WITHIN_REACH])
+
+        # Use Peerless Pathfinder to move token to feature
+        abilities = role.get_exhaust_abilities()
+        ability = abilities[0]
+        ability.on_success(engine, 0, feature)
+
+        # Token should be on feature
+        self.assertEqual(state.ranger.ranger_token_location, feature.id)
+
+        # Ranger should have suffered 2 fatigue
+        self.assertEqual(len(state.ranger.fatigue_pile), 2)
+
+        # Check and process clears (feature should clear by ranger token)
+        cleared = engine.check_and_process_clears()
+
+        # Feature should have cleared
+        self.assertEqual(len(cleared), 1)
+        self.assertEqual(cleared[0].id, feature.id)
+
+        # Feature should no longer be in play
+        self.assertNotIn(feature, state.areas[Area.WITHIN_REACH])
+
+        # Token should have auto-returned to role
+        self.assertEqual(state.ranger.ranger_token_location, role.id)
+
+    def test_ranger_token_does_not_clear_normal_threshold_card(self):
+        """Normal threshold cards should NOT clear just from ranger token"""
+        role = PeerlessPathfinder()
+        feature = OvergrownThicket()  # Normal feature with progress_threshold=2
+
+        ranger = RangerState(
+            name="Test Ranger",
+            aspects={Aspect.AWA: 2, Aspect.FIT: 2, Aspect.SPI: 2, Aspect.FOC: 2}
+        )
+        state = GameState(
+            ranger=ranger,
+            role_card=role,
+            areas={
+                Area.SURROUNDINGS: [],
+                Area.ALONG_THE_WAY: [],
+                Area.WITHIN_REACH: [feature],
+                Area.PLAYER_AREA: [role]
+            }
+        )
+        engine = GameEngine(state)
+
+        # Move token to normal feature
+        engine.move_ranger_token_to_card(feature)
+
+        # Should NOT clear (no progress, normal threshold)
+        clear_type = feature.clear_if_threshold(state)
+        self.assertIsNone(clear_type)
+
+        # Add progress but not enough
+        feature.add_progress(1)
+        clear_type = feature.clear_if_threshold(state)
+        self.assertIsNone(clear_type)
+
+        # Add enough progress to meet threshold
+        feature.add_progress(1)  # Now at 2
+        clear_type = feature.clear_if_threshold(state)
+        self.assertEqual(clear_type, "progress")  # NOW it clears
+
+
 class ExhaustAbilityTargetingTests(unittest.TestCase):
     """Tests for exhaust ability targeting (should ignore obstacles)"""
 
