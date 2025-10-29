@@ -88,7 +88,10 @@ class GameEngine:
             return []
 
         raw_candidates = action.target_provider(self.state)
-        return self._filter_by_obstacles(raw_candidates)
+        if action.is_test:
+            return self._filter_by_obstacles(raw_candidates)
+        else:
+            return raw_candidates
 
     def _filter_by_obstacles(self, candidates: list[Card]) -> list[Card]:
         """Filter candidates to exclude cards past the nearest Obstacle"""
@@ -165,7 +168,7 @@ class GameEngine:
         self.add_message(f"Step 2: Commit effort from your energy pool, approach icons in hand, and other sources.")
         
 
-    def perform_action(self, action: Action, decision: CommitDecision, target_id: Optional[str]) -> ChallengeOutcome:
+    def perform_test(self, action: Action, decision: CommitDecision, target_id: Optional[str]) -> ChallengeOutcome:
         # Non-test actions (e.g., Rest) skip challenge + energy
         target_card: Card | None = self.state.get_card_by_id(target_id)
 
@@ -278,14 +281,16 @@ class GameEngine:
         for area in self.state.areas:
             for card in self.state.areas[area]:
                 if CardType.PATH in card.card_types:
-                    clear_type = card.clear_if_threshold()
+                    clear_type = card.clear_if_threshold(self.state)
                     if clear_type == "progress":
                         # TODO: Check for clear-by-progress entry (on_progress_clear_log)
                         # Some cards might have special effects or stay in play
+                        self.add_message(f"{card.title} cleared by progress!")
                         to_clear.append(card)
                     elif clear_type == "harm":
                         # TODO: Check for clear-by-harm entry (on_harm_clear_log)
                         # Some cards might have special effects or stay in play
+                        self.add_message(f"{card.title} cleared by harm!")
                         to_clear.append(card)
 
         # Discard all cleared cards (this removes them from areas)
@@ -294,6 +299,28 @@ class GameEngine:
 
         return to_clear
     
+    #Ranger Token manipulation
+    def move_ranger_token_to_card(self, card: Card) -> None:
+        curr_location = self.state.ranger.ranger_token_location
+        curr_card = self.state.get_card_by_id(curr_location)
+        if curr_card is None:
+            raise RuntimeError(f"The current location id of the ranger token points to no card!")
+        else:
+            #TODO: add check for effects that prevent ranger token movement
+            self.state.ranger.ranger_token_location = card.id
+            self.add_message(f"Your Ranger token moves from {curr_card.title} to {card.title}.")
+
+    def move_ranger_token_to_role(self) -> None:
+        """Convenience method for when cards are discarded and the Ranger Token returns to the role card"""
+        self.move_ranger_token_to_card(self.state.role_card)
+
+    def get_ranger_token_card(self) -> Card:
+        card = self.state.get_card_by_id(self.state.ranger.ranger_token_location)
+        if card is None:
+            raise RuntimeError(f"Ranger token should always be on a card!")
+        else:
+            return card
+
     # Listener management methods
 
     def trigger_listeners(self, event_type: EventType, timing_type: TimingType, action: Action, effort: int):

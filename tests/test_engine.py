@@ -37,7 +37,7 @@ class EngineTests(unittest.TestCase):
             raise RuntimeError(f"Failed to fetch thicket test")
         else:
             act = thicket_test[0]
-            eng.perform_action(
+            eng.perform_test(
                 act,
                 decision=CommitDecision(energy=1, hand_indices=[0, 1]),
                 target_id=None)
@@ -67,7 +67,7 @@ class EngineTests(unittest.TestCase):
             raise RuntimeError(f"Failed to fetch thicket test")
         else:
             act = thicket_test[0]
-            eng.perform_action(
+            eng.perform_test(
                 act,
                 decision=CommitDecision(energy=1, hand_indices=[]),
                 target_id=None)
@@ -99,7 +99,7 @@ class EngineTests(unittest.TestCase):
 
         tests = provide_common_tests(state)
         act = tests[0]
-        eng.perform_action(
+        eng.perform_test(
             act,
             decision=CommitDecision(energy=1, hand_indices=[0]),
             target_id=feat.id)
@@ -142,7 +142,7 @@ class EngineTests(unittest.TestCase):
             difficulty_fn=lambda _s, _t: 1,
             on_success=add_progress_callback,
         )
-        eng.perform_action(act, decision=CommitDecision(energy=1, hand_indices=[0]), target_id=None)
+        eng.perform_test(act, decision=CommitDecision(energy=1, hand_indices=[0]), target_id=None)
 
         # Assert: Feature should be removed from zones and moved to path_discard
         all_cards_in_zones = sum(len(cards) for cards in state.areas.values())
@@ -185,7 +185,7 @@ class EngineTests(unittest.TestCase):
             difficulty_fn=lambda _s, _t: 1,
             on_success=add_harm_callback,
         )
-        eng.perform_action(act, decision=CommitDecision(energy=1, hand_indices=[0]), target_id=None)
+        eng.perform_test(act, decision=CommitDecision(energy=1, hand_indices=[0]), target_id=None)
 
         # Assert: Being should be removed from zones and moved to path_discard
         all_cards_in_zones = sum(len(cards) for cards in state.areas.values())
@@ -226,7 +226,7 @@ class EngineTests(unittest.TestCase):
             difficulty_fn=lambda _s, _t: 1,
             on_success=add_progress_callback,
         )
-        eng.perform_action(act, decision=CommitDecision(energy=1, hand_indices=[]), target_id=None)
+        eng.perform_test(act, decision=CommitDecision(energy=1, hand_indices=[]), target_id=None)
 
         # Assert: Feature should still be in zones (not cleared)
         all_cards_in_zones = sum(len(cards) for cards in state.areas.values())
@@ -269,7 +269,7 @@ class CommonTestsTests(unittest.TestCase):
         traverse = next(a for a in actions if a.id == "common-traverse")
 
         # Commit 1 FIT energy + 1 card with Exploration = 2 effort
-        outcome = eng.perform_action(traverse, CommitDecision(energy=1, hand_indices=[0]), target_id=feature.id)
+        outcome = eng.perform_test(traverse, CommitDecision(energy=1, hand_indices=[0]), target_id=feature.id)
 
         self.assertTrue(outcome.success)
         self.assertEqual(feature.progress, 2)
@@ -307,7 +307,7 @@ class CommonTestsTests(unittest.TestCase):
         traverse = next(a for a in actions if a.id == "common-traverse")
 
         # Commit 1 FIT energy + 0 cards + (-1 modifier) = 0 effort, difficulty 2
-        outcome = eng.perform_action(traverse, CommitDecision(energy=1, hand_indices=[]), target_id=feature.id)
+        outcome = eng.perform_test(traverse, CommitDecision(energy=1, hand_indices=[]), target_id=feature.id)
 
         self.assertFalse(outcome.success)
         self.assertEqual(feature.progress, 0)  # No progress on failure
@@ -345,7 +345,7 @@ class CommonTestsTests(unittest.TestCase):
         connect = next(a for a in actions if a.id == "common-connect")
 
         # Commit 1 SPI energy + 1 card with Connection = 2 effort
-        outcome = eng.perform_action(connect, CommitDecision(energy=1, hand_indices=[0]), target_id=being.id)
+        outcome = eng.perform_test(connect, CommitDecision(energy=1, hand_indices=[0]), target_id=being.id)
 
         self.assertTrue(outcome.success)
         self.assertEqual(being.progress, 2)
@@ -382,7 +382,7 @@ class CommonTestsTests(unittest.TestCase):
         connect = next(a for a in actions if a.id == "common-connect")
 
         # Commit 1 SPI + (-2 modifier) = 0 effort (clamped), difficulty 3
-        outcome = eng.perform_action(connect, CommitDecision(energy=1, hand_indices=[]), target_id=being.id)
+        outcome = eng.perform_test(connect, CommitDecision(energy=1, hand_indices=[]), target_id=being.id)
 
         self.assertFalse(outcome.success)
         self.assertEqual(being.progress, 0)
@@ -420,7 +420,7 @@ class CommonTestsTests(unittest.TestCase):
         avoid = next(a for a in actions if a.id == "common-avoid")
 
         # Commit 1 AWA energy + 1 card with Conflict = 2 effort
-        outcome = eng.perform_action(avoid, CommitDecision(energy=1, hand_indices=[0]), target_id=being.id)
+        outcome = eng.perform_test(avoid, CommitDecision(energy=1, hand_indices=[0]), target_id=being.id)
 
         self.assertTrue(outcome.success)
         self.assertTrue(being.exhausted)  # Being should be exhausted
@@ -457,7 +457,7 @@ class CommonTestsTests(unittest.TestCase):
         avoid = next(a for a in actions if a.id == "common-avoid")
 
         # Commit 1 AWA + (-2 modifier) = 0 effort, difficulty 3
-        outcome = eng.perform_action(avoid, CommitDecision(energy=1, hand_indices=[]), target_id=being.id)
+        outcome = eng.perform_test(avoid, CommitDecision(energy=1, hand_indices=[]), target_id=being.id)
 
         self.assertFalse(outcome.success)
         self.assertFalse(being.exhausted)  # Being not exhausted on failure
@@ -490,7 +490,7 @@ class CommonTestsTests(unittest.TestCase):
         spook = next(a for a in actions if a.verb == "Spook" and "Sitka Doe" in a.name)
 
         # Perform the spook action with 1 SPI energy + 1 Conflict card = 2 effort, difficulty 1
-        outcome = eng.perform_action(spook, CommitDecision(energy=1, hand_indices=[0]), target_id=None)
+        outcome = eng.perform_test(spook, CommitDecision(energy=1, hand_indices=[0]), target_id=None)
 
         # Verify test succeeded
         self.assertTrue(outcome.success)
@@ -527,7 +527,7 @@ class CommonTestsTests(unittest.TestCase):
         spook = next(a for a in actions if a.verb == "Spook" and "Sitka Doe" in a.name)
 
         # Perform the spook action with 1 SPI energy + no cards + (-2 modifier) = 0 effort (clamped), difficulty 1
-        outcome = eng.perform_action(spook, CommitDecision(energy=1, hand_indices=[]), target_id=None)
+        outcome = eng.perform_test(spook, CommitDecision(energy=1, hand_indices=[]), target_id=None)
 
         # Verify test failed
         self.assertFalse(outcome.success)
@@ -571,7 +571,7 @@ class CommonTestsTests(unittest.TestCase):
             difficulty_fn=lambda _s, _t: 1,
             on_success=lambda s, eff, _t: None,
         )
-        eng.perform_action(dummy_action, CommitDecision(energy=1, hand_indices=[]), target_id=None)
+        eng.perform_test(dummy_action, CommitDecision(energy=1, hand_indices=[]), target_id=None)
 
         # Verify both bucks moved to Within Reach
         self.assertEqual(len(state.areas[Area.ALONG_THE_WAY]), 0, "No bucks should remain in Along the Way")
@@ -620,7 +620,7 @@ class CommonTestsTests(unittest.TestCase):
             difficulty_fn=lambda _s, _t: 1,
             on_success=lambda s, eff, _t: None,
         )
-        eng.perform_action(dummy_action, CommitDecision(energy=1, hand_indices=[]), target_id=None)
+        eng.perform_test(dummy_action, CommitDecision(energy=1, hand_indices=[]), target_id=None)
 
         # Verify wolhund is exhausted and doe took harm equal to wolhund's presence
         self.assertTrue(wolhund.exhausted, "Wolhund should be exhausted")
@@ -662,7 +662,7 @@ class CommonTestsTests(unittest.TestCase):
             difficulty_fn=lambda _s, _t: 1,
             on_success=lambda s, eff, _t: None,
         )
-        eng.perform_action(dummy_action, CommitDecision(energy=1, hand_indices=[]), target_id=None)
+        eng.perform_test(dummy_action, CommitDecision(energy=1, hand_indices=[]), target_id=None)
 
         # Verify no harm was dealt (no active predators)
         self.assertEqual(doe.harm, 0, "Doe should still have 0 harm (no active predators)")
@@ -737,7 +737,7 @@ class WalkWithMeTests(unittest.TestCase):
         ranger.hand.append(Card(id="e1", title="E+1", approach_icons={Approach.EXPLORATION: 1}))
         ranger.hand.append(Card(id="e2", title="E+1", approach_icons={Approach.EXPLORATION: 1}))
 
-        outcome = eng.perform_action(traverse, CommitDecision(energy=1, hand_indices=[1, 2]), target_id=feature.id)
+        outcome = eng.perform_test(traverse, CommitDecision(energy=1, hand_indices=[1, 2]), target_id=feature.id)
 
         # Verify test succeeded
         self.assertTrue(outcome.success)
@@ -812,7 +812,7 @@ class WalkWithMeTests(unittest.TestCase):
 
         ranger.hand.append(Card(id="e1", title="E+1", approach_icons={Approach.EXPLORATION: 1}))
 
-        outcome = eng.perform_action(traverse, CommitDecision(energy=1, hand_indices=[1]), target_id=feature.id)
+        outcome = eng.perform_test(traverse, CommitDecision(energy=1, hand_indices=[1]), target_id=feature.id)
 
         # Verify test succeeded
         self.assertTrue(outcome.success)
@@ -886,7 +886,7 @@ class WalkWithMeTests(unittest.TestCase):
 
         ranger.hand.append(Card(id="e1", title="E+1", approach_icons={Approach.EXPLORATION: 1}))
 
-        outcome = eng.perform_action(traverse, CommitDecision(energy=1, hand_indices=[1]), target_id=feature.id)
+        outcome = eng.perform_test(traverse, CommitDecision(energy=1, hand_indices=[1]), target_id=feature.id)
 
         # Verify test succeeded
         self.assertTrue(outcome.success)
@@ -953,7 +953,7 @@ class WalkWithMeTests(unittest.TestCase):
 
         ranger.hand.append(Card(id="e1", title="E+1", approach_icons={Approach.EXPLORATION: 1}))
 
-        outcome = eng.perform_action(traverse, CommitDecision(energy=1, hand_indices=[1]), target_id=feature.id)
+        outcome = eng.perform_test(traverse, CommitDecision(energy=1, hand_indices=[1]), target_id=feature.id)
 
         # Verify test succeeded
         self.assertTrue(outcome.success)
@@ -1017,7 +1017,7 @@ class WalkWithMeTests(unittest.TestCase):
 
         ranger.hand.append(Card(id="c1", title="Conn+1", approach_icons={Approach.CONNECTION: 1}))
 
-        outcome = eng.perform_action(connect, CommitDecision(energy=1, hand_indices=[1]), target_id=being.id)
+        outcome = eng.perform_test(connect, CommitDecision(energy=1, hand_indices=[1]), target_id=being.id)
 
         # Verify test succeeded
         self.assertTrue(outcome.success)
@@ -1104,7 +1104,7 @@ class WalkWithMeTests(unittest.TestCase):
         for i in range(4):
             ranger.hand.append(Card(id=f"e{i}", title="E+1", approach_icons={Approach.EXPLORATION: 1}))
 
-        outcome = eng.perform_action(traverse, CommitDecision(energy=1, hand_indices=[1, 2, 3, 4]), target_id=feature.id)
+        outcome = eng.perform_test(traverse, CommitDecision(energy=1, hand_indices=[1, 2, 3, 4]), target_id=feature.id)
 
         # Verify test succeeded
         self.assertTrue(outcome.success)
@@ -1195,7 +1195,7 @@ class CalypsaRangerMentorTests(unittest.TestCase):
 
         ranger.hand.append(Card(id="e1", title="E+1", approach_icons={Approach.EXPLORATION: 1}))
 
-        eng.perform_action(dummy_action, CommitDecision(energy=1, hand_indices=[0]), target_id=None)
+        eng.perform_test(dummy_action, CommitDecision(energy=1, hand_indices=[0]), target_id=None)
 
         # Verify feature got 1 progress from Calypsa's Mountain effect
         self.assertEqual(feature.progress, 1, "Feature should have 1 progress from Calypsa's Mountain effect")
@@ -1238,7 +1238,7 @@ class CalypsaRangerMentorTests(unittest.TestCase):
 
         ranger.hand.append(Card(id="e1", title="E+1", approach_icons={Approach.EXPLORATION: 1}))
 
-        eng.perform_action(dummy_action, CommitDecision(energy=1, hand_indices=[0]), target_id=None)
+        eng.perform_test(dummy_action, CommitDecision(energy=1, hand_indices=[0]), target_id=None)
 
         # Verify Calypsa got 1 progress
         self.assertEqual(calypsa.progress, 1, "Calypsa should be able to add progress to herself")
@@ -1286,7 +1286,7 @@ class CalypsaRangerMentorTests(unittest.TestCase):
 
         ranger.hand.append(Card(id="e1", title="E+1", approach_icons={Approach.EXPLORATION: 1}))
 
-        eng.perform_action(dummy_action, CommitDecision(energy=1, hand_indices=[0]), target_id=None)
+        eng.perform_test(dummy_action, CommitDecision(energy=1, hand_indices=[0]), target_id=None)
 
         # Verify wolhund exhausted and Calypsa took harm equal to wolhund's presence (2)
         self.assertTrue(wolhund.exhausted, "Wolhund should be exhausted after Crest effect")
@@ -1330,7 +1330,7 @@ class CalypsaRangerMentorTests(unittest.TestCase):
 
         ranger.hand.append(Card(id="e1", title="E+1", approach_icons={Approach.EXPLORATION: 1}))
 
-        eng.perform_action(dummy_action, CommitDecision(energy=1, hand_indices=[0]), target_id=None)
+        eng.perform_test(dummy_action, CommitDecision(energy=1, hand_indices=[0]), target_id=None)
 
         # Verify Calypsa took no harm
         self.assertEqual(calypsa.harm, 0, "Calypsa should have no harm when no predators present")

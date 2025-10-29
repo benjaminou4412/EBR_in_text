@@ -51,8 +51,8 @@ def load_card_fields(title: str, card_set: str) -> dict: # type: ignore
     energy_cost = parse_energy_cost(data)
     approach_icons = parse_approach_icons(data)
     equip_value = data.get("equip_value") #type: ignore
-    harm_value, harm_forbidden = parse_threshold_value(data.get("harm_threshold")) #type: ignore
-    progress_value, progress_forbidden = parse_threshold_value(data.get("progress_threshold")) #type: ignore
+    harm_value, harm_forbidden, harm_clears_by_ranger_token = parse_threshold_value(data.get("harm_threshold")) #type: ignore
+    progress_value, progress_forbidden, progress_clears_by_ranger_token = parse_threshold_value(data.get("progress_threshold")) #type: ignore
     presence = data.get("presence") #type: ignore
 
     on_enter_log = data.get("campaign_log_entry") #type: ignore
@@ -84,6 +84,8 @@ def load_card_fields(title: str, card_set: str) -> dict: # type: ignore
         "progress_threshold": progress_value,
         "harm_forbidden": harm_forbidden,
         "progress_forbidden": progress_forbidden,
+        "harm_clears_by_ranger_tokens": harm_clears_by_ranger_token,
+        "progress_clears_by_ranger_tokens": progress_clears_by_ranger_token,
         "presence": presence,
         "on_enter_log": on_enter_log,
         "on_progress_clear_log": on_progress_clear_log,
@@ -189,6 +191,8 @@ def parse_card_types(card_set : str, card_type: str) -> set[CardType]:
         card_types.add(CardType.LOCATION)
     elif parsed_card_type == "mission":
         card_types.add(CardType.MISSION)
+    elif parsed_card_type == "role":
+        card_types.add(CardType.ROLE)
     
     return card_types
 
@@ -282,27 +286,30 @@ def generate_card_id(title: str, card_set: str) -> str:
 
 
 
-def parse_threshold_value(value) -> tuple[int | None, bool]: #type:ignore
+def parse_threshold_value(value) -> tuple[int | None, bool, bool]: #type:ignore
     """
     Parse threshold from JSON (handles int, string like "2R", or None).
-    Returns: (threshold_value, is_nulled)
+    Returns: (threshold_value, is_nulled, clears_by_ranger_token)
 
     Examples:
-        3 -> (3, False)
-        "2R" -> (2, False)
-        None -> (None, False)
-        -1 -> (None, False) for missing
-        -2 -> (None, True) for nulled
+        3 -> (3, False, False)
+        "2R" -> (2, False, False)
+        None -> (None, False, False)
+        -1 -> (None, False, False) for missing
+        -2 -> (None, True, False) for nulled
+        "Ranger Token" -> (None, False, True) for ranger token thresholds.
     """
     if value is None or value == -1:
-        return (None, False)  # Missing threshold
+        return (None, False, False)  # Missing threshold
     if value == -2:
-        return (None, True)  # Nulled threshold
+        return (None, True, False)  # Nulled threshold
     if isinstance(value, int):
-        return (value, False)
+        return (value, False, False)
+    if isinstance(value, str) and value.casefold() == "Ranger Token".casefold():
+        return (None, False, True)
     # Parse string like "2R" - extract just the number
     s = ''.join(ch for ch in str(value) if ch.isdigit()) #type:ignore
-    return (int(s) if s else None, False)
+    return (int(s) if s else None, False, False)
 
 
 def parse_area(enters_play: str | None, card_types: set[CardType]) -> Area | None:

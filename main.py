@@ -6,7 +6,7 @@ from src.models import (
     Card, RangerState, GameState, Action, Aspect, Approach, Area, CardType
 )
 from src.engine import GameEngine
-from src.registry import provide_common_tests, provide_card_tests
+from src.registry import provide_common_tests, provide_card_tests, provide_exhaust_abilities
 from src.view import (
     render_state, choose_action, choose_action_target, choose_commit,
     choose_target, display_and_clear_messages, choose_response, set_show_art_descriptions
@@ -14,7 +14,7 @@ from src.view import (
 from src.decks import build_woods_path_deck
 from src.cards import (
     OvergrownThicket, SunberryBramble, SitkaDoe, WalkWithMe, ADearFriend,
-    ProwlingWolhund, SitkaBuck, CalypsaRangerMentor
+    ProwlingWolhund, SitkaBuck, CalypsaRangerMentor, PeerlessPathfinder
 )
 
 
@@ -83,15 +83,17 @@ def build_demo_state() -> GameState:
         starting_area=Area.SURROUNDINGS,
     )
 
+    role_card = PeerlessPathfinder()
+
     ranger = RangerState(name="Demo Ranger", hand=[], aspects={Aspect.AWA: 99, Aspect.FIT: 99, Aspect.SPI: 99, Aspect.FOC: 99}, deck=ranger_deck, fatigue_pile=ranger_fatigue)
     # Build a simple path deck from woods, excluding the ones already in play
     deck = build_woods_path_deck()
     surroundings : list[Card] = [weather]
     along_the_way : list[Card] = [wol_0, buck_0, bramble]
     within_reach : list[Card] = [thicket, calypsa, doe]
-    player_area : list[Card] = []
+    player_area : list[Card] = [role_card]
     current_areas : dict[Area,list[Card]]= {Area.SURROUNDINGS : surroundings, Area.ALONG_THE_WAY : along_the_way, Area.WITHIN_REACH : within_reach, Area.PLAYER_AREA : player_area}
-    state = GameState(ranger=ranger, areas=current_areas, round_number=1, path_deck=deck)
+    state = GameState(ranger=ranger, role_card=role_card, areas=current_areas, round_number=1, path_deck=deck)
     # Note: Cards drawn to hand - listeners will be registered when engine is created
     for _ in range(5):
         _, _, _ = state.ranger.draw_card()  # Draw cards during setup
@@ -103,6 +105,9 @@ def menu_and_run(engine: GameEngine) -> None:
     # Print welcome header once
     print("=== Earthborne Rangers - Demo ===")
     print("Welcome to the demo! Press Enter to begin...")
+    input()
+    display_and_clear_messages(engine)
+    print("Press enter to continue to Phase 1...")
     input()
 
     while True:
@@ -125,11 +130,13 @@ def menu_and_run(engine: GameEngine) -> None:
             print("--- Event log and choices ---")
 
             # derive actions
-            actions = provide_card_tests(engine.state) + provide_common_tests(engine.state)
+            actions = (provide_card_tests(engine.state)
+            + provide_common_tests(engine.state)
+            + provide_exhaust_abilities(engine.state))
             # add system Rest action
             actions.append(Action(
                 id="system-rest",
-                name="Rest (end actions)",
+                name="[Rest] (end actions)",
                 verb="Rest",
                 aspect="",
                 approach="",
@@ -139,8 +146,8 @@ def menu_and_run(engine: GameEngine) -> None:
             # add system End Day action
             actions.append(Action(
                 id="system-end-day",
-                name="End the day",
-                verb="End the day",
+                name="END DAY",
+                verb="END DAY",
                 aspect="",
                 approach="",
                 is_test=False,
@@ -151,29 +158,40 @@ def menu_and_run(engine: GameEngine) -> None:
             act = None
             while not act:
                 act = choose_action(actions, engine.state, engine)
+                if act is not None and act.id == "system-end-day":
+                    yes = engine.response_decider(engine, "Are you sure?")
+                    if yes:
+                        engine.end_day()
+                        display_and_clear_messages(engine)
+                        print("\nThe day has ended. Demo complete!")
+                        input("Press Enter to exit...")
+                        return
+                    else:
+                        act = None
 
             if act.id == "system-rest":
                 print("\nYou rest and end your turn.")
                 input("Press Enter to proceed to Phase 3...")
                 break
 
-            if act.id == "system-end-day":
-                engine.end_day()
-                display_and_clear_messages(engine)
-                print("\nThe day has ended. Demo complete!")
-                input("Press Enter to exit...")
-                return
+            
             #TODO: Handle Exhaust actions and Play actions, which are not tests (so they should break before we hit test logic)
             target_id = choose_action_target(engine.state, act, engine)
-            engine.initiate_test(act, engine.state, target_id)
-            decision = choose_commit(act, len(engine.state.ranger.hand), engine.state, engine) if act.is_test else None
-
-            try:
-                engine.perform_action(act, decision or __import__('src.models', fromlist=['CommitDecision']).CommitDecision([]), target_id)
-            except RuntimeError as e:
-                print(str(e))
-                input("There was a runtime error! Press Enter to continue...")
-                continue
+            decision = None
+            if act.is_test:
+                engine.initiate_test(act, engine.state, target_id)
+                decision = choose_commit(act, len(engine.state.ranger.hand), engine.state, engine) if act.is_test else None
+                try:
+                    engine.perform_test(act, decision or __import__('src.models', fromlist=['CommitDecision']).CommitDecision([]), target_id)
+                except RuntimeError as e:
+                    print(str(e))
+                    input("There was a runtime error! Press Enter to continue...")
+                    continue
+            elif act.is_exhaust: #currently only non-test action at this point is Exhaust abilities
+                target_card = engine.state.get_card_by_id(target_id)
+                act.on_success(engine, 0, target_card)
+            else:
+                raise RuntimeError(f"Unknown action type: {act.id}")
 
             display_and_clear_messages(engine)
 
@@ -241,6 +259,7 @@ def main() -> None:
     state = build_demo_state()
     engine = GameEngine(state, card_chooser=choose_target, response_decider=choose_response)
     # Reconstruct listeners from cards in hand
+    engine.add_message(f"Setup: Draw starting hand.")
     engine.reconstruct_listeners()
     menu_and_run(engine)
 

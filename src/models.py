@@ -51,6 +51,7 @@ class CardType(str, Enum):
     MOMENT = "Moment"
     ATTRIBUTE = "Attribute"
     ATTACHMENT = "Attachment"
+    ROLE = "Role"
 
     #path card types
     BEING = "Being"
@@ -136,6 +137,8 @@ class Card:
     #path cards only
     harm_threshold: int | None = None #absence of threshold still allows tokens, but will never clear. "-1" in JSON
     progress_threshold: int | None = None
+    harm_clears_by_ranger_tokens: bool = False #not True for any existing card, but keeping it for future proofing
+    progress_clears_by_ranger_tokens: bool = False
     harm_forbidden : bool = False #a slash through the threshold box indicates no tokens of that type allowed. "-2" in JSON
     progress_forbidden : bool = False
     presence: int | None = None 
@@ -172,6 +175,9 @@ class Card:
         return None
     
     def get_tests(self) -> list[Action] | None:
+        return None
+    
+    def get_exhaust_abilities(self) -> list[Action] | None:
         return None
     
     def is_exhausted(self) -> bool:
@@ -230,15 +236,16 @@ class Card:
         
     def enters_hand(self, engine: GameEngine) -> EventListener | None:
         """Called when card enters hand. Shows art description. Override to add listeners."""
+        engine.add_message(f"You draw a copy of {self.title}.")
         if self.art_description:
-            engine.add_message(f"   {self.art_description}")
+            engine.add_message(f"   Art description: {self.art_description}")
         return None
 
     def enters_play(self, engine: GameEngine, area: Area) -> None:
         """Called when card enters play. Adds narrative messages and can be overridden for enter-play effects."""
         engine.add_message(f"{get_display_id(engine.state.all_cards_in_play(), self)} enters play {area.value}.")
         if self.art_description:
-            engine.add_message(f"   {self.art_description}")
+            engine.add_message(f"   Art description: {self.art_description}")
     
     #path card only methods
     def get_current_presence(self) -> int | None:
@@ -359,9 +366,15 @@ class Card:
             self.exhausted = False
             return f"{self.title} readies."
         
-    def clear_if_threshold(self) -> str | None:
+    def clear_if_threshold(self, state: GameState) -> str | None:
         prog_threshold = self.get_progress_threshold()
         harm_threshold = self.get_harm_threshold()
+
+        if self.progress_clears_by_ranger_tokens and state.ranger.ranger_token_location==self.id:
+            return "progress"
+        if self.harm_clears_by_ranger_tokens and state.ranger.ranger_token_location==self.id:
+            return "harm"
+
         if prog_threshold is not None and self.progress >= prog_threshold:
             return "progress"
         if harm_threshold is not None and self.harm >= harm_threshold:
@@ -376,9 +389,9 @@ class Card:
         Returns:
             Message describing what happened
         """
-        # TODO: Handle ranger token if on this card (when ranger token system implemented)
-        # if engine.state.ranger_token_location == self.id:
-        #     engine.move_ranger_token_to_role()
+        # Handle ranger token if on this card (when ranger token system implemented)
+        if engine.state.ranger.ranger_token_location == self.id:
+            engine.move_ranger_token_to_role()
 
         # TODO: Recursively discard all attached cards (when attachment system implemented)
         # for attached in self.attached_cards[:]:
@@ -434,6 +447,7 @@ class RangerState:
     fatigue_pile: list[Card] = field(default_factory=lambda: cast(list[Card], []))
     energy: dict[Aspect, int] = field(init=False)
     injury: int = 0
+    ranger_token_location: str = ""
 
     def __post_init__(self):
         self.energy = dict(self.aspects)
@@ -467,6 +481,7 @@ class RangerState:
 @dataclass
 class GameState:
     ranger: RangerState
+    role_card: Card = field(default_factory=lambda: Card()) #pointer to a card that always exists in the Player Area
     areas: dict[Area, list[Card]] = field(
         default_factory=lambda: cast(
             dict[Area, list[Card]], 
@@ -478,7 +493,10 @@ class GameState:
     # Path deck for Phase 1 draws
     path_deck: list[Card] = field(default_factory=lambda: cast(list[Card], []))
     path_discard: list[Card] = field(default_factory=lambda: cast(list[Card], []))
-    ranger_token_location: str | None = None  #card_id
+    
+
+    def __post_init__(self) -> None:
+        self.ranger.ranger_token_location=self.role_card.id #ranger token begins on the Role Card
 
     #Card getter methods
 
@@ -572,6 +590,7 @@ class Action:
     aspect: Aspect | str  # required energy type (if is_test), str for non-test actions like Rest
     approach: Approach | str  # legal approach icons to commit (if is_test), str for non-test actions
     is_test: bool = True
+    is_exhaust: bool = False #for "Exhaust:" abilities
     verb: Optional[str] = None  # action verb (e.g. "Traverse", "Connect", "Hunt") for game effects that care
     # If the action requires a target, provide candidate Card targets based on state
     target_provider: Optional[Callable[[GameState], list['Card']]] = None

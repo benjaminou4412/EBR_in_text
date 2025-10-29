@@ -9,7 +9,7 @@ class ADearFriend(Card):
     def __init__(self):
         # Load all common RangerCard fields from JSON
         super().__init__(**load_card_fields("A Dear Friend", "Conciliator")) #type:ignore
-        self.art_description = "Two figures stand facing the horizon, with an arm each on each other's backs." \
+        self.art_description = "Two figures stand facing the horizon, with an arm each on each other's backs. " \
         "The figure on the right is fully colored and detailed, with slick black hair tied in a bushy ponytail, goggles, " \
         "a red-orange billowing cloak, and their gloved hand pointing out into the distance. The figure on the left, " \
         "along with the background landscape, are greyscale sketches. The figure on the left has goggles, a bladed staff, " \

@@ -27,7 +27,8 @@ def render_card_detail(card: Card, index: int | None = None, display_id: str | N
     # Build card type string
     type_strs : list[str]= []
     for ct in [CardType.MOMENT, CardType.GEAR, CardType.ATTACHMENT, CardType.ATTRIBUTE,
-               CardType.BEING, CardType.FEATURE, CardType.WEATHER, CardType.LOCATION, CardType.MISSION]:
+               CardType.BEING, CardType.FEATURE, CardType.WEATHER, CardType.LOCATION,
+               CardType.MISSION, CardType.ROLE]:
         if ct in card.card_types:
             type_strs.append(ct.value)
 
@@ -37,10 +38,14 @@ def render_card_detail(card: Card, index: int | None = None, display_id: str | N
         type_line += f" ({traits_str})"
 
     # Header line with index if provided
+    is_exhausted: str = ""
+    if card.is_exhausted():
+        is_exhausted = " (EXHAUSTED)"
+
     if index is not None:
-        print(f"{index}. {card_name} {type_line}")
+        print(f"{index}. {card_name} {type_line}" + is_exhausted)
     else:
-        print(f"{card_name} {type_line}")
+        print(f"{card_name} {type_line}" + is_exhausted)
 
     # Art description if present and enabled
     if _show_art_descriptions and card.art_description:
@@ -78,11 +83,25 @@ def render_card_detail(card: Card, index: int | None = None, display_id: str | N
             else:
                 parts.append(f"Printed Presence: {card.presence}; Current Presence: {card.get_current_presence()}")
         if card.progress_threshold is not None:
+            #normal numeric threshold value
             parts.append(f"Progress: {card.progress}/{card.get_progress_threshold()}")
+        elif card.progress_clears_by_ranger_tokens:
+            parts.append(f"Progress: {card.progress}; clears by Ranger Token(s).")
+        elif not card.progress_forbidden:
+            parts.append(f"Progress: {card.progress}; no Progress threshold.")
+        else:
+            parts.append(f"Cannot put Progress on this card.")
+
+
         if card.harm_threshold is not None:
+            #normal numeric threshold value
             parts.append(f"Harm: {card.harm}/{card.get_harm_threshold()}")
-        if card.is_exhausted():
-            parts.append("(EXHAUSTED)")
+        elif card.harm_clears_by_ranger_tokens:
+            parts.append(f"Harm: {card.harm}; clears by Ranger Token(s).")
+        elif not card.harm_forbidden:
+            parts.append(f"Harm: {card.harm}; no Harm Threshold.")
+        else:
+            parts.append(f"Cannot put Harm on this card.")
         if parts:
             print(f"   {' | '.join(parts)}")
 
@@ -124,8 +143,12 @@ def render_state(state: GameState, phase_header: str = "") -> None:
 
     print("")
     # Ranger status line
+    ranger_token_card = state.get_card_by_id(r.ranger_token_location)
+    if ranger_token_card is None:
+        raise RuntimeError(f"Ranger token should always be on a card!")
+    ranger_token_id = get_display_id(all_cards, ranger_token_card)
     print(f"Ranger: {r.name} | Energy AWA {r.energy[Aspect.AWA]} FIT {r.energy[Aspect.FIT]} SPI {r.energy[Aspect.SPI]} FOC {r.energy[Aspect.FOC]} | Injury {r.injury}")
-    print(f"Remaining deck size: {len(r.deck)} | Discard pile size: {len(r.discard)} | Fatigue stack size: {len(r.fatigue_pile)}")
+    print(f"Remaining deck size: {len(r.deck)} | Discard pile size: {len(r.discard)} | Fatigue stack size: {len(r.fatigue_pile)} | Ranger Token Location: {ranger_token_id}")
 
     # Discard pile contents (top to bottom)
     if r.discard:
@@ -164,18 +187,31 @@ def choose_action(actions: list[Action], state: GameState, engine: GameEngine) -
 
     for i, a in enumerate(actions, start=1):
         # Use verb for condensed display
-        if a.verb and a.source_id and a.source_id != "common":
+        if a.source_id and a.source_id != "common":
             # Card-based action - find the card and get display ID
             card = state.get_card_by_id(a.source_id)
-            if card:
-                display_name = get_display_id(all_cards, card)
-                display = f"{a.verb} ({display_name})"
+            if a.is_test:
+                approach = a.approach
+                aspect = a.aspect
+                if not isinstance(approach, Approach) or not isinstance(aspect, Aspect):
+                    raise RuntimeError(f"A test should always have an approach and aspect!")
+                if card:
+                    display_name = get_display_id(all_cards, card)
+                    
+                    display = f"[Test] {aspect.value} + [{approach.value}]: {a.verb} ({display_name})"
+                else:
+                    display = f"[Test] {aspect.value} + [{approach.value}]: {a.verb} ({a.source_title})"
+            elif a.is_exhaust:
+                display = f"[Exhaust] ({a.source_title})"
             else:
-                display = f"{a.verb} ({a.source_title})"
+                raise RuntimeError(f"All actions right now should be Test or Exhaust!")
         elif a.verb and a.source_title:
-            display = f"{a.verb} ({a.source_title})"
-        elif a.verb:
-            display = a.verb
+            #Common tests
+            approach = a.approach
+            aspect = a.aspect
+            if not isinstance(approach, Approach) or not isinstance(aspect, Aspect):
+                raise RuntimeError(f"A test should always have an approach and aspect!")
+            display = f"[Test] {aspect.value} + [{approach.value}]: {a.verb} ({a.source_title})"
         else:
             # Fallback to full name
             display = a.name
@@ -236,7 +272,7 @@ def choose_response(engine: GameEngine, prompt: str) -> bool:
     print(prompt)
 
     while True:
-        choice = input("Play this response? (y/n): ").strip().casefold()
+        choice = input("(y/n): ").strip().casefold()
 
         if choice in ('y', 'yes'):
             return True

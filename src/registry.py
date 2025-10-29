@@ -121,3 +121,12 @@ def provide_card_tests(state: GameState) -> list[Action]:
             actions.extend(tests)
     return actions
 
+def provide_exhaust_abilities(state: GameState) -> list[Action]:
+    """Scan all cards in play and collect Exhaust abilities from non-exhausted ones"""
+    actions: list[Action] = []
+    for card in state.all_cards_in_play():
+        if card.is_ready():
+            exhaust_abilities = card.get_exhaust_abilities()
+            if exhaust_abilities is not None:
+                actions.extend(exhaust_abilities)
+    return actions
