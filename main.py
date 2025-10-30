@@ -260,7 +260,7 @@ def main() -> None:
     engine = GameEngine(state, card_chooser=choose_target, response_decider=choose_response)
     # Reconstruct listeners from cards in hand
     engine.add_message(f"Setup: Draw starting hand.")
-    engine.reconstruct_listeners()
+    engine.reconstruct()
     menu_and_run(engine)
 
 

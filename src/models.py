@@ -107,7 +107,32 @@ class TimingType(str, Enum):
     WHEN = "when"
     AFTER = "after"
 
+class ConstantAbilityType(Enum):
+    """Types of passive abilities that modify game rules"""
 
+    # Modifications (change values during calculation)
+    MODIFY_EFFORT = "modify_effort" #ranger tokens, tenebrae
+    MODIFY_PRESENCE = "modify_presence" #boulder field, the fundamentalist, reclaimer mucus
+
+    # Preventions (block actions from happening)
+    PREVENT_INTERACTION = "prevent_interaction" #topside mast
+    PREVENT_INTERACTION_PAST = "prevent_interaction_past"  # Obstacle
+    PREVENT_RANGER_TOKEN_MOVE = "prevent_ranger_token_move" #caustic mulcher, carnivorous naiad
+    PREVENT_TRAVEL = "prevent_travel" #obstacle, caustic mulcher
+    PREVENT_READYING = "prevent_readying" #caustic mulcher
+    PREVENT_PROGRESS = "prevent_progress" #dolewood canopy, Disconnected, Untraversable
+    PREVENT_FATIGUE = "prevent_fatigue" #arcology threshold, talus cave, the bubble, fraying rope bridge
+
+    # Exemptions (ignore normally-applied rules)
+    SKIP_INTERACTION_FATIGUE = "skip_interaction_fatigue" # Friendly
+    IGNORE_KEYWORD = "ignore_keyword" #spiderline stanchion
+    TREAT_AS_EXHAUSTED = "treat_as_exhausted" #dolewood canopy
+
+    # Enablement (grant access to abilities)
+    GRANT_ABILITY = "grant_ability" #deep woods
+    GRANT_TEST = "grant_test" #trained stilt-horse
+    GRANT_KEYWORD = "grant_keyword" #puffercrawler, bloodbeckoned velox, trained stilt-horse
+    
 
 # Core data structures: pure state and card data
 
@@ -156,9 +181,12 @@ class Card:
     exhausted: bool = False
     modifiers : list[ValueModifier] = field(default_factory=lambda:cast(list[ValueModifier],[]))
     unique_tokens : dict[str, int] = field(default_factory=lambda: cast(dict[str, int], {})) #a card will rarely, but sometimes have a mix of non-progress non-harm tokens
+    attached_to_id: str | None = None  # ID of card this is attached to, or "role" for role attachment
+    attached_card_ids: list[str] = field(default_factory=lambda: cast(list[str], []))  # Cards attached to this card
     #path cards only
     progress: int = 0
     harm: int = 0
+
 
     
     def __post_init__(self):
@@ -180,6 +208,9 @@ class Card:
     def get_exhaust_abilities(self) -> list[Action] | None:
         return None
     
+    def get_constant_abilities(self) -> list[ConstantAbility] | None:
+        return None
+
     def is_exhausted(self) -> bool:
         #TODO: take into account stuff that says to "Treat cards as exhausted"
         return self.exhausted
@@ -234,14 +265,14 @@ class Card:
         else:
             return None
         
-    def enters_hand(self, engine: GameEngine) -> EventListener | None:
+    def enters_hand(self, engine: GameEngine) -> list[EventListener] | None:
         """Called when card enters hand. Shows art description. Override to add listeners."""
         engine.add_message(f"You draw a copy of {self.title}.")
         if self.art_description:
             engine.add_message(f"   Art description: {self.art_description}")
         return None
 
-    def enters_play(self, engine: GameEngine, area: Area) -> None:
+    def enters_play(self, engine: GameEngine, area: Area) -> list[ConstantAbility] | None:
         """Called when card enters play. Adds narrative messages and can be overridden for enter-play effects."""
         engine.add_message(f"{get_display_id(engine.state.all_cards_in_play(), self)} enters play {area.value}.")
         if self.art_description:
@@ -359,9 +390,17 @@ class Card:
             self.exhausted = True
             return f"{self.title} exhausts."
     
-    def ready(self) -> str:
+    def ready(self, engine: GameEngine) -> str:
+        blocker_abilities: list[ConstantAbility] = engine.get_constant_abilities_by_type(ConstantAbilityType.PREVENT_READYING)
+        blocker_ids = [blocker_ability.source_card_id for blocker_ability in blocker_abilities if blocker_ability.is_active(engine.state, self)]
         if self.is_ready():
             return f"{self.title} is already ready."
+        elif self.attached_to_id in blocker_ids:
+            blocker = engine.state.get_card_by_id(self.attached_to_id)
+            if blocker is None:
+                raise RuntimeError(f"{self.title} has a non-None attached_to_id that refers to no card in play.")
+            blocker_display = get_display_id(engine.state.all_cards_in_play(), blocker)
+            return f"{self.title} cannot be readied due to {blocker_display}."
         else:
             self.exhausted = False
             return f"{self.title} readies."
@@ -393,9 +432,16 @@ class Card:
         if engine.state.ranger.ranger_token_location == self.id:
             engine.move_ranger_token_to_role()
 
-        # TODO: Recursively discard all attached cards (when attachment system implemented)
-        # for attached in self.attached_cards[:]:
-        #     attached.discard_from_play(engine)
+        # Recursively discard all attached cards
+        for id in list(self.attached_card_ids):
+            card = engine.state.get_card_by_id(id)
+            if card is None:
+                raise RuntimeError(f"Attachment not found!")
+            else:
+                engine.unattach(card)
+                #unattach() already auto-discards attachments
+                if CardType.ATTACHMENT not in card.card_types:
+                    card.discard_from_play(engine)
 
         # Remove from area
         for area_cards in engine.state.areas.values():
@@ -413,9 +459,13 @@ class Card:
             # For now, treat as path cards
             engine.state.path_discard.append(self)
 
-        # TODO: Clean up attachment state (when attachment system implemented)
-        # self.attached_cards.clear()
-        # self.attached_to_id = None
+        # Clean up attachment state
+        self.attached_card_ids.clear()
+        self.attached_to_id = None
+
+        # Clean up listeners and constant abilities
+        engine.remove_constant_abilities_by_id(self.id)
+        engine.remove_listeners_by_id(self.id)
 
         # TODO: If this is a facedown placeholder, handle original (when facedown system implemented)
         # if self.is_facedown():
@@ -618,11 +668,26 @@ class MessageEvent:
 
 @dataclass
 class EventListener:
+    """For Response abilities and other game effects that trigger before/when/after another effect"""
     event_type: EventType
     effect_fn: Callable[[GameEngine, int], None]
     source_card_id: str
     timing_type: TimingType
     test_type: str | None = None #"Traverse", "Connect", etc.
 
-    
-    
+@dataclass
+class ConstantAbility:
+    """A continuous/passive ability that modifies game rules while active.
+    Caller of condition_fn responsible for the ability's behavior"""
+    ability_type: ConstantAbilityType
+    source_card_id: str
+
+    # Condition function: determines when this ability is "active"
+    # Returns True if the ability should currently apply
+    condition_fn: Callable[[GameState, Card], bool]
+
+    # Optional: human-readable description for debugging
+    description: str = ""
+
+    def is_active(self, state: GameState, card: Card) -> bool:
+        return self.condition_fn(state, card)

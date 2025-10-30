@@ -726,7 +726,7 @@ class WalkWithMeTests(unittest.TestCase):
         listener = wwm.enters_hand(eng)
         self.assertIsNotNone(listener, "Walk With Me should create a listener")
         if listener:  # Type guard for mypy
-            eng.add_listener(listener)
+            eng.register_listeners(listener)
 
         # Perform Traverse test (3 effort = 1 FIT energy + 2 Exploration icons)
         from src.registry import provide_common_tests
@@ -803,7 +803,7 @@ class WalkWithMeTests(unittest.TestCase):
         # Register listener
         listener = wwm.enters_hand(eng)
         if listener:  # Type guard for mypy
-            eng.add_listener(listener)
+            eng.register_listeners(listener)
 
         # Perform Traverse test
         from src.registry import provide_common_tests
@@ -877,7 +877,7 @@ class WalkWithMeTests(unittest.TestCase):
         # Register listener
         listener = wwm.enters_hand(eng)
         if listener:  # Type guard for mypy
-            eng.add_listener(listener)
+            eng.register_listeners(listener)
 
         # Perform Traverse test
         from src.registry import provide_common_tests
@@ -944,7 +944,7 @@ class WalkWithMeTests(unittest.TestCase):
         # Register listener
         listener = wwm.enters_hand(eng)
         if listener:  # Type guard for mypy
-            eng.add_listener(listener)
+            eng.register_listeners(listener)
 
         # Perform Traverse test
         from src.registry import provide_common_tests
@@ -1008,7 +1008,7 @@ class WalkWithMeTests(unittest.TestCase):
         # Register listener
         listener = wwm.enters_hand(eng)
         if listener:  # Type guard for mypy
-            eng.add_listener(listener)
+            eng.register_listeners(listener)
 
         # Perform CONNECT test (not Traverse!)
         from src.registry import provide_common_tests
@@ -1093,7 +1093,7 @@ class WalkWithMeTests(unittest.TestCase):
         # Register listener
         listener = wwm.enters_hand(eng)
         if listener:  # Type guard for mypy
-            eng.add_listener(listener)
+            eng.register_listeners(listener)
 
         # Perform Traverse test with 5 effort
         from src.registry import provide_common_tests
@@ -1129,16 +1129,18 @@ class WalkWithMeTests(unittest.TestCase):
         )
         eng = GameEngine(state)
 
-        listener = wwm.enters_hand(eng)
+        listeners = wwm.enters_hand(eng)
+        if listeners is not None:
+            listener = listeners[0]
 
-        self.assertIsNotNone(listener, "Walk With Me should create a listener")
-        # Type assertion for tests - we know it's not None after the check
-        assert listener is not None
-        self.assertEqual(listener.event_type, EventType.TEST_SUCCEED, "Should listen for test success")
-        self.assertEqual(listener.timing_type, TimingType.AFTER, "Should trigger after test")
-        self.assertEqual(listener.test_type, "Traverse", "Should only trigger on Traverse tests")
-        self.assertEqual(listener.source_card_id, wwm.id, "Should have card's ID")
-        self.assertIsNotNone(listener.effect_fn, "Should have an effect function")
+            self.assertIsNotNone(listener, "Walk With Me should create a listener")
+            # Type assertion for tests - we know it's not None after the check
+            assert listener is not None
+            self.assertEqual(listener.event_type, EventType.TEST_SUCCEED, "Should listen for test success")
+            self.assertEqual(listener.timing_type, TimingType.AFTER, "Should trigger after test")
+            self.assertEqual(listener.test_type, "Traverse", "Should only trigger on Traverse tests")
+            self.assertEqual(listener.source_card_id, wwm.id, "Should have card's ID")
+            self.assertIsNotNone(listener.effect_fn, "Should have an effect function")
 
 
 class CalypsaRangerMentorTests(unittest.TestCase):

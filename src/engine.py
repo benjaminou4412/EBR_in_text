@@ -5,7 +5,7 @@ from typing import Callable, Optional
 from .models import (
     GameState, Action, CommitDecision, RangerState, Card, ChallengeIcon,
     Aspect, Approach, Area, CardType, EventType, TimingType, EventListener,
-    MessageEvent, Keyword
+    MessageEvent, Keyword, ConstantAbility, ConstantAbilityType
 )
 from .challenge import draw_challenge
 from .utils import get_display_id
@@ -35,6 +35,7 @@ class GameEngine:
         self.response_decider = response_decider if response_decider is not None else self._default_decider
         # Event listeners and message queue (game engine concerns, not board state)
         self.listeners: list[EventListener] = []
+        self.constant_abilities: list[ConstantAbility] = []
         self.message_queue: list[MessageEvent] = []
         self.day_has_ended: bool = False
 
@@ -65,7 +66,7 @@ class GameEngine:
             self.state.ranger.hand.remove(card)
             self.state.ranger.discard.append(card)
             # Remove any listeners associated with this card
-            self.remove_listener_by_id(card.id)
+            self.remove_listeners_by_id(card.id)
 
     def discard_committed(self, ranger: RangerState, committed_indices: list[int]) -> None:
         """Discard cards committed to a test"""
@@ -77,7 +78,7 @@ class GameEngine:
         for card in cards_to_discard:
             ranger.discard.append(card)
             # Remove any listeners associated with committed cards
-            self.remove_listener_by_id(card.id)
+            self.remove_listeners_by_id(card.id)
     
     def get_valid_targets(self, action: Action) -> list[Card]:
         """Get valid targets for an action, respecting Obstacle keyword.
@@ -240,18 +241,18 @@ class GameEngine:
             Area.PLAYER_AREA,      # TODO: player chooses order within area
         ]
 
-        nonzero_challenges = False
+        zero_challenge_effects_resolved = True
         for area in challenge_areas:
             for card in self.state.areas[area]:
                 if card.is_ready():
                     # Get handlers directly from the card (always current)
                     handlers = card.get_challenge_handlers()
                     if handlers and symbol in handlers:
-                        nonzero_challenges = True
+                        zero_challenge_effects_resolved = False
                         handlers[symbol](self)
-        if not nonzero_challenges:
+                        cleared.extend(self.check_and_process_clears())
+        if zero_challenge_effects_resolved:
             self.add_message("No challenge effects resolved.")
-        cleared.extend(self.check_and_process_clears())
 
         for cleared_card in cleared:
             self.add_message(f"{cleared_card.title} cleared!")
@@ -300,15 +301,21 @@ class GameEngine:
         return to_clear
     
     #Ranger Token manipulation
-    def move_ranger_token_to_card(self, card: Card) -> None:
+    def move_ranger_token_to_card(self, card: Card) -> bool:
+        """Return whether token actually moved"""
         curr_location = self.state.ranger.ranger_token_location
         curr_card = self.state.get_card_by_id(curr_location)
         if curr_card is None:
             raise RuntimeError(f"The current location id of the ranger token points to no card!")
         else:
             #TODO: add check for effects that prevent ranger token movement
-            self.state.ranger.ranger_token_location = card.id
-            self.add_message(f"Your Ranger token moves from {curr_card.title} to {card.title}.")
+            if curr_location == card.id:
+                self.add_message(f"Your Ranger token is already on {card.title}.")
+                return False
+            else:
+                self.state.ranger.ranger_token_location = card.id
+                self.add_message(f"Your Ranger token moves from {curr_card.title} to {card.title}.")
+                return True
 
     def move_ranger_token_to_role(self) -> None:
         """Convenience method for when cards are discarded and the Ranger Token returns to the role card"""
@@ -334,31 +341,62 @@ class GameEngine:
             listener.effect_fn(self, effort)
     
 
-    def add_listener(self, listener: EventListener) -> None:
+    def register_listeners(self, listeners: list[EventListener]) -> None:
         """Add an event listener to the active listener registry"""
-        self.listeners.append(listener)
+        self.listeners.extend(listeners)
 
-    def remove_listener_by_id(self, id: str) -> None:
-        """Remove listener by source card ID"""
-        target = None
+    def remove_listeners_by_id(self, id: str) -> None:
+        """Remove listeners by source card ID"""
+        targets: list[EventListener] = []
         for listener in self.listeners:
             if listener.source_card_id == id:
-                target = listener
-        if target is not None:
-            self.listeners.remove(target)
+                targets.append(listener)
+        if targets:
+            for target in targets:
+                self.listeners.remove(target)
 
-    def reconstruct_listeners(self) -> None:
-        """Rebuild listener registry from current game state (for loading saved games)"""
+    def reconstruct(self) -> None:
+        """Rebuild listener and constant ability registry from current game state (for loading saved games)"""
         self.listeners.clear()
 
         # Listeners from cards in hand
         for card in self.state.ranger.hand:
-            listener : EventListener | None = card.enters_hand(self)
-            if listener:
-                self.listeners.append(listener)
+            listeners : list[EventListener] | None = card.enters_hand(self)
+            if listeners:
+                self.listeners.extend(listeners)
 
-        # Future: listeners from cards in play with enters_play()
+        # TODO: listeners from cards in play with enters_play(), and any other potential source
 
+        self.constant_abilities.clear()
+
+        # Constant abilities from cards in play
+        for card in self.state.all_cards_in_play():
+            const_abilities : list[ConstantAbility] | None = card.get_constant_abilities()
+            if const_abilities:
+                self.constant_abilities.extend(const_abilities)
+
+        # TODO: constant abilities from any other sources besides cards in play
+
+
+    # ConstantAbility management methods
+    def register_constant_abilities(self, abilities: list[ConstantAbility]):
+        """Register a constant ability from a card entering play"""
+        self.constant_abilities.extend(abilities)
+
+    def remove_constant_abilities_by_id(self, card_id: str):
+        """Remove all constant abilities from a specific card (for cleanup)"""
+        self.constant_abilities = [
+            a for a in self.constant_abilities
+            if a.source_card_id != card_id
+        ]
+
+    def get_constant_abilities_by_type(self, ability_type: ConstantAbilityType) -> list[ConstantAbility]:
+        """Get all constsant abilities of a specific type"""
+        return [
+            ability for ability in self.constant_abilities
+            if ability.ability_type == ability_type
+        ]
+        
     # Message management methods
 
     def add_message(self, message: str) -> None:
@@ -463,9 +501,45 @@ class GameEngine:
         card = self.state.path_deck.pop(0)
         if card.starting_area is not None:
                 self.state.areas[card.starting_area].append(card)
-                card.enters_play(self, card.starting_area)
+                constant_abilities: list[ConstantAbility] | None = card.enters_play(self, card.starting_area)
+                if constant_abilities:
+                    self.register_constant_abilities(constant_abilities)
         else:
             raise AttributeError("Path card drawn is missing a starting area.")
+        
+    def attach(self, to_attach: Card, attachment_target: Card) -> None:
+        if to_attach.id == attachment_target.id:
+            raise RuntimeError(f"Cannot attach a card to itself!")
+        attachment_target.attached_card_ids.append(to_attach.id)
+        to_attach.attached_to_id = attachment_target.id
+        attachment_target_area = self.state.get_card_area_by_id(attachment_target.id)
+        to_attach_area = self.state.get_card_area_by_id(to_attach.id)
+        if attachment_target_area is None:
+            #it's ok for the to_attach card to not exist in an area, since it might be an Attachment in a player's hand
+            raise RuntimeError(f"Attachment target does not exist in an in-play area!")
+        else:
+            if attachment_target_area != to_attach_area and to_attach_area is not None:
+                #only move cards that are actually in play, not attachments in player's hands 
+                #(which should have to_attach_area == None)
+                self.move_card(to_attach.id, attachment_target_area)
+        to_attach_display = get_display_id(self.state.all_cards_in_play(), to_attach)
+        attachment_target_display = get_display_id(self.state.all_cards_in_play(), attachment_target)
+        self.add_message(f"{to_attach_display} becomes attached to {attachment_target_display}.")
+        
+    
+    def unattach(self, to_unattach: Card) -> None:
+        attached_to: Card | None = self.state.get_card_by_id(to_unattach.attached_to_id)
+        if attached_to is None:
+            raise RuntimeError(f"{to_unattach.id} is attached to nothing!")
+        else:
+            attached_to.attached_card_ids.remove(to_unattach.id)
+            to_unattach.attached_to_id = None
+            to_unattach_display = get_display_id(self.state.all_cards_in_play(), to_unattach)
+            attached_to_display = get_display_id(self.state.all_cards_in_play(), attached_to)
+            self.add_message(f"{to_unattach_display} unattaches from {attached_to_display}.")
+            if CardType.ATTACHMENT in to_unattach.card_types:
+                to_unattach.discard_from_play(self) #attachments cannot exist in play without being attached
+            #generally, cards in play should stay in area of the card they were just attached to
 
 
     # Round/Phase helpers
@@ -493,7 +567,7 @@ class GameEngine:
         if card is not None:
             listener = card.enters_hand(self)
             if listener is not None:
-                self.add_listener(listener)
+                self.register_listeners(listener)
         #Step 3: Refill energy
         self.state.ranger.refresh_all_energy()
         self.add_message("Your energy is restored.")
@@ -502,5 +576,5 @@ class GameEngine:
         #Step 5: Ready all cards in play
         for area in self.state.areas:
             for card in self.state.areas[area]:
-                card.ready()
+                card.ready(self)
         self.add_message("All cards in play Ready.")

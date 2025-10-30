@@ -378,7 +378,7 @@ class PeerlessPathfinderTests(unittest.TestCase):
         self.assertEqual(len(abilities), 0)
 
         # Ready the role
-        role.ready()
+        role.ready(engine)
         self.assertFalse(role.is_exhausted())
 
         # Should have 1 ability available again

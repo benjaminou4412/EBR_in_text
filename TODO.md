@@ -4,6 +4,17 @@ A living checklist. Roughly prioritized.
 
 
 - Implement ConstantAbilities
+
+
+    Implement check_can_move_ranger_token() in GameEngine
+
+    Call check in move_ranger_token_to_card()
+
+    Refactor Obstacle keyword to use ConstantAbility
+
+    Refactor Friendly keyword to use ConstantAbility
+
+    Test ConstantAbility system with existing cards
 - Implement attachment system
 - Implement faceup/facedown cards
 - Implement Caustic Mulcher

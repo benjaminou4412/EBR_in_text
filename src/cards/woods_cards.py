@@ -3,7 +3,7 @@ Woods terrain set card implementations
 """
 from typing import Callable
 
-from src.models import Area
+from src.models import Area, ConstantAbility
 from ..models import *
 from ..json_loader import load_card_fields #type:ignore
 from ..utils import get_display_id
@@ -47,7 +47,7 @@ class ProwlingWolhund(Card):
                 #prompt player to pick one to ready
                 engine.add_message(f"Challenge (Sun) on {self_display_id}: Choose another Prowling Wolhund to ready:")
                 target: Card = engine.card_chooser(engine, exhausted_wolhunds)
-                engine.add_message(target.ready())
+                engine.add_message(target.ready(engine))
                 return True
             else:
                 engine.add_message(f"Challenge (Sun) on {self_display_id}: (all other Wolhunds already ready)")
@@ -214,7 +214,125 @@ class CausticMulcher(Card):
         "teeth. Extending from the center of its maw is a prehensile tentacle-tube, with a ring of " \
         "grabber-claws at the end of it. You count at least 8 legs extending haphazardly from just below " \
         "the maw, each with two joints along its length. They're coated in exoskeleton, like a spider's."
+    
+    def enters_play(self, engine: GameEngine, area: Area) -> list[ConstantAbility] | None:
+        super().enters_play(engine, area)
+        return self.get_constant_abilities()
 
+    def get_constant_abilities(self) -> list[ConstantAbility] | None:
+        return [self._beings_attached_do_not_ready(), self._ranger_token_prevents_travel(), self._ranger_token_cannot_move()]
+
+    def _beings_attached_do_not_ready(self) -> ConstantAbility:
+        return ConstantAbility(ability_type=ConstantAbilityType.PREVENT_READYING,
+                               source_card_id=self.id,
+                               condition_fn=self._card_is_attached)
+    
+    def _card_is_attached(self, state: GameState, card: Card) -> bool:
+        if (card.id in self.attached_card_ids) != (card.attached_to_id == self.id):
+            raise RuntimeError(f"Attachment tracking out of sync!")
+        else:
+            return (card.id in self.attached_card_ids) and (card.attached_to_id == self.id)
+    
+    def _ranger_token_prevents_travel(self) -> ConstantAbility:
+        return ConstantAbility(ability_type=ConstantAbilityType.PREVENT_TRAVEL,
+                               source_card_id=self.id,
+                               condition_fn=lambda state, _c: state.ranger.ranger_token_location==self.id)
+    
+    def _ranger_token_cannot_move(self) -> ConstantAbility:
+        return ConstantAbility(ability_type=ConstantAbilityType.PREVENT_RANGER_TOKEN_MOVE,
+                               source_card_id=self.id,
+                               condition_fn=lambda state, _c: state.ranger.ranger_token_location==self.id)
+
+    def get_tests(self) -> list[Action]:
+        """Returns all tests this card provides"""
+        return [
+            Action(
+                id=f"test-{self.id}",
+                name=f"{self.title} (FIT + Conflict) [2]",
+                aspect=Aspect.FIT,
+                approach=Approach.CONFLICT,
+                verb="Wrest",
+                target_provider=lambda _s: [self],
+                difficulty_fn=lambda _s, _t: 2,
+                on_success=self._on_wrest_success,
+                on_fail=None,
+                source_id=self.id,
+                source_title=self.title,
+            )
+        ]
+
+    def _on_wrest_success(self, engine: GameEngine, effort: int, card: Card | None) -> None:
+        """Wrest test success: exhaust this biomeld, then remove a ranger token or unattach a being from it"""
+        self.exhaust()
+        attached_cards: list[Card] = []
+        for id in self.attached_card_ids:
+            card = engine.state.get_card_by_id(id)
+            if card is None:
+                raise RuntimeError(f"Attached card not found!")
+            else:
+                attached_cards.append(card)
+
+        if engine.state.ranger.ranger_token_location == self.id and self.attached_card_ids:
+            #Prompt player to remove ranger token or unattach being
+            remove_token: bool = engine.response_decider(engine, f"Remove ranger token (y) or unattach being (n) from Caustic Mulcher?")
+            if remove_token:
+                engine.move_ranger_token_to_role()
+            else:
+                target = engine.card_chooser(engine, attached_cards)
+                engine.unattach(target)
+        elif engine.state.ranger.ranger_token_location == self.id:
+            #Player must remove ranger token
+            engine.move_ranger_token_to_role()
+        elif self.attached_card_ids:
+            #Player must choose a being to detatch
+            target = engine.card_chooser(engine, attached_cards)
+            engine.unattach(target)
+        else:
+            engine.add_message(f"No Ranger Tokens to remove or beings to unattach.")
+
+        
+
+    def get_challenge_handlers(self) -> dict[ChallengeIcon, Callable[[GameEngine], bool]] | None:
+        """Returns challenge symbol effects for this card"""
+        return {
+            ChallengeIcon.SUN: self._sun_effect,
+            ChallengeIcon.CREST: self._crest_effect
+        }
+
+    def _sun_effect(self, engine: GameEngine) -> bool:
+        """Sun effect: If there is another active being, exhaust it and attach it to this
+        biomeld. If not, move your ranger token to this biomeld"""
+        self_display_id = get_display_id(engine.state.all_cards_in_play(), self)
+        other_active_beings = [being for being in engine.state.beings_in_play() if being.id!=self.id]
+
+        if other_active_beings:
+            engine.add_message(f"Challenge: (Sun) on {self_display_id}: Choose an active being to exhaust and attach to this Biomeld:")
+            target = engine.card_chooser(engine, other_active_beings)
+            target.exhaust()
+            engine.attach(target, self)
+            return True
+        else:
+            engine.add_message(f"Challenge: (Sun) on {self_display_id}: With no active beings in play, the Biomeld targets you.")
+            return engine.move_ranger_token_to_card(self)
+    
+    def _crest_effect(self, engine: GameEngine) -> bool:
+        """Crest effect: Add 1 harm to each being attached to this biomeld. Each
+        Ranger with their ranger token on this biomeld suffers 1 injury."""
+        self_display_id = get_display_id(engine.state.all_cards_in_play(), self)
+        resolved = False
+        if self.attached_card_ids:
+            engine.add_message(f"Challenge: (Crest) on {self_display_id}: The Mulcher harms each being attached to it.")
+        for card_id in self.attached_card_ids:
+            card = engine.state.get_card_by_id(card_id)
+            if card is None:
+                raise RuntimeError(f"Attachment not found!")
+            resolved = True
+            card.add_harm(1)
+        if engine.state.ranger.ranger_token_location==self.id:
+            engine.add_message(f"Challenge: (Crest) on {self_display_id}: The Mulcher injures each Ranger it has captured.")
+            resolved = True
+            engine.injure_ranger(engine.state.ranger)
+        return resolved
 
 class SunberryBramble(Card):
     def __init__(self):
@@ -267,7 +385,9 @@ class SunberryBramble(Card):
         """Mountain effect: If there is an active prey, exhaust it >>
         Add [progress] to it and [harm] to this feature, both equal to 
         that prey's presence."""
-        return self.harm_from_prey(engine, ChallengeIcon.MOUNTAIN, self)
+        #no need for add_message here; harm_from_prey uses the passed-in symbol to add messages
+        resolved = self.harm_from_prey(engine, ChallengeIcon.MOUNTAIN, self)
+        return resolved
             
 
 
