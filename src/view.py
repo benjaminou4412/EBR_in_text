@@ -1,5 +1,5 @@
 from __future__ import annotations
-from typing import Optional, TYPE_CHECKING
+from typing import Optional, TYPE_CHECKING, Any
 import shutil
 import textwrap
 from .models import (
@@ -358,6 +358,97 @@ def choose_target(engine: GameEngine, targets: list[Card]) -> Card:
                 print(f"Please enter a number between 1 and {len(targets)}.")
         except ValueError:
             print("Invalid input. Please enter a number.")
+
+
+def choose_order(engine: GameEngine, items: list[Any], prompt: str) -> list[Any]:
+    """Prompt player to arrange items in a specific order.
+
+    This is a generic ordering function that can handle any list of items (Cards, EventListeners, etc.).
+    The player selects items one at a time to build the ordered list.
+
+    Args:
+        engine: GameEngine for context and message display
+        items: List of items to order (can be Cards, EventListeners, or any other objects)
+        prompt: Description of what's being ordered and why
+
+    Returns:
+        The items rearranged in the player's chosen order
+    """
+    display_and_clear_messages(engine)
+
+    if not items:
+        return []
+
+    if len(items) == 1:
+        # Only one item, no need to order
+        return items
+
+    print(f"\n{prompt}")
+    print("Select items in the order you want them (first selected = first to resolve):")
+
+    # Make a working copy we can remove from
+    remaining = list(items)
+    ordered: list[Any] = []
+
+    all_cards = engine.state.all_cards_in_play()
+
+    while remaining:
+        print(f"\nRemaining items ({len(remaining)}):")
+
+        # Display items with appropriate formatting based on type
+        from .models import Card, EventListener
+        for i, item in enumerate(remaining, start=1):
+            if isinstance(item, Card):
+                display_name = get_display_id(all_cards, item)
+                print(f" {i}. {display_name}")
+            elif isinstance(item, EventListener):
+                # For listeners, show source card name and event type
+                source_card = engine.state.get_card_by_id(item.source_card_id)
+                if source_card:
+                    source_name = get_display_id(all_cards, source_card)
+                    print(f" {i}. {source_name} - {item.event_type.value} ({item.timing_type.value})")
+                else:
+                    print(f" {i}. {item.event_type.value} listener ({item.timing_type.value})")
+            else:
+                # Generic fallback - try to display title or string representation
+                if hasattr(item, 'title'):
+                    print(f" {i}. {item.title}")
+                elif hasattr(item, 'name'):
+                    print(f" {i}. {item.name}")
+                else:
+                    print(f" {i}. {str(item)}")
+
+        try:
+            choice = input(f"Choose item #{len(ordered) + 1} (or 'done' if finished): ").strip()
+
+            if choice.lower() == 'done':
+                # If player says done but items remain, confirm
+                if len(remaining) > 0:
+                    print(f"Warning: {len(remaining)} items remain unordered.")
+                    confirm = input("Add remaining items in current order? (y/n): ").strip().lower()
+                    if confirm in ('y', 'yes'):
+                        ordered.extend(remaining)
+                        break
+                    else:
+                        continue
+                else:
+                    break
+
+            if not choice:
+                continue
+
+            idx = int(choice) - 1
+            if 0 <= idx < len(remaining):
+                selected = remaining.pop(idx)
+                ordered.append(selected)
+                print(f"✓ Added to position {len(ordered)}")
+            else:
+                print(f"Please enter a number between 1 and {len(remaining)}.")
+        except ValueError:
+            print("Invalid input. Please enter a number or 'done'.")
+
+    print(f"\n✓ Order finalized: {len(ordered)} items")
+    return ordered
 
 
 def choose_commit(action: Action, hand_size: int, state: GameState, engine: GameEngine) -> CommitDecision:

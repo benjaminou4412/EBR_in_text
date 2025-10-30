@@ -200,6 +200,9 @@ class Card:
         if self.starting_tokens:
             self.unique_tokens = {self.starting_tokens[0]: self.starting_tokens[1]}
     
+    def __str__(self):
+        return f"{self.title}"
+    
     def get_challenge_handlers(self) -> dict[ChallengeIcon, Callable[[GameEngine], bool]] | None:
         return None
     
@@ -526,7 +529,7 @@ class RangerState:
     def __post_init__(self):
         self.energy = dict(self.aspects)
 
-    def draw_card(self) -> tuple[Card | None, str | None, bool]:
+    def draw_card(self) -> tuple[Card | None, str, bool]:
         """Draw a card from deck to hand.
         Returns (card, message, should_end_day).
         If deck is empty, returns (None, error_message, True).

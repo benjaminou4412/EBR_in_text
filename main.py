@@ -9,7 +9,8 @@ from src.engine import GameEngine
 from src.registry import provide_common_tests, provide_card_tests, provide_exhaust_abilities
 from src.view import (
     render_state, choose_action, choose_action_target, choose_commit,
-    choose_target, display_and_clear_messages, choose_response, set_show_art_descriptions
+    choose_target, display_and_clear_messages, choose_response, set_show_art_descriptions,
+    choose_order
 )
 from src.decks import build_woods_path_deck
 from src.cards import (
@@ -25,16 +26,16 @@ def pick_demo_cards() -> list[Card]:
     walk_with_me_0 : Card = WalkWithMe()
     a_dear_friend_0 : Card= ADearFriend()
     exploration_dummies : list[Card] = []
-    for _ in range(5):
+    for _ in range(2):
         exploration_dummies.append(Card(title="Demo Explore +1", approach_icons={Approach.EXPLORATION: 1}))
     conflict_dummies : list[Card]  = []
-    for _ in range(5):
+    for _ in range(2):
         conflict_dummies.append(Card(title="Demo Conflict +1", approach_icons={Approach.CONFLICT: 1}))
     reason_dummies : list[Card]  = []
-    for _ in range(5):
+    for _ in range(2):
         reason_dummies.append(Card(title="Demo Reason +1", approach_icons={Approach.REASON: 1}))
     connection_dummies : list[Card]  = []
-    for _ in range(5):
+    for _ in range(2):
         connection_dummies.append(Card(title="Demo Connection +1", approach_icons={Approach.CONNECTION: 1}))
 
     deck = exploration_dummies + conflict_dummies + reason_dummies + connection_dummies
@@ -275,14 +276,14 @@ def main() -> None:
     ranger = RangerState(name="Demo Ranger", hand=[], aspects={Aspect.AWA: 99, Aspect.FIT: 99, Aspect.SPI: 99, Aspect.FOC: 99}, deck=ranger_deck, fatigue_stack=ranger_fatigue)
     role_card = PeerlessPathfinder()
     state = GameState(ranger=ranger, role_card=role_card)
-    engine = GameEngine(state, card_chooser=choose_target, response_decider=choose_response)
+    engine = GameEngine(state, card_chooser=choose_target, response_decider=choose_response, order_decider=choose_order)
     engine.add_message(f"===BEGIN SETUP===")
     engine.add_message(f"Step 1: Set up player area (skipped)")
     #TODO: simulate ranger setup
     engine.add_message(f"Step 2: Draw starting hand")
     for _ in range(5):
         card, msg, _ = state.ranger.draw_card()  # Draw cards during setup
-        if card is not None and msg is not None:
+        if card is not None:
             engine.add_message(msg)
             card.enters_hand(engine)
         else:

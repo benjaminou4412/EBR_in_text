@@ -1,7 +1,7 @@
 from __future__ import annotations
 import random
 from dataclasses import dataclass
-from typing import Callable, Optional
+from typing import Callable, Optional, Any, cast
 from .models import (
     GameState, Action, CommitDecision, RangerState, Card, ChallengeIcon,
     Aspect, Approach, Area, CardType, EventType, TimingType, EventListener,
@@ -30,16 +30,20 @@ class GameEngine:
                   state: GameState,
                   challenge_drawer: Callable[[], tuple[int, ChallengeIcon]] = draw_challenge,
                   card_chooser: Callable[[GameEngine, list[Card]], Card] | None = None,
-                  response_decider: Callable[[GameEngine, str],bool] | None = None):
+                  response_decider: Callable[[GameEngine, str],bool] | None = None,
+                  order_decider: Callable[[GameEngine, Any, str], Any] | None = None):
         self.state = state
         self.draw_challenge = challenge_drawer
         self.card_chooser = card_chooser if card_chooser is not None else self._default_chooser
         self.response_decider = response_decider if response_decider is not None else self._default_decider
+        self.order_decider = order_decider if order_decider is not None else self._default_order_decider
         # Event listeners and message queue (game engine concerns, not board state)
         self.listeners: list[EventListener] = []
         self.constant_abilities: list[ConstantAbility] = []
         self.message_queue: list[MessageEvent] = []
         self.day_has_ended: bool = False
+        # Display ID cache for challenge resolution (maintains consistent IDs even if cards clear)
+        self._display_id_cache: dict[str, str] = {}
         self.reconstruct()
 
     def _default_chooser(self, _engine: 'GameEngine', choices: list[Card]) -> Card:  # noqa: ARG002
@@ -49,6 +53,21 @@ class GameEngine:
     def _default_decider(self, _engine: 'GameEngine', _prompt: str) -> bool:  # noqa: ARG002
         """Default: always play responses (for tests)"""
         return True
+
+    def _default_order_decider(self, _engine: 'GameEngine', items: Any, _prompt: str) -> Any:  # noqa: ARG002
+        """Default: maintain current order (no rearrangement)"""
+        return items
+
+    def get_display_id_cached(self, card: Card) -> str:
+        """Get display ID for a card, using cache if available (during challenge resolution).
+
+        This ensures consistent display IDs even if cards get cleared mid-resolution.
+        Falls back to live computation if cache is empty.
+        """
+        if self._display_id_cache and card.id in self._display_id_cache:
+            return self._display_id_cache[card.id]
+        # Fallback to live computation
+        return get_display_id(self.state.all_cards_in_play(), card)
 
     def commit_icons(self, ranger: RangerState, approach: Approach, decision: CommitDecision) -> tuple[int, list[int]]:
         total = decision.energy
@@ -245,42 +264,65 @@ class GameEngine:
         cleared.clear()
         # Step 5:  Resolve Challenge effects (dynamically from active cards)
         # TODO: Future challenge resolution features:
-        #   - When multiple cards in the same area have challenge effects, player chooses the order
         #   - If new cards enter play during challenge resolution, their effects should trigger
         #   - If cards move areas during challenge resolution and become active, their effects should trigger
         self.add_message(f"Step 5: Resolve [{symbol.upper()}] challenge effects, if any.")
         challenge_areas : list[Area] = [
             Area.SURROUNDINGS,     # Weather, Location, Mission
-            Area.ALONG_THE_WAY,    # TODO: player chooses order within area
-            Area.WITHIN_REACH,     # TODO: player chooses order within area
-            Area.PLAYER_AREA,      # TODO: player chooses order within area
+            Area.ALONG_THE_WAY,
+            Area.WITHIN_REACH,
+            Area.PLAYER_AREA,
         ]
 
         zero_challenge_effects_resolved = True
-        already_resolved_ids: list[tuple[str, ChallengeIcon]] = [] 
+        already_resolved_ids: list[tuple[str, ChallengeIcon]] = []
         #track which cards had a challenge effect resolve so they don't resolve again
+
+        # Pre-compute display IDs for all cards before any effects resolve
+        # This ensures consistent naming even if cards get cleared mid-resolution
+        all_cards_snapshot = self.state.all_cards_in_play()
+        self._display_id_cache.clear()
+        for card in all_cards_snapshot:
+            self._display_id_cache[card.id] = get_display_id(all_cards_snapshot, card)
+
         for area in challenge_areas:
+            # Collect cards with challenge effects for this symbol in this area
+            cards_with_effects: list[Card] = []
             for card in self.state.areas[area]:
                 if card.is_ready():
-                    # Get handlers directly from the card (always current)
                     handlers = card.get_challenge_handlers()
                     if handlers and symbol in handlers and (card.id, symbol) not in already_resolved_ids:
-                        resolved = handlers[symbol](self)
-                        if resolved:
-                            already_resolved_ids.append((card.id, symbol))
-                            zero_challenge_effects_resolved = False 
-                        cleared.extend(self.check_and_process_clears())
+                        cards_with_effects.append(card)
+
+            # If multiple cards have effects in the same area, let player choose order
+            if len(cards_with_effects) > 1:
+                cards_with_effects = cast(list[Card], self.order_decider(self, cards_with_effects,
+                    f"Choose order to resolve {symbol.upper()} challenge effects in {area.value}"))
+
+            # Resolve effects in the chosen order
+            for card in cards_with_effects:
+                handlers = card.get_challenge_handlers()
+                if handlers and symbol in handlers and (card.id, symbol) not in already_resolved_ids:
+                    resolved = handlers[symbol](self)
+                    if resolved:
+                        already_resolved_ids.append((card.id, symbol))
+                        zero_challenge_effects_resolved = False
+                    cleared.extend(self.check_and_process_clears())
+
         if zero_challenge_effects_resolved:
             self.add_message("No challenge effects resolved.")
 
         for cleared_card in cleared:
             self.add_message(f"{cleared_card.title} cleared!")
 
+        # Clear the display ID cache after challenge resolution is complete
+        self._display_id_cache.clear()
+
         return ChallengeOutcome(
-            difficulty=difficulty, 
-            base_effort=base_effort, 
-            modifier=mod, symbol=symbol, 
-            resulting_effort=effort, 
+            difficulty=difficulty,
+            base_effort=base_effort,
+            modifier=mod, symbol=symbol,
+            resulting_effort=effort,
             success=success
         )
 
@@ -367,6 +409,12 @@ class GameEngine:
                     if action.verb is not None and listener.test_type is not None:
                         if action.verb.casefold() == listener.test_type.casefold():
                             triggered.append(listener)
+
+        # If multiple listeners trigger simultaneously, let player choose order
+        if len(triggered) > 1:
+            triggered = cast(list[EventListener], self.order_decider(self, triggered,
+                f"Choose order to resolve {event_type.value} listeners ({timing_type.value})"))
+
         for listener in triggered:
             listener.effect_fn(self, effort)
     
@@ -536,7 +584,72 @@ class GameEngine:
                     self.register_constant_abilities(constant_abilities)
         else:
             raise AttributeError("Path card drawn is missing a starting area.")
-        
+
+    def scout_cards(self, deck: list[Card], count: int) -> None:
+        """Scout X cards from a deck: look at top X cards, then place each on top or bottom in any order.
+
+        The scouting process:
+        1. Look at the top X cards
+        2. Sort them one-by-one into "top" and "bottom" piles
+        3. Order the "top" pile (first card will be closest to top of deck)
+        4. Order the "bottom" pile (first card will be closest to bottom of deck)
+        5. Reconstruct deck: remaining cards + bottom pile + top pile
+
+        Args:
+            deck: The deck to scout from (typically path_deck or ranger.deck)
+            count: Number of cards to scout
+        """
+        if count <= 0:
+            return
+
+        # Can't scout more cards than exist in the deck
+        actual_count = min(count, len(deck))
+        if actual_count == 0:
+            self.add_message("No cards to scout.")
+            return
+
+        # Step 1: Look at top X cards
+        scouted_cards = deck[:actual_count]
+        self.add_message(f"Scouting {actual_count} cards from deck:")
+        for card in scouted_cards:
+            self.add_message(f"   {card.title}")
+
+        # Step 2: Sort cards into "top" and "bottom" piles one at a time
+        top_pile: list[Card] = []
+        bottom_pile: list[Card] = []
+
+        for card in scouted_cards:
+            place_on_top = self.response_decider(self,
+                f"Place '{card.title}' on TOP of deck? (No = place on BOTTOM) (y/n)")
+            if place_on_top:
+                top_pile.append(card)
+            else:
+                bottom_pile.append(card)
+
+        # Step 3: Order the top pile (if more than one card)
+        if len(top_pile) > 1:
+            top_pile = cast(list[Card], self.order_decider(self, top_pile,
+                "Order cards for TOP of deck (first choice will be drawn first)"))
+
+        # Step 4: Order the bottom pile (if more than one card)
+        if len(bottom_pile) > 1:
+            bottom_pile = cast(list[Card], self.order_decider(self, bottom_pile,
+                "Order cards for BOTTOM of deck (first choice will be farthest from bottom; last choice will be bottom)"))
+
+        # Step 5: Reconstruct the deck
+        # Remove all scouted cards from the deck
+        for card in scouted_cards:
+            deck.remove(card)
+
+        # Add bottom pile to end of remaining deck (in order, first card goes closest to bottom)
+        deck.extend(bottom_pile)
+
+        # Add top pile to beginning of deck (in reverse, so first card ends up on top)
+        for card in reversed(top_pile):
+            deck.insert(0, card)
+
+        self.add_message(f"Scout complete: {len(top_pile)} cards on top, {len(bottom_pile)} cards on bottom.")
+
     def attach(self, to_attach: Card, attachment_target: Card) -> None:
         if to_attach.id == attachment_target.id:
             raise RuntimeError(f"Cannot attach a card to itself!")

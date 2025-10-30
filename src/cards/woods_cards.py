@@ -6,7 +6,6 @@ from typing import Callable
 from src.models import Area, ConstantAbility
 from ..models import *
 from ..json_loader import load_card_fields #type:ignore
-from ..utils import get_display_id
 from ..engine import GameEngine
 
 
@@ -37,7 +36,7 @@ class ProwlingWolhund(Card):
         
     def _sun_effect(self, engine: GameEngine) -> bool:
         """Sun effect: Ready another Prowling Wolhund"""
-        self_display_id = get_display_id(engine.state.all_cards_in_play(), self)
+        self_display_id = engine.get_display_id_cached(self)
         wolhunds = engine.state.get_cards_by_title("Prowling Wolhund")
         if wolhunds is None:
             engine.add_message(f"Challenge (Sun) on {self_display_id}: (no other Wolhunds in play)")
@@ -58,7 +57,7 @@ class ProwlingWolhund(Card):
 
     def _crest_effect(self, engine: GameEngine) -> bool:
         """Crest effect: If you have 3 or more fatigue, exhaust this being >> Suffer 1 injury"""
-        self_display_id = get_display_id(engine.state.all_cards_in_play(), self)
+        self_display_id = engine.get_display_id_cached(self)
         enough_fatigue = len(engine.state.ranger.fatigue_stack) >= 3
         if enough_fatigue:
             engine.add_message(f"Challenge (Crest) on {self_display_id}: You have {len(engine.state.ranger.fatigue_stack)} fatigue - Prowling Wolhund exhausts itself and you suffer 1 injury!")
@@ -91,7 +90,7 @@ class SitkaBuck(Card):
     def _sun_effect(self, engine: GameEngine) -> bool:
         """If there is another active Sitka Buck, exhaust this being >> Add 2[harm] to both this
         and the other Sitka Buck."""
-        self_display_id = get_display_id(engine.state.all_cards_in_play(), self)
+        self_display_id = engine.get_display_id_cached(self)
         bucks = engine.state.get_cards_by_title("Sitka Buck")
         if not bucks:
             raise RuntimeError("This card should count itself as a buck, so we can't get no-bucks-found here.")
@@ -114,7 +113,7 @@ class SitkaBuck(Card):
     def _mountain_effect(self, engine: GameEngine) -> bool:
         """If there is an active predator, exhaust it >> Add 2 harm to it, then add harm to this
         being equal to that predator's presence."""
-        self_display_id = get_display_id(engine.state.all_cards_in_play(), self)
+        self_display_id = engine.get_display_id_cached(self)
         predators = engine.state.get_cards_by_trait("Predator")
         if not predators:
             engine.add_message(f"Challenge (Mountain) on {self_display_id}: (no predators in play)")
@@ -140,7 +139,7 @@ class SitkaBuck(Card):
     
     def _crest_effect(self, engine: GameEngine) -> bool:
         """If there is an active Sitka Doe, the buck charges >> Suffer 1 injury."""
-        self_display_id = get_display_id(engine.state.all_cards_in_play(), self)
+        self_display_id = engine.get_display_id_cached(self)
         does = engine.state.get_cards_by_title("Sitka Doe")
         if does and any(doe.is_ready() for doe in does):
             engine.add_message(f"Challenge (Crest) on {self_display_id}: There is an active Sitka Doe, so the buck charges.")
@@ -189,7 +188,7 @@ class SitkaDoe(Card):
     def _sun_effect(self, engine: GameEngine) -> bool:
         """Sun effect: If there are 1 or more Sitka Bucks in play >> Move each Sitka Buck within reach"""
         bucks = engine.state.get_cards_by_title("Sitka Buck")
-        self_display_id = get_display_id(engine.state.all_cards_in_play(), self)
+        self_display_id = engine.get_display_id_cached(self)
         if bucks is None:
             engine.add_message(f"Challenge (Sun) on {self_display_id}: (no Sitka Buck in play)")
             return False
@@ -308,7 +307,7 @@ class CausticMulcher(Card):
     def _sun_effect(self, engine: GameEngine) -> bool:
         """Sun effect: If there is another active being, exhaust it and attach it to this
         biomeld. If not, move your ranger token to this biomeld"""
-        self_display_id = get_display_id(engine.state.all_cards_in_play(), self)
+        self_display_id = engine.get_display_id_cached(self)
         other_active_beings = [being for being in engine.state.beings_in_play() if being.id!=self.id and being.is_ready()]
 
         if other_active_beings:
@@ -324,7 +323,7 @@ class CausticMulcher(Card):
     def _crest_effect(self, engine: GameEngine) -> bool:
         """Crest effect: Add 1 harm to each being attached to this biomeld. Each
         Ranger with their ranger token on this biomeld suffers 1 injury."""
-        self_display_id = get_display_id(engine.state.all_cards_in_play(), self)
+        self_display_id = engine.get_display_id_cached(self)
         resolved = False
         if self.attached_card_ids:
             engine.add_message(f"Challenge: (Crest) on {self_display_id}: The Mulcher harms each being attached to it.")
@@ -438,7 +437,7 @@ class OvergrownThicket(Card):
 
     def _mountain_effect(self, engine: GameEngine) -> bool:
         """Mountain effect: discard 1 progress"""
-        self_display_id = get_display_id(engine.state.all_cards_in_play(), self)
+        self_display_id = engine.get_display_id_cached(self)
         if self.progress > 0:
             engine.add_message(f"Challenge (Mountain) on {self_display_id}: discards 1 progress to fatigue you.")
             engine.add_message(self.remove_progress(1)[1])

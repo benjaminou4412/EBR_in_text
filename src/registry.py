@@ -93,6 +93,21 @@ def provide_common_tests(state: GameState) -> list[Action]:
         )
     )
 
+    # Avoid: FOC + [Reason], no target, diff 1; on success scout ranger deck equal to effort, then draw
+    def remember_success(e: GameEngine, eff: int, _card: Card | None) -> None:  # noqa: ARG001
+        deck = e.state.ranger.deck
+        e.scout_cards(deck, eff)
+        card, msg, day_ended = e.state.ranger.draw_card()
+        if card is None:
+            if day_ended:
+                e.day_has_ended = True
+                return
+            else:
+                raise RuntimeError(f"Day should end when deck is empty!")
+        else:
+            e.add_message(msg)
+            card.enters_hand(e)
+
     # Remember: FOC + [Reason], no target, diff 1
     actions.append(
         Action(
@@ -103,11 +118,12 @@ def provide_common_tests(state: GameState) -> list[Action]:
             verb="Remember",
             target_provider=None,
             difficulty_fn=lambda _s, _t: 1,
-            on_success=lambda e, eff, _t: None,  # No deck manipulation yet; placeholder
+            on_success=remember_success,  # No deck manipulation yet; placeholder
             source_id="common",
             source_title="Common Test",
         )
     )
+
 
     return actions
 
