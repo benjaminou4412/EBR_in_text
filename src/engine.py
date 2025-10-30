@@ -155,7 +155,7 @@ class GameEngine:
             for card in fatiguing_cards:
                 card_display_id = get_display_id(all_cards, card)
                 self.add_message(f"    {card_display_id} fatigues you.")
-                curr_presence = card.get_current_presence()
+                curr_presence = card.get_current_presence(self)
                 if curr_presence is not None:
                     self.fatigue_ranger(ranger, curr_presence)
                 else:
@@ -170,7 +170,7 @@ class GameEngine:
 
         # Show player Test Step 1 information
         self.add_message(f"[{action.verb}] test initiated of aspect [{aspect_str}] and approach [{approach_str}].")
-        self.add_message(f"This test is of difficulty {action.difficulty_fn(state,target_card)}.")
+        self.add_message(f"This test is of difficulty {action.difficulty_fn(self,target_card)}.")
         self.add_message(f"Step 1: You suffer fatigue from each ready card between you and your interaction target.")
         if target_id is not None:
             target = self.state.get_card_by_id(target_id)
@@ -210,7 +210,7 @@ class GameEngine:
 
         mod, symbol = self.draw_challenge()
         effort = max(0, base_effort + mod)
-        difficulty = action.difficulty_fn(self.state, target_card)
+        difficulty = action.difficulty_fn(self, target_card)
         self.add_message(f"Step 3: Draw a challenge card and apply modifiers.")
         self.add_message(f"You drew: [{aspect.value}]{mod:+d}, symbol [{symbol.upper()}]")
 
@@ -440,7 +440,7 @@ class GameEngine:
                 self.state.areas[current_area].remove(target_card)
                 self.state.areas[target_area].append(target_card)
                 self.add_message(f"{target_display_id} moves to {target_area.value}.")
-                curr_presence = target_card.get_current_presence()
+                curr_presence = target_card.get_current_presence(self)
                 if target_area == Area.WITHIN_REACH and target_card.has_keyword(Keyword.AMBUSH) and curr_presence is not None:
                     self.fatigue_ranger(self.state.ranger, curr_presence)
                 return True
@@ -457,18 +457,18 @@ class GameEngine:
 
         for _ in range(amount):
             card = ranger.deck.pop(0)  # Take from top of deck
-            ranger.fatigue_pile.insert(0, card)  # Insert at top of fatigue pile
+            ranger.fatigue_stack.insert(0, card)  # Insert at top of fatigue pile
 
         if amount > 0:
             self.add_message(f"Ranger suffers {amount} fatigue.")
 
     def soothe_ranger(self, ranger: RangerState, amount: int) -> None:
         """Move top amount cards from fatigue pile to hand"""
-        cards_to_soothe = min(amount, len(ranger.fatigue_pile))
+        cards_to_soothe = min(amount, len(ranger.fatigue_stack))
         if cards_to_soothe > 0:
             self.add_message(f"Ranger soothes {cards_to_soothe} fatigue.")
         for _ in range(cards_to_soothe):
-            card = ranger.fatigue_pile.pop(0)  # Take from top of fatigue pile
+            card = ranger.fatigue_stack.pop(0)  # Take from top of fatigue pile
             ranger.hand.append(card)  # Add to hand
             self.add_message(f"   {card.title} is added to your hand.")
         
@@ -482,10 +482,10 @@ class GameEngine:
         TODO: Add Lingering Injury card to deck when taking 3rd injury
         """
         # Discard all fatigue
-        fatigue_count = len(ranger.fatigue_pile)
+        fatigue_count = len(ranger.fatigue_stack)
         if fatigue_count > 0:
-            ranger.discard.extend(ranger.fatigue_pile)
-            ranger.fatigue_pile.clear()
+            ranger.discard.extend(ranger.fatigue_stack)
+            ranger.fatigue_stack.clear()
             self.add_message(f"Ranger discards {fatigue_count} fatigue from injury.")
 
         # Increment injury counter

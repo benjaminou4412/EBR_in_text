@@ -19,12 +19,12 @@ def set_show_art_descriptions(show: bool) -> None:
     _show_art_descriptions = show
 
 
-def render_card_detail(card: Card, state: GameState, displayed_ids: set[str], index: int | None = None, display_id: str | None = None, indent_level: int = 0) -> None:
+def render_card_detail(card: Card, engine: GameEngine, displayed_ids: set[str], index: int | None = None, display_id: str | None = None, indent_level: int = 0) -> None:
     """Render a single card with full details in multi-line format, including attachments
 
     Args:
         card: The card to render
-        state: GameState for looking up attached cards
+        engine: GameEngine for looking up attached cards within state and referencing Constant Abilities
         displayed_ids: Set of card IDs already displayed (to prevent duplicates)
         index: Optional numeric index to display before card name
         display_id: Optional display ID to use instead of card title
@@ -97,10 +97,10 @@ def render_card_detail(card: Card, state: GameState, displayed_ids: set[str], in
     if card.presence is not None or card.progress_threshold is not None or card.harm_threshold is not None:
         parts = []
         if card.presence is not None:
-            if card.presence == card.get_current_presence():
-                parts.append(f"Presence: {card.get_current_presence()}")
+            if card.presence == card.get_current_presence(engine):
+                parts.append(f"Presence: {card.get_current_presence(engine)}")
             else:
-                parts.append(f"Printed Presence: {card.presence}; Current Presence: {card.get_current_presence()}")
+                parts.append(f"Printed Presence: {card.presence}; Current Presence: {card.get_current_presence(engine)}")
         if card.progress_threshold is not None:
             #normal numeric threshold value
             parts.append(f"Progress: {card.progress}/{card.get_progress_threshold()}")
@@ -142,18 +142,18 @@ def render_card_detail(card: Card, state: GameState, displayed_ids: set[str], in
     # Render attachments recursively
     if card.attached_card_ids:
         print(f"{indent}   ATTACHMENTS:")
-        all_cards = state.all_cards_in_play()
+        all_cards = engine.state.all_cards_in_play()
         for attached_id in card.attached_card_ids:
-            attached_card = state.get_card_by_id(attached_id)
+            attached_card = engine.state.get_card_by_id(attached_id)
             if attached_card:
                 attached_display_id = get_display_id(all_cards, attached_card)
-                render_card_detail(attached_card, state, displayed_ids,
+                render_card_detail(attached_card, engine, displayed_ids,
                                  display_id=attached_display_id, indent_level=indent_level + 1)
 
 
-def render_state(state: GameState, phase_header: str = "") -> None:
+def render_state(engine: GameEngine, phase_header: str = "") -> None:
     """Render the current game state with optional phase header"""
-    r = state.ranger
+    r = engine.state.ranger
 
     # Phase header if provided
     if phase_header:
@@ -163,28 +163,28 @@ def render_state(state: GameState, phase_header: str = "") -> None:
     displayed_ids: set[str] = set()
 
     # Areas
-    all_cards = state.all_cards_in_play()
+    all_cards = engine.state.all_cards_in_play()
     for area in [Area.SURROUNDINGS, Area.ALONG_THE_WAY, Area.WITHIN_REACH, Area.PLAYER_AREA]:
         print(f"\n--- {area.value} ---")
-        cards = state.areas.get(area, [])
+        cards = engine.state.areas.get(area, [])
         if cards:
             for card in cards:
                 # Only render cards that aren't attached to something else
                 # (attachments will be rendered under their parent)
                 if card.attached_to_id is None:
                     display_id = get_display_id(all_cards, card)
-                    render_card_detail(card, state, displayed_ids, display_id=display_id)
+                    render_card_detail(card, engine, displayed_ids, display_id=display_id)
         else:
             print("[No cards currently in this area]")
 
     print("")
     # Ranger status line
-    ranger_token_card = state.get_card_by_id(r.ranger_token_location)
+    ranger_token_card = engine.state.get_card_by_id(r.ranger_token_location)
     if ranger_token_card is None:
         raise RuntimeError(f"Ranger token should always be on a card!")
     ranger_token_id = get_display_id(all_cards, ranger_token_card)
     print(f"Ranger: {r.name} | Energy AWA {r.energy[Aspect.AWA]} FIT {r.energy[Aspect.FIT]} SPI {r.energy[Aspect.SPI]} FOC {r.energy[Aspect.FOC]} | Injury {r.injury}")
-    print(f"Remaining deck size: {len(r.deck)} | Discard pile size: {len(r.discard)} | Fatigue stack size: {len(r.fatigue_pile)} | Ranger Token Location: {ranger_token_id}")
+    print(f"Remaining deck size: {len(r.deck)} | Discard pile size: {len(r.discard)} | Fatigue stack size: {len(r.fatigue_stack)} | Ranger Token Location: {ranger_token_id}")
 
     # Discard pile contents (top to bottom)
     if r.discard:
@@ -207,7 +207,7 @@ def render_state(state: GameState, phase_header: str = "") -> None:
         # Create a separate displayed_ids set for hand (cards in hand can't be attachments to in-play cards)
         hand_displayed_ids: set[str] = set()
         for i, card in enumerate(r.hand, start=1):
-            render_card_detail(card, state, hand_displayed_ids, index=i)
+            render_card_detail(card, engine, hand_displayed_ids, index=i)
     else:
         print("[Empty hand]")
 

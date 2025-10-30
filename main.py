@@ -15,7 +15,7 @@ from src.decks import build_woods_path_deck
 from src.cards import (
     OvergrownThicket, SunberryBramble, SitkaDoe, WalkWithMe, ADearFriend,
     ProwlingWolhund, SitkaBuck, CalypsaRangerMentor, PeerlessPathfinder,
-    CausticMulcher
+    CausticMulcher, BoulderField
 )
 
 
@@ -56,6 +56,16 @@ def build_demo_state() -> GameState:
     ranger_deck = pick_demo_cards()
     ranger_fatigue = pick_demo_cards()[0:5]
 
+    #add Boulder Field
+    location = BoulderField()
+
+    # Add Midday Sun (Weather)
+    weather = Card(
+        id="midday-sun-01",
+        title="Midday Sun",
+        card_types={CardType.WEATHER},
+        starting_area=Area.SURROUNDINGS,
+    )
     #Add Caustic Mulcher
     mulcher = CausticMulcher()
     #Add Overgrown Thicket
@@ -78,20 +88,14 @@ def build_demo_state() -> GameState:
     # Add Calypsa
     calypsa = CalypsaRangerMentor()
 
-    # Add Midday Sun (Weather)
-    weather = Card(
-        id="midday-sun-01",
-        title="Midday Sun",
-        card_types={CardType.WEATHER},
-        starting_area=Area.SURROUNDINGS,
-    )
+    
 
     role_card = PeerlessPathfinder()
 
-    ranger = RangerState(name="Demo Ranger", hand=[], aspects={Aspect.AWA: 99, Aspect.FIT: 99, Aspect.SPI: 99, Aspect.FOC: 99}, deck=ranger_deck, fatigue_pile=ranger_fatigue)
+    ranger = RangerState(name="Demo Ranger", hand=[], aspects={Aspect.AWA: 99, Aspect.FIT: 99, Aspect.SPI: 99, Aspect.FOC: 99}, deck=ranger_deck, fatigue_stack=ranger_fatigue)
     # Build a simple path deck from woods, excluding the ones already in play
     deck = build_woods_path_deck()
-    surroundings : list[Card] = [weather]
+    surroundings : list[Card] = [weather, location]
     along_the_way : list[Card] = [wol_0, buck_0, bramble, mulcher]
     within_reach : list[Card] = [thicket, calypsa, doe]
     player_area : list[Card] = [role_card]
@@ -117,7 +121,7 @@ def menu_and_run(engine: GameEngine) -> None:
         # Phase 1: Draw path cards
         clear_screen()
         engine.phase1_draw_paths(count=1)
-        render_state(engine.state, phase_header=f"Round {engine.state.round_number} — Phase 1: Draw Paths")
+        render_state(engine, phase_header=f"Round {engine.state.round_number} — Phase 1: Draw Paths")
         print("")
         print("--- Event log ---")
         display_and_clear_messages(engine)
@@ -126,7 +130,7 @@ def menu_and_run(engine: GameEngine) -> None:
         # Phase 2: Actions until Rest
         while True:
             clear_screen()
-            render_state(engine.state, phase_header=f"Round {engine.state.round_number} — Phase 2: Actions")
+            render_state(engine, phase_header=f"Round {engine.state.round_number} — Phase 2: Actions")
 
             print("")
 
@@ -214,7 +218,7 @@ def menu_and_run(engine: GameEngine) -> None:
 
         # Phase 3: Travel (skipped)
         clear_screen()
-        render_state(engine.state, phase_header=f"Round {engine.state.round_number} — Phase 3: Travel (skipped)")
+        render_state(engine, phase_header=f"Round {engine.state.round_number} — Phase 3: Travel (skipped)")
         print("")
         print("--- Event log ---")
         display_and_clear_messages(engine)
@@ -230,7 +234,7 @@ def menu_and_run(engine: GameEngine) -> None:
         # Phase 4: Refresh
         clear_screen()
         engine.phase4_refresh()
-        render_state(engine.state, phase_header=f"Round {engine.state.round_number} — Phase 4: Refresh")
+        render_state(engine, phase_header=f"Round {engine.state.round_number} — Phase 4: Refresh")
         print("")
         print("--- Event log ---")
         display_and_clear_messages(engine)

@@ -16,9 +16,9 @@ def provide_common_tests(state: GameState) -> list[Action]:
     def traverse_fail(e: GameEngine, eff: int, card: Card | None) -> None:  # noqa: ARG001
         e.state.ranger.injury += 1
 
-    def get_traverse_difficulty(s: GameState, card: Card | None) -> int:
+    def get_traverse_difficulty(e: GameEngine, card: Card | None) -> int:
         if card:
-            presence = card.get_current_presence()
+            presence = card.get_current_presence(e)
             return max(1, presence if presence is not None else 1)
         return 1
 
@@ -44,9 +44,9 @@ def provide_common_tests(state: GameState) -> list[Action]:
             msg = card.add_progress(eff)
             e.add_message(msg)
 
-    def get_connect_difficulty(s: GameState, card: Card | None) -> int:
+    def get_connect_difficulty(e: GameEngine, card: Card | None) -> int:
         if card:
-            presence = card.get_current_presence()
+            presence = card.get_current_presence(e)
             return max(1, presence if presence is not None else 1)
         return 1
 
@@ -72,9 +72,9 @@ def provide_common_tests(state: GameState) -> list[Action]:
         else:
             raise RuntimeError("Card not found!")
 
-    def get_avoid_difficulty(s: GameState, card: Card | None) -> int:
+    def get_avoid_difficulty(e: GameEngine, card: Card | None) -> int:
         if card:
-            presence = card.get_current_presence()
+            presence = card.get_current_presence(e)
             return max(1, presence if presence is not None else 1)
         return 1
 

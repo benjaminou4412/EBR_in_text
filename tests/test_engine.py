@@ -1362,7 +1362,7 @@ class KeywordTests(unittest.TestCase):
         # Verify no fatigue occurred (Calypsa is Friendly)
         self.assertEqual(len(ranger.deck), initial_deck_size,
                         "Deck size should not change - Friendly cards don't cause fatigue")
-        self.assertEqual(len(ranger.fatigue_pile), 0,
+        self.assertEqual(len(ranger.fatigue_stack), 0,
                         "Fatigue pile should be empty - Friendly cards don't cause fatigue")
 
     def test_obstacle_keyword_blocks_targeting(self):

@@ -141,7 +141,7 @@ class ProwlingWolhundTests(unittest.TestCase):
         wolhund = ProwlingWolhund()
         ranger = RangerState(name="Ranger", aspects={Aspect.AWA: 3, Aspect.FIT: 2, Aspect.SPI: 2, Aspect.FOC: 1})
         # Only 2 fatigue
-        ranger.fatigue_pile = [
+        ranger.fatigue_stack = [
             Card(id="f1", title="Fatigue 1"),
             Card(id="f2", title="Fatigue 2")
         ]
@@ -169,7 +169,7 @@ class ProwlingWolhundTests(unittest.TestCase):
         wolhund = ProwlingWolhund()
         ranger = RangerState(name="Ranger", aspects={Aspect.AWA: 3, Aspect.FIT: 2, Aspect.SPI: 2, Aspect.FOC: 1})
         # 3 fatigue
-        ranger.fatigue_pile = [
+        ranger.fatigue_stack = [
             Card(id="f1", title="Fatigue 1"),
             Card(id="f2", title="Fatigue 2"),
             Card(id="f3", title="Fatigue 3")
@@ -192,7 +192,7 @@ class ProwlingWolhundTests(unittest.TestCase):
         self.assertTrue(resolved)
         self.assertTrue(wolhund.exhausted)
         self.assertEqual(ranger.injury, 1)
-        self.assertEqual(len(ranger.fatigue_pile), 0)  # Fatigue discarded by injury
+        self.assertEqual(len(ranger.fatigue_stack), 0)  # Fatigue discarded by injury
         self.assertEqual(len(ranger.discard), 3)  # Fatigue moved to discard
 
 
@@ -482,7 +482,7 @@ class SunberryBrambleTests(unittest.TestCase):
         bramble = SunberryBramble()
         ranger = RangerState(name="Ranger", aspects={Aspect.AWA: 3, Aspect.FIT: 2, Aspect.SPI: 2, Aspect.FOC: 1})
         # Add some fatigue
-        ranger.fatigue_pile = [
+        ranger.fatigue_stack = [
             Card(id="f1", title="Fatigue 1"),
             Card(id="f2", title="Fatigue 2"),
             Card(id="f3", title="Fatigue 3")
@@ -503,7 +503,7 @@ class SunberryBrambleTests(unittest.TestCase):
         bramble._on_pluck_success(eng, 2, None)
 
         self.assertEqual(bramble.harm, 1)
-        self.assertEqual(len(ranger.fatigue_pile), 1)  # 2 soothed
+        self.assertEqual(len(ranger.fatigue_stack), 1)  # 2 soothed
         self.assertEqual(len(ranger.hand), 2)  # 2 moved to hand
 
     def test_pluck_test_fail_fatigues_ranger(self):
@@ -529,7 +529,7 @@ class SunberryBrambleTests(unittest.TestCase):
         # Invoke fail effect
         bramble._fail_effect(eng, 0, None)
 
-        self.assertEqual(len(ranger.fatigue_pile), 1)  # Presence is 1
+        self.assertEqual(len(ranger.fatigue_stack), 1)  # Presence is 1
         self.assertEqual(len(ranger.deck), 1)
 
     def test_mountain_effect_with_active_prey(self):
@@ -633,7 +633,7 @@ class OvergrownThicketTests(unittest.TestCase):
 
         self.assertTrue(resolved)
         self.assertEqual(thicket.progress, 1)  # 1 progress removed
-        self.assertEqual(len(ranger.fatigue_pile), 1)  # Fatigued by presence (1)
+        self.assertEqual(len(ranger.fatigue_stack), 1)  # Fatigued by presence (1)
         self.assertEqual(len(ranger.deck), 1)
 
     def test_mountain_effect_no_progress(self):

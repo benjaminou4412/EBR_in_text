@@ -13,7 +13,8 @@ CARD_JSON_FILES = {
     "explorer": "reference JSON/Ranger Cards/explorer_cards.json",
     "conciliator": "reference JSON/Ranger Cards/conciliator_cards.json",
     "valley": "reference JSON/Path Sets/valley.json",
-    "woods": "reference JSON/Path Sets/Terrain sets/woods.json"
+    "woods": "reference JSON/Path Sets/Terrain sets/woods.json",
+    "locations": "reference JSON/locations.json"
     # Add more as needed
 }
 

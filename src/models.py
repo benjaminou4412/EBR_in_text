@@ -292,15 +292,18 @@ class Card:
             engine.add_message(f"   Art description: {self.art_description}")
     
     #path card only methods
-    def get_current_presence(self) -> int | None:
+    def get_current_presence(self, engine: GameEngine) -> int | None:
         if self.presence is not None:
-            #first, get just the presence modifiers
+            #first, get just the card's own presence modifiers
             presence_mods = [mod for mod in self.modifiers if mod.target == "presence"]
+            #then, we get presence modifiers from Constant Abilities
+            presence_mods.extend([ability.modifier for ability in engine.constant_abilities 
+                                  if ability.condition_fn(engine.state, self) and ability.modifier is not None])
             #then, we apply modifiers in order of largest minimums first
             sorted_by_mins = sorted(presence_mods, key=lambda m: m.minimum_result, reverse=True)
             current_presence = self.presence
             for mod in sorted_by_mins:
-                current_presence = min(mod.minimum_result, current_presence + mod.amount)
+                current_presence = max(mod.minimum_result, current_presence + mod.amount)
             return current_presence
         else:
             return None
@@ -322,7 +325,7 @@ class Card:
                     engine.add_message(f"Challenge ({symbol.value}) on {self_display_id}: Choose a predator that will exhaust itself and harms {harm_target_display_id}:")
                 target_predator = engine.card_chooser(engine, active_predators)
                 engine.add_message(target_predator.exhaust())
-                target_predator_presence = target_predator.get_current_presence()
+                target_predator_presence = target_predator.get_current_presence(engine)
                 if target_predator_presence is not None:
                     #this should always happen
                     msg = harm_target.add_harm(target_predator_presence)
@@ -352,7 +355,7 @@ class Card:
                     engine.add_message(f"Challenge ({symbol.value}) on {self_display_id}: Choose a prey that will exhaust itself and harms {harm_target_display_id}:")
                 target_prey = engine.card_chooser(engine, active_prey)
                 engine.add_message(target_prey.exhaust())
-                target_prey_presence = target_prey.get_current_presence()
+                target_prey_presence = target_prey.get_current_presence(engine)
                 if target_prey_presence is not None:
                     #this should always happen
                     msg = harm_target.add_harm(target_prey_presence)
@@ -507,7 +510,7 @@ class RangerState:
     deck: list[Card] = field(default_factory=lambda: cast(list[Card], []))
     hand: list[Card] = field(default_factory=lambda: cast(list[Card], []))
     discard: list[Card] = field(default_factory=lambda: cast(list[Card], []))
-    fatigue_pile: list[Card] = field(default_factory=lambda: cast(list[Card], []))
+    fatigue_stack: list[Card] = field(default_factory=lambda: cast(list[Card], []))
     energy: dict[Aspect, int] = field(init=False)
     injury: int = 0
     ranger_token_location: str = ""
@@ -658,7 +661,7 @@ class Action:
     # If the action requires a target, provide candidate Card targets based on state
     target_provider: Optional[Callable[[GameState], list['Card']]] = None
     # Computes difficulty for the chosen target (or state)
-    difficulty_fn: Callable[[GameState, Optional[Card]], int] = lambda _s, _t: 1
+    difficulty_fn: Callable[[GameEngine, Optional[Card]], int] = lambda _s, _t: 1
     # Effects
     on_success: Callable[[GameEngine, int, Optional[Card]], None] = lambda _s, _e, _t: None
     on_fail: Optional[Callable[[GameEngine, int, Optional[Card]], None]] = lambda _s, _e, _t: None
@@ -698,6 +701,8 @@ class ConstantAbility:
     # Condition function: determines when this ability is "active"
     # Returns True if the ability should currently apply
     condition_fn: Callable[[GameState, Card], bool]
+
+    modifier: ValueModifier | None = None
 
     # Optional: human-readable description for debugging
     description: str = ""

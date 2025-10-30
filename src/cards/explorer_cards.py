@@ -46,7 +46,7 @@ class PeerlessPathfinder(Card):
         engine.move_ranger_token_to_card(target)
 
         # Target feature fatigues you
-        presence = target.get_current_presence()
+        presence = target.get_current_presence(engine)
         if presence is not None and presence > 0:
             engine.fatigue_ranger(engine.state.ranger, presence)
 

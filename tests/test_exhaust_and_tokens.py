@@ -287,7 +287,7 @@ class PeerlessPathfinderTests(unittest.TestCase):
         # Initial state
         self.assertFalse(role.is_exhausted())
         self.assertEqual(state.ranger.ranger_token_location, role.id)
-        self.assertEqual(len(state.ranger.fatigue_pile), 0)
+        self.assertEqual(len(state.ranger.fatigue_stack), 0)
         self.assertEqual(len(state.ranger.deck), 10)
 
         # Activate the ability
@@ -300,7 +300,7 @@ class PeerlessPathfinderTests(unittest.TestCase):
         self.assertEqual(state.ranger.ranger_token_location, feature.id)
 
         # Should have suffered fatigue equal to feature's presence (1)
-        self.assertEqual(len(state.ranger.fatigue_pile), 1)
+        self.assertEqual(len(state.ranger.fatigue_stack), 1)
         self.assertEqual(len(state.ranger.deck), 9)
 
     def test_peerless_pathfinder_with_high_presence_feature(self):
@@ -335,7 +335,7 @@ class PeerlessPathfinderTests(unittest.TestCase):
         ability.on_success(engine, 0, feature)
 
         # Should suffer 3 fatigue
-        self.assertEqual(len(state.ranger.fatigue_pile), 3)
+        self.assertEqual(len(state.ranger.fatigue_stack), 3)
         self.assertEqual(len(state.ranger.deck), 7)
 
     def test_peerless_pathfinder_multiple_activations(self):
@@ -505,7 +505,7 @@ class RangerTokenClearingTests(unittest.TestCase):
         self.assertEqual(state.ranger.ranger_token_location, feature.id)
 
         # Ranger should have suffered 2 fatigue
-        self.assertEqual(len(state.ranger.fatigue_pile), 2)
+        self.assertEqual(len(state.ranger.fatigue_stack), 2)
 
         # Check and process clears (feature should clear by ranger token)
         cleared = engine.check_and_process_clears()

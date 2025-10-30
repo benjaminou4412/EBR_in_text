@@ -57,9 +57,9 @@ class ProwlingWolhund(Card):
     def _crest_effect(self, engine: GameEngine) -> bool:
         """Crest effect: If you have 3 or more fatigue, exhaust this being >> Suffer 1 injury"""
         self_display_id = get_display_id(engine.state.all_cards_in_play(), self)
-        enough_fatigue = len(engine.state.ranger.fatigue_pile) >= 3
+        enough_fatigue = len(engine.state.ranger.fatigue_stack) >= 3
         if enough_fatigue:
-            engine.add_message(f"Challenge (Crest) on {self_display_id}: You have {len(engine.state.ranger.fatigue_pile)} fatigue - Prowling Wolhund exhausts itself and you suffer 1 injury!")
+            engine.add_message(f"Challenge (Crest) on {self_display_id}: You have {len(engine.state.ranger.fatigue_stack)} fatigue - Prowling Wolhund exhausts itself and you suffer 1 injury!")
             self.exhaust()
             engine.injure_ranger(engine.state.ranger)
             return True
@@ -129,7 +129,7 @@ class SitkaBuck(Card):
             target_predator = engine.card_chooser(engine, active_predators)
             engine.add_message(target_predator.exhaust())
             engine.add_message(target_predator.add_harm(2))
-            curr_presence = target_predator.get_current_presence()
+            curr_presence = target_predator.get_current_presence(engine)
             if curr_presence is not None:
                 engine.add_message(self.add_harm(curr_presence))
                 return True
@@ -374,7 +374,7 @@ class SunberryBramble(Card):
 
     def _fail_effect(self, engine: GameEngine, effort: int, card: Card | None) -> None:
         engine.add_message(f"Target {self.title} fatigues you.")
-        curr_presence = self.get_current_presence()
+        curr_presence = self.get_current_presence(engine)
         if curr_presence is not None:
             engine.fatigue_ranger(engine.state.ranger, curr_presence)
 
@@ -440,7 +440,7 @@ class OvergrownThicket(Card):
         if self.progress > 0:
             engine.add_message(f"Challenge (Mountain) on {self_display_id}: discards 1 progress to fatigue you.")
             engine.add_message(self.remove_progress(1)[1])
-            curr_presence = self.get_current_presence()
+            curr_presence = self.get_current_presence(engine)
             if curr_presence is not None:
                 engine.fatigue_ranger(engine.state.ranger, curr_presence)
             return True
