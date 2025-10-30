@@ -38,6 +38,7 @@ class GameEngine:
         self.constant_abilities: list[ConstantAbility] = []
         self.message_queue: list[MessageEvent] = []
         self.day_has_ended: bool = False
+        self.reconstruct()
 
     def _default_chooser(self, _engine: 'GameEngine', choices: list[Card]) -> Card:  # noqa: ARG002
         """Placeholder default; tests should pass in more sophisticated choosers, runtime should prompt player"""
@@ -81,7 +82,7 @@ class GameEngine:
             self.remove_listeners_by_id(card.id)
     
     def get_valid_targets(self, action: Action) -> list[Card]:
-        """Get valid targets for an action, respecting Obstacle keyword.
+        """Get valid targets for an action, respecting Obstacle and Friendly keyword.
 
         Applies game rule filters (Obstacle, etc.) to the raw candidate list.
         """
@@ -89,21 +90,34 @@ class GameEngine:
             return []
 
         raw_candidates = action.target_provider(self.state)
+
         if action.is_test:
-            return self.filter_by_obstacles(raw_candidates)
-        else:
-            return raw_candidates
+            raw_candidates = self.filter_by_obstacles(raw_candidates)
+
+        source_card = self.state.get_card_by_id(action.source_id)
+
+        if source_card and source_card.has_trait("Weapon"):
+            raw_candidates = [c for c in raw_candidates if not c.has_keyword(Keyword.FRIENDLY)]
+
+        return raw_candidates
 
     def filter_by_obstacles(self, candidates: list[Card]) -> list[Card]:
         """Filter candidates to exclude cards past the nearest Obstacle"""
-        from .models import Keyword, Area
-
+        # Gather active ConstantAbilities that block interaction
+        ability_ids = [ability.source_card_id for ability in self.constant_abilities 
+                     if ability.ability_type==ConstantAbilityType.PREVENT_INTERACTION_PAST
+                     and ability.is_active(self.state, Card())] #card input unused; pass in empty card dummy
+        ability_areas : list[Area]= []
+        for id in ability_ids:
+            area = self.state.get_card_area_by_id(id)
+            if area is None:
+                raise RuntimeError(f"ability_id points to no Card object!")
+            else:
+                ability_areas.append(area)
         # Find closest ready Obstacle
         closest_obstacle_area = None
         for area in [Area.WITHIN_REACH, Area.ALONG_THE_WAY, Area.SURROUNDINGS]:
-            cards_in_area = self.state.areas[area]
-            if any(card.has_keyword(Keyword.OBSTACLE) and card.is_ready()
-                   for card in cards_in_area):
+            if area in ability_areas:
                 closest_obstacle_area = area
                 break
 
@@ -129,7 +143,6 @@ class GameEngine:
         if target_area is None:
             raise RuntimeError(f"Something went horribly wrong, this target has no area.")
 
-        # TODO:Filter out Friendly cards
         all_cards = self.state.all_cards_in_play()
         fatiguing_cards = [card for card in cards_between if card.is_ready() and not card.has_keyword(Keyword.FRIENDLY)]
         target_display_id = get_display_id(all_cards, target)

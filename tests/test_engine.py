@@ -722,11 +722,6 @@ class WalkWithMeTests(unittest.TestCase):
                         card_chooser=pick_first,
                         response_decider=always_yes)
 
-        # Register listener when card enters hand
-        listener = wwm.enters_hand(eng)
-        self.assertIsNotNone(listener, "Walk With Me should create a listener")
-        if listener:  # Type guard for mypy
-            eng.register_listeners(listener)
 
         # Perform Traverse test (3 effort = 1 FIT energy + 2 Exploration icons)
         from src.registry import provide_common_tests
@@ -800,10 +795,7 @@ class WalkWithMeTests(unittest.TestCase):
                         challenge_drawer=fixed_draw(0, ChallengeIcon.SUN),
                         response_decider=always_no)
 
-        # Register listener
-        listener = wwm.enters_hand(eng)
-        if listener:  # Type guard for mypy
-            eng.register_listeners(listener)
+        
 
         # Perform Traverse test
         from src.registry import provide_common_tests
@@ -874,10 +866,7 @@ class WalkWithMeTests(unittest.TestCase):
                         challenge_drawer=fixed_draw(0, ChallengeIcon.SUN),
                         response_decider=always_yes)
 
-        # Register listener
-        listener = wwm.enters_hand(eng)
-        if listener:  # Type guard for mypy
-            eng.register_listeners(listener)
+        
 
         # Perform Traverse test
         from src.registry import provide_common_tests
@@ -941,10 +930,7 @@ class WalkWithMeTests(unittest.TestCase):
                         challenge_drawer=fixed_draw(0, ChallengeIcon.SUN),
                         response_decider=always_yes)
 
-        # Register listener
-        listener = wwm.enters_hand(eng)
-        if listener:  # Type guard for mypy
-            eng.register_listeners(listener)
+        
 
         # Perform Traverse test
         from src.registry import provide_common_tests
@@ -1004,11 +990,6 @@ class WalkWithMeTests(unittest.TestCase):
         eng = GameEngine(state,
                         challenge_drawer=fixed_draw(0, ChallengeIcon.SUN),
                         response_decider=always_yes)
-
-        # Register listener
-        listener = wwm.enters_hand(eng)
-        if listener:  # Type guard for mypy
-            eng.register_listeners(listener)
 
         # Perform CONNECT test (not Traverse!)
         from src.registry import provide_common_tests
@@ -1090,10 +1071,6 @@ class WalkWithMeTests(unittest.TestCase):
                         card_chooser=pick_being_b,
                         response_decider=always_yes)
 
-        # Register listener
-        listener = wwm.enters_hand(eng)
-        if listener:  # Type guard for mypy
-            eng.register_listeners(listener)
 
         # Perform Traverse test with 5 effort
         from src.registry import provide_common_tests

@@ -127,6 +127,7 @@ class ConstantAbilityType(Enum):
     SKIP_INTERACTION_FATIGUE = "skip_interaction_fatigue" # Friendly
     IGNORE_KEYWORD = "ignore_keyword" #spiderline stanchion
     TREAT_AS_EXHAUSTED = "treat_as_exhausted" #dolewood canopy
+    IGNORE_WEAPON_EFFECTS = "ignore_weapon_effects" #Friendly
 
     # Enablement (grant access to abilities)
     GRANT_ABILITY = "grant_ability" #deep woods
@@ -209,7 +210,19 @@ class Card:
         return None
     
     def get_constant_abilities(self) -> list[ConstantAbility] | None:
-        return None
+        if self.keywords:
+            result: list[ConstantAbility] = []
+            for keyword in self.keywords:
+                if keyword == Keyword.OBSTACLE:
+                    result.append(ConstantAbility(ConstantAbilityType.PREVENT_INTERACTION_PAST,
+                                                  self.id,
+                                                  lambda _s, _c: self.is_ready()))
+                    result.append(ConstantAbility(ConstantAbilityType.PREVENT_TRAVEL,
+                                                  self.id,
+                                                  lambda _s, _c: self.is_ready()))
+            return result
+        else:
+            return None
 
     def is_exhausted(self) -> bool:
         #TODO: take into account stuff that says to "Treat cards as exhausted"
@@ -220,7 +233,7 @@ class Card:
         return not self.exhausted
     
     def has_keyword(self, keyword: Keyword) -> bool:
-        #TODO: take into account added keywords
+        #TODO: take into account keywords added by ConstantAbilities
         return keyword in self.keywords
     
     def has_trait(self, trait: str) -> bool:

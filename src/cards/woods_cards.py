@@ -220,7 +220,11 @@ class CausticMulcher(Card):
         return self.get_constant_abilities()
 
     def get_constant_abilities(self) -> list[ConstantAbility] | None:
-        return [self._beings_attached_do_not_ready(), self._ranger_token_prevents_travel(), self._ranger_token_cannot_move()]
+        keyword_abilities = super().get_constant_abilities() or []
+        custom_abilities = [self._beings_attached_do_not_ready(),
+                             self._ranger_token_prevents_travel(), 
+                             self._ranger_token_cannot_move()]
+        return keyword_abilities + custom_abilities
 
     def _beings_attached_do_not_ready(self) -> ConstantAbility:
         return ConstantAbility(ability_type=ConstantAbilityType.PREVENT_READYING,
@@ -399,6 +403,9 @@ class OvergrownThicket(Card):
         self.art_description = "The trees before you have grown thick and tangled, forming " \
         "a nearly impenetrable barrier in your path."
 
+    def get_constant_abilities(self) -> list[ConstantAbility] | None:
+        return super().get_constant_abilities()
+    
     def get_tests(self) -> list[Action] | None:
         """Returns all tests this card provides"""
         return [

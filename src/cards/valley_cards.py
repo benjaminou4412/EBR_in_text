@@ -2,6 +2,8 @@
 Valley set card implementations
 """
 from typing import Callable
+
+
 from ..models import *
 from ..json_loader import load_card_fields #type:ignore
 from ..engine import GameEngine
@@ -18,9 +20,6 @@ class CalypsaRangerMentor(Card):
         "broad chest. She carries a simple walking stick shaped like a shepherd's crook, " \
         "reinforced by a wrapping around the grip point and what might be bone ornamentation along its hook."
 
-    def get_tests(self) -> list[Action]:
-        """Returns all tests this card provides"""
-        return []
 
     def get_challenge_handlers(self) -> dict[ChallengeIcon, Callable[[GameEngine], bool]] | None:
         """Returns challenge symbol effects for this card"""
