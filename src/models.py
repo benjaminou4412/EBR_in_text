@@ -367,8 +367,9 @@ class Card:
             engine.add_message(f"Challenge ({symbol.value}) on {self_display_id}: (no prey in play)")
             return False
         
-    #todo: validate inputs on all these setters; amount should always be positive
     def add_progress(self, amount: int) -> str:
+        if amount < 0:
+            raise ValueError(f"'amount' in add_progress should always be non-negative. Use remove_progress instead.")
         if not self.progress_forbidden:
             self.progress = max(0, self.progress + amount)
             return f"Added {amount} progress to {self.title}. Now has {self.progress} progress."
@@ -376,6 +377,8 @@ class Card:
             return f"Progress cannot be added to {self.title}!"
 
     def add_harm(self, amount: int) -> str:
+        if amount < 0:
+            raise ValueError(f"'amount' in add_harm should always be non-negative. Use remove_harm instead.")
         if not self.harm_forbidden:
             self.harm = max(0, self.harm + amount)
             return f"Added {amount} harm to {self.title}. Now has {self.harm} harm."
@@ -383,6 +386,8 @@ class Card:
             return f"Harm cannot be added to {self.title}!"
 
     def remove_progress(self, amount: int) -> tuple[int,str]: #amount of tokens actually removed often matters
+        if amount < 0:
+            raise ValueError(f"'amount' in remove_progress should always be non-negative. Use add_progress instead.")
         if not self.progress_forbidden:
             amount_removed = min(self.progress, amount)
             self.progress = self.progress - amount_removed
@@ -391,6 +396,8 @@ class Card:
             return 0, f"Progress cannot exist on {self.title}!"
 
     def remove_harm(self, amount: int) -> tuple[int, str]: 
+        if amount < 0:
+            raise ValueError(f"'amount' in remove_harm should always be non-negative. Use add_harm instead.")
         if not self.harm_forbidden:
             amount_removed = min(self.harm, amount)
             self.harm = self.harm - amount_removed
@@ -635,10 +642,16 @@ class GameState:
         target_area = self.get_card_area_by_id(target.id)
         
         # Cards attached to role are ALWAYS between (all areas)
-        # TODO: When we have attachments, add them here
+        attached_ids = self.role_card.attached_card_ids
+        for id in attached_ids:
+            card = self.get_card_by_id(id)
+            if card is None:
+                raise RuntimeError(f"Card attached to role does not exist!")
+            else:
+                between.append(card)
         
         if target_area == Area.WITHIN_REACH:
-            # Only role attachments (already added above)
+            #role attachments already added above
             pass
         elif target_area == Area.ALONG_THE_WAY:
             # Role attachments + Within Reach

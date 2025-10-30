@@ -365,6 +365,118 @@ class CausticMulcherConstantAbilitiesTests(unittest.TestCase):
         self.assertEqual(len(prevention_abilities), 1)
         self.assertTrue(prevention_abilities[0].is_active(state, mulcher))
 
+    def test_ranger_token_movement_blocked_from_mulcher(self):
+        """Test that attempting to move ranger token from Caustic Mulcher actually fails."""
+        role = PeerlessPathfinder()
+        ranger = make_test_ranger()
+        state = GameState(ranger=ranger, role_card=role)
+        engine = GameEngine(state)
+
+        # Add role to player area so it can be found
+        state.areas[Area.PLAYER_AREA].append(role)
+
+        mulcher = CausticMulcher()
+        other_card = Card(
+            id="other_card",
+            title="Other Card",
+            card_types={CardType.PATH},
+            keywords=set()
+        )
+        state.areas[Area.WITHIN_REACH].extend([mulcher, other_card])
+
+        # Register abilities
+        abilities = mulcher.enters_play(engine, Area.WITHIN_REACH)
+        if abilities:
+            engine.register_constant_abilities(abilities)
+
+        # Move ranger token to mulcher
+        engine.move_ranger_token_to_card(mulcher)
+        self.assertEqual(state.ranger.ranger_token_location, mulcher.id)
+
+        # Attempt to move ranger token to other card - should fail
+        result = engine.move_ranger_token_to_card(other_card)
+        self.assertFalse(result, "Ranger token movement should be blocked")
+        self.assertEqual(state.ranger.ranger_token_location, mulcher.id,
+                        "Ranger token should still be on mulcher")
+
+    def test_ranger_token_movement_blocked_even_when_exhausted(self):
+        """Test that ranger token cannot move from Caustic Mulcher even when exhausted.
+
+        The ranger token movement prevention ability is ALWAYS active, not conditional
+        on the mulcher being ready.
+        """
+        role = PeerlessPathfinder()
+        ranger = make_test_ranger()
+        state = GameState(ranger=ranger, role_card=role)
+        engine = GameEngine(state)
+
+        # Add role to player area so it can be found
+        state.areas[Area.PLAYER_AREA].append(role)
+
+        mulcher = CausticMulcher()
+        other_card = Card(
+            id="other_card",
+            title="Other Card",
+            card_types={CardType.PATH},
+            keywords=set()
+        )
+        state.areas[Area.WITHIN_REACH].extend([mulcher, other_card])
+
+        # Register abilities
+        abilities = mulcher.enters_play(engine, Area.WITHIN_REACH)
+        if abilities:
+            engine.register_constant_abilities(abilities)
+
+        # Move ranger token to mulcher and exhaust it
+        engine.move_ranger_token_to_card(mulcher)
+        mulcher.exhaust()
+        self.assertTrue(mulcher.is_exhausted())
+
+        # Attempt to move ranger token - should still be blocked even when exhausted
+        result = engine.move_ranger_token_to_card(other_card)
+        self.assertFalse(result, "Ranger token movement should be blocked even when mulcher is exhausted")
+        self.assertEqual(state.ranger.ranger_token_location, mulcher.id,
+                        "Ranger token should still be on mulcher")
+
+    def test_ranger_token_can_move_when_not_on_mulcher(self):
+        """Test that ranger token CAN move normally when not on Caustic Mulcher."""
+        role = PeerlessPathfinder()
+        ranger = make_test_ranger()
+        state = GameState(ranger=ranger, role_card=role)
+        engine = GameEngine(state)
+
+        # Add role to player area so it can be found
+        state.areas[Area.PLAYER_AREA].append(role)
+
+        mulcher = CausticMulcher()
+        card1 = Card(
+            id="card1",
+            title="Card 1",
+            card_types={CardType.PATH},
+            keywords=set()
+        )
+        card2 = Card(
+            id="card2",
+            title="Card 2",
+            card_types={CardType.PATH},
+            keywords=set()
+        )
+        state.areas[Area.WITHIN_REACH].extend([mulcher, card1, card2])
+
+        # Register abilities
+        abilities = mulcher.enters_play(engine, Area.WITHIN_REACH)
+        if abilities:
+            engine.register_constant_abilities(abilities)
+
+        # Move ranger token to card1 (not the mulcher)
+        engine.move_ranger_token_to_card(card1)
+        self.assertEqual(state.ranger.ranger_token_location, card1.id)
+
+        # Should be able to move to card2 - mulcher's ability doesn't apply
+        result = engine.move_ranger_token_to_card(card2)
+        self.assertTrue(result, "Ranger token movement should succeed when not on mulcher")
+        self.assertEqual(state.ranger.ranger_token_location, card2.id)
+
 
 class CausticMulcherWrestTests(unittest.TestCase):
     """Tests for Caustic Mulcher's Wrest test."""

@@ -4,22 +4,16 @@ A living checklist. Roughly prioritized.
 
 
 
--Travel
-    -just travel procedures; no campaign log entries or arrival setup
-    -Finish implementing travel-blocking abilities (Obstacle and Caustic Mulcher)
 
-- Prevent challenge effect re‑trigger when a card moves into an already‑resolved area during the same test
 - Implement ordering selection:
   -scouting/remember
   -challenge effects in the same zone
   -response abilities at the same timing point
   -go back and implement arrival setup now that we have scouting
+- Implement actual challenge card objects and challenge deck behaviors
 
 - Arrival setup for locations
 
-
-
-- Implement actual challenge card objects and challenge deck behaviors
 - Implement at least two other Valley NPCs
 - Implement Refresh abilites and single-sided weather
 - Implement weather-flipping

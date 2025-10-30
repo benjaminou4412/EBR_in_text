@@ -218,7 +218,7 @@ class GameEngine:
 
 
 
-        # Step 4: Determine success or failure and apply results. TODO: notify "after you succeed/fail" listeners
+        # Step 4: Determine success or failure and apply results.
         self.add_message(f"Step 4: Determine success or failure and apply results.")
         self.add_message(f"Total effort committed: {base_effort}")
         self.add_message(f"Test difficulty: {difficulty}")
@@ -257,14 +257,18 @@ class GameEngine:
         ]
 
         zero_challenge_effects_resolved = True
+        already_resolved_ids: list[tuple[str, ChallengeIcon]] = [] 
+        #track which cards had a challenge effect resolve so they don't resolve again
         for area in challenge_areas:
             for card in self.state.areas[area]:
                 if card.is_ready():
                     # Get handlers directly from the card (always current)
                     handlers = card.get_challenge_handlers()
-                    if handlers and symbol in handlers:
-                        zero_challenge_effects_resolved = False
-                        handlers[symbol](self)
+                    if handlers and symbol in handlers and (card.id, symbol) not in already_resolved_ids:
+                        resolved = handlers[symbol](self)
+                        if resolved:
+                            already_resolved_ids.append((card.id, symbol))
+                            zero_challenge_effects_resolved = False 
                         cleared.extend(self.check_and_process_clears())
         if zero_challenge_effects_resolved:
             self.add_message("No challenge effects resolved.")
@@ -323,14 +327,25 @@ class GameEngine:
         if curr_card is None:
             raise RuntimeError(f"The current location id of the ranger token points to no card!")
         else:
-            #TODO: add check for effects that prevent ranger token movement
-            if curr_location == card.id:
-                self.add_message(f"Your Ranger token is already on {card.title}.")
+            blockers = [blocker for blocker in self.constant_abilities 
+                        if blocker.ability_type == ConstantAbilityType.PREVENT_RANGER_TOKEN_MOVE
+                        and blocker.condition_fn(self.state, card)]
+            if blockers:
+                blocker_card = self.state.get_card_by_id(blockers[0].source_card_id)
+                if blocker_card is None:
+                    raise RuntimeError(f"Card blocking ranger token movement does not exist!")
+                
+                blocker_display = get_display_id(self.state.all_cards_in_play(), blocker_card)
+                self.add_message(f"Your Ranger token cannot move due to {blocker_display}")
                 return False
             else:
-                self.state.ranger.ranger_token_location = card.id
-                self.add_message(f"Your Ranger token moves from {curr_card.title} to {card.title}.")
-                return True
+                if curr_location == card.id:
+                    self.add_message(f"Your Ranger token is already on {card.title}.")
+                    return False
+                else:
+                    self.state.ranger.ranger_token_location = card.id
+                    self.add_message(f"Your Ranger token moves from {curr_card.title} to {card.title}.")
+                    return True
 
     def move_ranger_token_to_role(self) -> None:
         """Convenience method for when cards are discarded and the Ranger Token returns to the role card"""
@@ -662,13 +677,17 @@ class GameEngine:
             self.add_message(f"Steps 8, 9, and 10: Build path deck, resolve arrival setup, and finishing touches.")
 
 
-        #load terrain set; TODO: define amounts of each card in path sets somewhere
-        woods_set: list[Card] = build_woods_path_deck()
+        #load terrain set
+        woods_set: list[Card] = build_woods_path_deck() #TODO: path set should vary based on terrain type
         
         
         #TODO: load location set or 3 random Valley NPCs 
         #For now, just load in Calypsa
-        location_set_or_valley: list[Card] = select_three_random_valley_cards()
+        if self.state.location.has_trait("Pivotal"):
+            location_set_or_valley: list[Card] = select_three_random_valley_cards() #TODO: replace with pivotal card set
+        else:
+            location_set_or_valley: list[Card] = select_three_random_valley_cards()
+        
 
         #TODO: check weather, location, and missions for additional cards from "path deck assembly"
         #shuffle everything together
@@ -680,6 +699,7 @@ class GameEngine:
         #TODO: resolve missions to "arrive at" the new location
         #TODO: resolve arrival setup
         #for now, default to drawing 1 path card:
+        self.add_message(f"Arrival Setup:")
         self.draw_path_card()
 
     def phase4_refresh(self):

@@ -1454,5 +1454,158 @@ class KeywordTests(unittest.TestCase):
         self.assertIn(doe, valid_targets)
 
 
+class ChallengeRetriggerPreventionTests(unittest.TestCase):
+    """Tests for preventing challenge effects from retriggering when cards move during challenge resolution"""
+
+    def test_challenge_effect_does_not_retrigger_when_card_moves_to_challenge_area(self):
+        """Test that a challenge effect doesn't trigger twice when a card moves into a challenge area during resolution"""
+        from src.cards import SitkaDoe, SitkaBuck
+
+        doe = SitkaDoe()
+        buck = SitkaBuck()
+
+        # Initial setup: Doe in Within Reach (challenge area), Buck in Surroundings (not challenge area)
+        ranger = RangerState(
+            name="Ranger",
+            hand=[],
+            aspects={Aspect.AWA: 3, Aspect.FIT: 2, Aspect.SPI: 2, Aspect.FOC: 1}
+        )
+        state = GameState(
+            ranger=ranger,
+            areas={
+                Area.SURROUNDINGS: [buck],  # Buck starts here (not a challenge area)
+                Area.ALONG_THE_WAY: [],
+                Area.WITHIN_REACH: [doe],  # Doe here with Sun effect
+                Area.PLAYER_AREA: [],
+            }
+        )
+
+        # Draw SUN symbol - this should trigger doe's Sun effect which moves buck to Within Reach
+        eng = GameEngine(state, challenge_drawer=fixed_draw(0, ChallengeIcon.SUN))
+
+        # Perform a test to trigger challenge resolution
+        dummy_action = Action(
+            id="dummy",
+            name="dummy",
+            aspect=Aspect.AWA,
+            approach=Approach.EXPLORATION,
+            difficulty_fn=lambda _s, _t: 1,
+            on_success=lambda _e, _eff, _t: None,
+        )
+        eng.perform_test(dummy_action, CommitDecision(energy=1, hand_indices=[]), target_id=None)
+
+        # Verify buck moved to Within Reach
+        self.assertEqual(len(state.areas[Area.WITHIN_REACH]), 2, "Buck should have moved to Within Reach")
+        self.assertIn(buck, state.areas[Area.WITHIN_REACH], "Buck should be in Within Reach")
+
+        # The key check: messages should only show ONE sun effect trigger for the doe
+        # Not two (one before buck moved, one after)
+        messages = [msg.message for msg in eng.get_messages()]
+        sun_triggers = [msg for msg in messages if "Challenge (Sun) on" in msg and "Sitka Doe" in msg]
+        self.assertEqual(len(sun_triggers), 1,
+                        "Doe's Sun effect should only trigger once, not again after buck moves to Within Reach")
+
+    def test_multiple_cards_with_same_symbol_each_trigger_once(self):
+        """Test that multiple cards with the same challenge symbol each trigger exactly once"""
+        from src.cards import SitkaDoe
+
+        doe_a = SitkaDoe()
+        doe_b = SitkaDoe()
+
+        # Both does in Within Reach
+        ranger = RangerState(
+            name="Ranger",
+            hand=[],
+            aspects={Aspect.AWA: 3, Aspect.FIT: 2, Aspect.SPI: 2, Aspect.FOC: 1}
+        )
+        state = GameState(
+            ranger=ranger,
+            areas={
+                Area.SURROUNDINGS: [],
+                Area.ALONG_THE_WAY: [],
+                Area.WITHIN_REACH: [doe_a, doe_b],
+                Area.PLAYER_AREA: [],
+            }
+        )
+
+        # Draw SUN symbol - both does have Sun effects
+        eng = GameEngine(state, challenge_drawer=fixed_draw(0, ChallengeIcon.SUN))
+
+        # Perform a test to trigger challenge resolution
+        dummy_action = Action(
+            id="dummy",
+            name="dummy",
+            aspect=Aspect.AWA,
+            approach=Approach.EXPLORATION,
+            difficulty_fn=lambda _s, _t: 1,
+            on_success=lambda _e, _eff, _t: None,
+        )
+        eng.perform_test(dummy_action, CommitDecision(energy=1, hand_indices=[]), target_id=None)
+
+        # Each doe should trigger exactly once
+        messages = [msg.message for msg in eng.get_messages()]
+        sun_triggers = [msg for msg in messages if "Challenge (Sun) on" in msg and "Sitka Doe" in msg]
+        self.assertEqual(len(sun_triggers), 2,
+                        "Both does should trigger their Sun effects exactly once each")
+
+    def test_challenge_effect_can_trigger_again_on_next_test(self):
+        """Test that challenge effects can trigger again on a subsequent test (not permanently blocked)"""
+        from src.cards import SitkaDoe, SitkaBuck
+
+        doe = SitkaDoe()
+        buck_a = SitkaBuck()
+        buck_b = SitkaBuck()
+
+        ranger = RangerState(
+            name="Ranger",
+            hand=[],
+            aspects={Aspect.AWA: 3, Aspect.FIT: 2, Aspect.SPI: 2, Aspect.FOC: 1}
+        )
+        state = GameState(
+            ranger=ranger,
+            areas={
+                Area.SURROUNDINGS: [],
+                Area.ALONG_THE_WAY: [buck_a],  # First buck
+                Area.WITHIN_REACH: [doe],
+                Area.PLAYER_AREA: [],
+            }
+        )
+
+        # First test with SUN symbol
+        eng = GameEngine(state, challenge_drawer=fixed_draw(0, ChallengeIcon.SUN))
+
+        dummy_action = Action(
+            id="dummy",
+            name="dummy",
+            aspect=Aspect.AWA,
+            approach=Approach.EXPLORATION,
+            difficulty_fn=lambda _s, _t: 1,
+            on_success=lambda _e, _eff, _t: None,
+        )
+        eng.perform_test(dummy_action, CommitDecision(energy=1, hand_indices=[]), target_id=None)
+
+        # Buck A should have moved
+        self.assertIn(buck_a, state.areas[Area.WITHIN_REACH], "Buck A should have moved on first test")
+
+        # Clear messages
+        eng.clear_messages()
+
+        # Add second buck to Along the Way
+        state.areas[Area.ALONG_THE_WAY].append(buck_b)
+
+        # Second test with SUN symbol (new test, so effects should trigger again)
+        # The already_resolved_ids list is local to each perform_test call, so it resets automatically
+        eng.perform_test(dummy_action, CommitDecision(energy=1, hand_indices=[]), target_id=None)
+
+        # Buck B should also have moved (doe's Sun effect triggered again)
+        self.assertIn(buck_b, state.areas[Area.WITHIN_REACH], "Buck B should have moved on second test")
+
+        # Verify Sun effect triggered on second test
+        messages = [msg.message for msg in eng.get_messages()]
+        sun_triggers = [msg for msg in messages if "Challenge (Sun) on" in msg and "Sitka Doe" in msg]
+        self.assertEqual(len(sun_triggers), 1,
+                        "Doe's Sun effect should trigger again on the second test")
+
+
 if __name__ == '__main__':
     unittest.main()
