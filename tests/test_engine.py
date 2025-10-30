@@ -486,7 +486,7 @@ class CommonTestsTests(unittest.TestCase):
 
         # Get the Sitka Doe spook action from registry
         from src.registry import provide_card_tests
-        actions = provide_card_tests(state)
+        actions = provide_card_tests(eng)
         spook = next(a for a in actions if a.verb == "Spook" and "Sitka Doe" in a.name)
 
         # Perform the spook action with 1 SPI energy + 1 Conflict card = 2 effort, difficulty 1
@@ -523,7 +523,7 @@ class CommonTestsTests(unittest.TestCase):
 
         # Get the Sitka Doe spook action from registry
         from src.registry import provide_card_tests
-        actions = provide_card_tests(state)
+        actions = provide_card_tests(eng)
         spook = next(a for a in actions if a.verb == "Spook" and "Sitka Doe" in a.name)
 
         # Perform the spook action with 1 SPI energy + no cards + (-2 modifier) = 0 effort (clamped), difficulty 1

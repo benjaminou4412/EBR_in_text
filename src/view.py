@@ -19,8 +19,27 @@ def set_show_art_descriptions(show: bool) -> None:
     _show_art_descriptions = show
 
 
-def render_card_detail(card: Card, index: int | None = None, display_id: str | None = None) -> None:
-    """Render a single card with full details in multi-line format"""
+def render_card_detail(card: Card, state: GameState, displayed_ids: set[str], index: int | None = None, display_id: str | None = None, indent_level: int = 0) -> None:
+    """Render a single card with full details in multi-line format, including attachments
+
+    Args:
+        card: The card to render
+        state: GameState for looking up attached cards
+        displayed_ids: Set of card IDs already displayed (to prevent duplicates)
+        index: Optional numeric index to display before card name
+        display_id: Optional display ID to use instead of card title
+        indent_level: Indentation level for nested attachments (0 = no indent)
+    """
+    # Skip if already displayed
+    if card.id in displayed_ids:
+        return
+
+    # Mark this card as displayed
+    displayed_ids.add(card.id)
+
+    # Calculate indentation
+    indent = "   " * indent_level
+
     # Use display_id if provided, otherwise just use title
     card_name = display_id if display_id else card.title
 
@@ -43,25 +62,25 @@ def render_card_detail(card: Card, index: int | None = None, display_id: str | N
         is_exhausted = " (EXHAUSTED)"
 
     if index is not None:
-        print(f"{index}. {card_name} {type_line}" + is_exhausted)
+        print(f"{indent}{index}. {card_name} {type_line}" + is_exhausted)
     else:
-        print(f"{card_name} {type_line}" + is_exhausted)
+        print(f"{indent}{card_name} {type_line}" + is_exhausted)
 
     # Art description if present and enabled
     if _show_art_descriptions and card.art_description:
         terminal_width = shutil.get_terminal_size(fallback=(120, 24)).columns
-        max_art_width = terminal_width - 6
+        max_art_width = terminal_width - 6 - len(indent)
         if len(card.art_description) > max_art_width:
             wrapped_lines = textwrap.wrap(card.art_description, width=max_art_width)
             for line in wrapped_lines:
                 if line == wrapped_lines[0]:
-                    print(f"   {{Art: {line}")
+                    print(f"{indent}   {{Art: {line}")
                 elif line == wrapped_lines[len(wrapped_lines)-1]:
-                    print(f"   {line}}}")
+                    print(f"{indent}   {line}}}")
                 else:
-                    print(f"   {line}")
+                    print(f"{indent}   {line}")
         else:
-            print(f"   {{Art: {card.art_description}}}")
+            print(f"{indent}   {{Art: {card.art_description}}}")
 
     # Cost/Icons line for ranger cards
     if card.energy_cost is not None or card.approach_icons:
@@ -72,7 +91,7 @@ def render_card_detail(card: Card, index: int | None = None, display_id: str | N
             icons_str = ", ".join(f"{k.value}+{v}" for k, v in card.approach_icons.items() if v)
             parts.append(f"Approach Icons: {icons_str}")
         if parts:
-            print(f"   {' | '.join(parts)}")
+            print(f"{indent}   {' | '.join(parts)}")
 
     # State line for path cards
     if card.presence is not None or card.progress_threshold is not None or card.harm_threshold is not None:
@@ -103,22 +122,33 @@ def render_card_detail(card: Card, index: int | None = None, display_id: str | N
         else:
             parts.append(f"Cannot put Harm on this card.")
         if parts:
-            print(f"   {' | '.join(parts)}")
+            print(f"{indent}   {' | '.join(parts)}")
 
     # Rules text
     if card.abilities_text:
         # Get terminal width, default to 120 if unable to detect
         terminal_width = shutil.get_terminal_size(fallback=(120, 24)).columns
-        max_ability_width = terminal_width - 6  # Account for "   " indentation
+        max_ability_width = terminal_width - 6 - len(indent)  # Account for indentation
 
         for ability in card.abilities_text:
             # Word wrap long abilities instead of truncating
             if len(ability) > max_ability_width:
                 wrapped_lines = textwrap.wrap(ability, width=max_ability_width)
                 for line in wrapped_lines:
-                    print(f"   {line}")
+                    print(f"{indent}   {line}")
             else:
-                print(f"   {ability}")
+                print(f"{indent}   {ability}")
+
+    # Render attachments recursively
+    if card.attached_card_ids:
+        print(f"{indent}   ATTACHMENTS:")
+        all_cards = state.all_cards_in_play()
+        for attached_id in card.attached_card_ids:
+            attached_card = state.get_card_by_id(attached_id)
+            if attached_card:
+                attached_display_id = get_display_id(all_cards, attached_card)
+                render_card_detail(attached_card, state, displayed_ids,
+                                 display_id=attached_display_id, indent_level=indent_level + 1)
 
 
 def render_state(state: GameState, phase_header: str = "") -> None:
@@ -129,6 +159,9 @@ def render_state(state: GameState, phase_header: str = "") -> None:
     if phase_header:
         print(f"=== {phase_header} ===")
 
+    # Track displayed card IDs to prevent duplicate rendering of attachments
+    displayed_ids: set[str] = set()
+
     # Areas
     all_cards = state.all_cards_in_play()
     for area in [Area.SURROUNDINGS, Area.ALONG_THE_WAY, Area.WITHIN_REACH, Area.PLAYER_AREA]:
@@ -136,8 +169,11 @@ def render_state(state: GameState, phase_header: str = "") -> None:
         cards = state.areas.get(area, [])
         if cards:
             for card in cards:
-                display_id = get_display_id(all_cards, card)
-                render_card_detail(card, display_id=display_id)
+                # Only render cards that aren't attached to something else
+                # (attachments will be rendered under their parent)
+                if card.attached_to_id is None:
+                    display_id = get_display_id(all_cards, card)
+                    render_card_detail(card, state, displayed_ids, display_id=display_id)
         else:
             print("[No cards currently in this area]")
 
@@ -168,8 +204,10 @@ def render_state(state: GameState, phase_header: str = "") -> None:
     # Hand
     print("\n--- Hand ---")
     if r.hand:
+        # Create a separate displayed_ids set for hand (cards in hand can't be attachments to in-play cards)
+        hand_displayed_ids: set[str] = set()
         for i, card in enumerate(r.hand, start=1):
-            render_card_detail(card, index=i)
+            render_card_detail(card, state, hand_displayed_ids, index=i)
     else:
         print("[Empty hand]")
 

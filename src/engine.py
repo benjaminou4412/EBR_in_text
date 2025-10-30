@@ -90,11 +90,11 @@ class GameEngine:
 
         raw_candidates = action.target_provider(self.state)
         if action.is_test:
-            return self._filter_by_obstacles(raw_candidates)
+            return self.filter_by_obstacles(raw_candidates)
         else:
             return raw_candidates
 
-    def _filter_by_obstacles(self, candidates: list[Card]) -> list[Card]:
+    def filter_by_obstacles(self, candidates: list[Card]) -> list[Card]:
         """Filter candidates to exclude cards past the nearest Obstacle"""
         from .models import Keyword, Area
 

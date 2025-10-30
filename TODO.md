@@ -5,26 +5,20 @@ A living checklist. Roughly prioritized.
 
 - Implement ConstantAbilities
 
-
-    Implement check_can_move_ranger_token() in GameEngine
-
-    Call check in move_ranger_token_to_card()
-
     Refactor Obstacle keyword to use ConstantAbility
 
     Refactor Friendly keyword to use ConstantAbility
 
-    Test ConstantAbility system with existing cards
-- Implement attachment system
+- Implement Locations and Travel, arrival setup
+    -Finish implementing travel-blocking abilities (Obstacle and Caustic Mulcher)
+
 - Implement faceup/facedown cards
-- Implement Caustic Mulcher
-  - Attachment system
-  - faceup/facedown cards
+
 - Implement actual challenge card objects and challenge deck behaviors
 - Implement at least two other Valley NPCs
 - Implement Refresh abilites and weather
   - can ride on faceup/facedown card system
-- Implement Locations and Travel, arrival setup
+
 - Implement weather-flipping
 - Implement at least one Gear + one non-response Moment + 1 attachment, and the Play action
   - Have the gear commit effort so we're forced to implement that system too (committing effort from in-play cards in CommitDecision, spending tokens/exhausting as needed)

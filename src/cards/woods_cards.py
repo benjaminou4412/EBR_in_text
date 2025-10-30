@@ -303,7 +303,7 @@ class CausticMulcher(Card):
         """Sun effect: If there is another active being, exhaust it and attach it to this
         biomeld. If not, move your ranger token to this biomeld"""
         self_display_id = get_display_id(engine.state.all_cards_in_play(), self)
-        other_active_beings = [being for being in engine.state.beings_in_play() if being.id!=self.id]
+        other_active_beings = [being for being in engine.state.beings_in_play() if being.id!=self.id and being.is_ready()]
 
         if other_active_beings:
             engine.add_message(f"Challenge: (Sun) on {self_display_id}: Choose an active being to exhaust and attach to this Biomeld:")

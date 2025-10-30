@@ -112,10 +112,10 @@ def provide_common_tests(state: GameState) -> list[Action]:
     return actions
 
 
-def provide_card_tests(state: GameState) -> list[Action]:
-    """Scan all cards in play and collect tests they provide"""
+def provide_card_tests(engine: GameEngine) -> list[Action]:
+    """Scan all cards in play and collect tests they provide, taking into account Obstacles"""
     actions: list[Action] = []
-    for card in state.all_cards_in_play():
+    for card in engine.filter_by_obstacles(engine.state.all_cards_in_play()):
         tests = card.get_tests()
         if tests is not None:
             actions.extend(tests)

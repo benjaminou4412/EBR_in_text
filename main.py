@@ -14,7 +14,8 @@ from src.view import (
 from src.decks import build_woods_path_deck
 from src.cards import (
     OvergrownThicket, SunberryBramble, SitkaDoe, WalkWithMe, ADearFriend,
-    ProwlingWolhund, SitkaBuck, CalypsaRangerMentor, PeerlessPathfinder
+    ProwlingWolhund, SitkaBuck, CalypsaRangerMentor, PeerlessPathfinder,
+    CausticMulcher
 )
 
 
@@ -55,6 +56,8 @@ def build_demo_state() -> GameState:
     ranger_deck = pick_demo_cards()
     ranger_fatigue = pick_demo_cards()[0:5]
 
+    #Add Caustic Mulcher
+    mulcher = CausticMulcher()
     #Add Overgrown Thicket
     thicket = OvergrownThicket()
 
@@ -89,7 +92,7 @@ def build_demo_state() -> GameState:
     # Build a simple path deck from woods, excluding the ones already in play
     deck = build_woods_path_deck()
     surroundings : list[Card] = [weather]
-    along_the_way : list[Card] = [wol_0, buck_0, bramble]
+    along_the_way : list[Card] = [wol_0, buck_0, bramble, mulcher]
     within_reach : list[Card] = [thicket, calypsa, doe]
     player_area : list[Card] = [role_card]
     current_areas : dict[Area,list[Card]]= {Area.SURROUNDINGS : surroundings, Area.ALONG_THE_WAY : along_the_way, Area.WITHIN_REACH : within_reach, Area.PLAYER_AREA : player_area}
@@ -130,7 +133,7 @@ def menu_and_run(engine: GameEngine) -> None:
             print("--- Event log and choices ---")
 
             # derive actions
-            actions = (provide_card_tests(engine.state)
+            actions = (provide_card_tests(engine)
             + provide_common_tests(engine.state)
             + provide_exhaust_abilities(engine.state))
             # add system Rest action
