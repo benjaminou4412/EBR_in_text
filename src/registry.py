@@ -9,7 +9,7 @@ def provide_common_tests(state: GameState) -> list[Action]:
 
     # Traverse: FIT + [Exploration], target Feature or Location, diff X=presence
     def traverse_success(e: GameEngine, eff: int, card: Card | None) -> None:
-        if card and CardType.FEATURE in card.card_types:
+        if card and (CardType.FEATURE in card.card_types or CardType.LOCATION in card.card_types):
             msg = card.add_progress(eff)
             e.add_message(msg)
 
@@ -29,7 +29,7 @@ def provide_common_tests(state: GameState) -> list[Action]:
             aspect=Aspect.FIT,
             approach=Approach.EXPLORATION,
             verb="Traverse",
-            target_provider=lambda s: s.features_in_play(),
+            target_provider=lambda s: s.features_in_play() + [s.location],
             difficulty_fn=get_traverse_difficulty,
             on_success=traverse_success,
             on_fail=traverse_fail,

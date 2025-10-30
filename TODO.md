@@ -4,8 +4,8 @@ A living checklist. Roughly prioritized.
 
 
 
-- Implement Locations and Travel
-    -just front-side and travel procedures; no campaign log entries or arrival setup
+-Travel
+    -just travel procedures; no campaign log entries or arrival setup
     -Finish implementing travel-blocking abilities (Obstacle and Caustic Mulcher)
 
 - Prevent challenge effect re‑trigger when a card moves into an already‑resolved area during the same test
@@ -13,6 +13,7 @@ A living checklist. Roughly prioritized.
   -scouting/remember
   -challenge effects in the same zone
   -response abilities at the same timing point
+  -go back and implement arrival setup now that we have scouting
 
 - Arrival setup for locations
 
@@ -27,7 +28,7 @@ A living checklist. Roughly prioritized.
   - Have the gear commit effort so we're forced to implement that system too (committing effort from in-play cards in CommitDecision, spending tokens/exhausting as needed)
 - Implement missions, campaign log entries, clear entries, etc.
 - Implement Day system and save/load/autosave
-
+- Implement full Travel map
 - automatic keyword loading from JSON
 - Implement...the entire rest of the game.
 

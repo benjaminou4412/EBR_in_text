@@ -280,7 +280,7 @@ def choose_action_target(state: GameState, action: Action, engine: GameEngine) -
         print("No valid targets.")
         return None
     elif len(targets)==1:
-        print("Only 1 valid target; automatically chosen.")
+        print(f"Only 1 valid target ({targets[0].title}); automatically chosen.")
         return targets[0].id
     print("Choose target:")
 

@@ -146,7 +146,7 @@ class EngineTests(unittest.TestCase):
 
         # Assert: Feature should be removed from zones and moved to path_discard
         all_cards_in_zones = sum(len(cards) for cards in state.areas.values())
-        self.assertEqual(all_cards_in_zones, 0, "Feature should be removed from zones")
+        self.assertEqual(all_cards_in_zones, 1, "Feature should be removed from zones; only role card remains")
         self.assertEqual(len(state.path_discard), 1, "Feature should be in path_discard")
         self.assertEqual(state.path_discard[0].id, "test-feature", "Cleared feature should be the one we added progress to")
 
@@ -189,7 +189,7 @@ class EngineTests(unittest.TestCase):
 
         # Assert: Being should be removed from zones and moved to path_discard
         all_cards_in_zones = sum(len(cards) for cards in state.areas.values())
-        self.assertEqual(all_cards_in_zones, 0, "Being should be removed from zones")
+        self.assertEqual(all_cards_in_zones, 1, "Being should be removed from zones; only role card remains")
         self.assertEqual(len(state.path_discard), 1, "Being should be in path_discard")
         self.assertEqual(state.path_discard[0].id, "test-being", "Cleared being should be the one we added harm to")
 
@@ -230,7 +230,7 @@ class EngineTests(unittest.TestCase):
 
         # Assert: Feature should still be in zones (not cleared)
         all_cards_in_zones = sum(len(cards) for cards in state.areas.values())
-        self.assertEqual(all_cards_in_zones, 1, "Feature should still be in play")
+        self.assertEqual(all_cards_in_zones, 2, "Feature should still be in play along with role card")
         self.assertEqual(len(state.path_discard), 0, "Nothing should be discarded")
         self.assertEqual(feature.progress, 1, "Feature should have 1 progress")
 

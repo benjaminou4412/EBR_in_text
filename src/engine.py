@@ -7,8 +7,10 @@ from .models import (
     Aspect, Approach, Area, CardType, EventType, TimingType, EventListener,
     MessageEvent, Keyword, ConstantAbility, ConstantAbilityType
 )
+
 from .challenge import draw_challenge
 from .utils import get_display_id
+from .decks import build_woods_path_deck, select_three_random_valley_cards, get_new_location
 
 
 @dataclass
@@ -561,6 +563,124 @@ class GameEngine:
         for _ in range(count):
             self.draw_path_card()
 
+    def phase3_travel(self) -> bool: #returns whether day ended by camping
+        self.add_message(f"Begin Phase 3: Travel")
+        location_progress_threshold = self.state.location.get_progress_threshold()
+        travel_blockers = [ability for ability in self.constant_abilities 
+                           if ability.ability_type == ConstantAbilityType.PREVENT_TRAVEL
+                           and ability.condition_fn(self.state, Card())] #travel blockers don't use Card input
+        if travel_blockers:
+            travel_blocker_ids: list[str] = []
+            for blocker_ability in travel_blockers:
+                card = self.state.get_card_by_id(blocker_ability.source_card_id)
+                if card is None:
+                    raise RuntimeError(f"Travel-blocking id points to no card!")
+                else:
+                    travel_blocker_ids.append(get_display_id(self.state.all_cards_in_play(),card))
+            self.add_message(f"You cannot travel due to: {travel_blocker_ids}")
+            return False
+        
+        if location_progress_threshold is None:
+            if self.state.location.progress_clears_by_ranger_tokens:
+                if self.state.ranger.ranger_token_location == self.state.location.id:
+                    decision = self.response_decider(self, "Your Ranger Token is on the location. Would you like to Travel? (y/n):")
+                    if decision: return self.execute_travel()
+                else:
+                    self.add_message(f"Your Ranger Token is not yet on the location. You may not yet Travel.")
+                    return False
+            else:
+                raise RuntimeError(f"Locations should have a progress threshold!")
+        else:
+            if self.state.location.progress >= location_progress_threshold:
+                decision = self.response_decider(self, "There is sufficient Progress on the Location. Would you like to Travel? (y/n):")
+                if decision: return self.execute_travel()
+            else:
+                self.add_message(f"There is insufficient Progress on the Location. You may not yet Travel.")
+                return False
+        return False
+    def execute_travel(self) -> bool: #returns whether day ended by camping
+        #Step 1: Clear Play Area
+
+        self.add_message(f"Step 1: Clear Play Area")
+
+        self.add_message(f"   Discarding all non-persistent path cards from play...")
+        for card in [card for card in list(self.state.all_cards_in_play()) 
+                     if CardType.PATH in card.card_types and not card.has_keyword(Keyword.PERSISTENT)]:
+            card.discard_from_play(self) #ignore return messages b/c spammy
+
+        self.add_message(f"   Discarding all non-persistent ranger cards from path areas...")
+        for area, cards in self.state.areas.items():
+            path_areas = [Area.WITHIN_REACH, Area.ALONG_THE_WAY, Area.SURROUNDINGS]
+            if area in path_areas:
+                ranger_cards = [card for card in cards 
+                                if CardType.RANGER in card.card_types and not card.has_keyword(Keyword.PERSISTENT)]
+                for card in list(ranger_cards):
+                    card.discard_from_play(self) #ignore return messages b/c spammy
+
+        self.add_message(f"   Returning Path Deck and Path Discard to collection...")
+        self.state.path_deck.clear()
+        self.state.path_discard.clear()
+
+        #TODO: resolve Missions that instruct you to "travel away" from a location
+
+        #Step 2: Travel to a new location
+
+        #TODO: Render valley map and offer choice
+        #For now: fixed choice to single other implemented location
+        curr_location = self.state.location
+        new_location = get_new_location(curr_location)
+        self.state.areas[Area.SURROUNDINGS].append(new_location)
+        self.state.areas[Area.SURROUNDINGS].remove(curr_location)
+        self.state.location = new_location
+        self.add_message(f"Traveled away from {curr_location.title} to {new_location.title}.")
+        self.state.location.enters_play(self, Area.SURROUNDINGS)
+        #(note: unlike path cards, locations' campaign log entries and arrival setup should not be called with enters_play)
+        #(instead, Step 5 of the Travel sequence resolves campaign log entries and arrival setup)
+
+        #Step 3: Decide to camp
+        will_camp = self.response_decider(self, f"Will you end the day by camping? (y/n):")
+        if will_camp:
+            #TODO: take into account ending-day-by-camping to allow reward card swaps
+            self.end_day()
+            return True
+        #Step 4 and 5: Build path deck, arrival setup
+        self.arrival_setup(start_of_day=False)
+
+        
+        return False
+    
+    def arrival_setup(self, start_of_day: bool):
+        if start_of_day:
+            self.add_message(f"Step 5: Set up starting location")
+            self.state.location = get_new_location(Card()) #TODO: reference campaign log for start of day location
+            self.state.areas[Area.SURROUNDINGS].append(self.state.location)
+            self.state.location.enters_play(self, Area.SURROUNDINGS)
+            self.add_message(f"Step 6: Set up the weather card (skipped)")
+            #TODO: setup start of day weather
+            self.add_message(f"Step 7: Set up mission cards (skipped)")
+            #TODO: setup missions
+            self.add_message(f"Steps 8, 9, and 10: Build path deck, resolve arrival setup, and finishing touches.")
+
+
+        #load terrain set; TODO: define amounts of each card in path sets somewhere
+        woods_set: list[Card] = build_woods_path_deck()
+        
+        
+        #TODO: load location set or 3 random Valley NPCs 
+        #For now, just load in Calypsa
+        location_set_or_valley: list[Card] = select_three_random_valley_cards()
+
+        #TODO: check weather, location, and missions for additional cards from "path deck assembly"
+        #shuffle everything together
+
+        self.state.path_deck = woods_set + location_set_or_valley
+        random.shuffle(self.state.path_deck)
+
+        #TODO: display campaign log entry and resolve decisions; may be overridden by missions
+        #TODO: resolve missions to "arrive at" the new location
+        #TODO: resolve arrival setup
+        #for now, default to drawing 1 path card:
+        self.draw_path_card()
 
     def phase4_refresh(self):
         self.add_message(f"Begin Phase 4: Refresh")

@@ -9,6 +9,8 @@ from ..json_loader import load_card_fields #type:ignore
 from ..utils import get_display_id
 from ..engine import GameEngine
 
+
+
 class ProwlingWolhund(Card):
     def __init__(self):
         super().__init__(**load_card_fields("Prowling Wolhund", "woods")) #type:ignore

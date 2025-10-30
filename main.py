@@ -100,7 +100,7 @@ def build_demo_state() -> GameState:
     within_reach : list[Card] = [thicket, calypsa, doe]
     player_area : list[Card] = [role_card]
     current_areas : dict[Area,list[Card]]= {Area.SURROUNDINGS : surroundings, Area.ALONG_THE_WAY : along_the_way, Area.WITHIN_REACH : within_reach, Area.PLAYER_AREA : player_area}
-    state = GameState(ranger=ranger, role_card=role_card, areas=current_areas, round_number=1, path_deck=deck)
+    state = GameState(ranger=ranger, role_card=role_card, location=location, areas=current_areas, round_number=1, path_deck=deck)
     # Note: Cards drawn to hand - listeners will be registered when engine is created
     for _ in range(5):
         _, _, _ = state.ranger.draw_card()  # Draw cards during setup
@@ -121,7 +121,7 @@ def menu_and_run(engine: GameEngine) -> None:
         # Phase 1: Draw path cards
         clear_screen()
         engine.phase1_draw_paths(count=1)
-        render_state(engine, phase_header=f"Round {engine.state.round_number} — Phase 1: Draw Paths")
+        render_state(engine, phase_header=f"Round {engine.state.round_number} — Phase 1: Draw Path Cards")
         print("")
         print("--- Event log ---")
         display_and_clear_messages(engine)
@@ -130,7 +130,7 @@ def menu_and_run(engine: GameEngine) -> None:
         # Phase 2: Actions until Rest
         while True:
             clear_screen()
-            render_state(engine, phase_header=f"Round {engine.state.round_number} — Phase 2: Actions")
+            render_state(engine, phase_header=f"Round {engine.state.round_number} — Phase 2: Ranger Turns")
 
             print("")
 
@@ -216,18 +216,24 @@ def menu_and_run(engine: GameEngine) -> None:
             input("Press Enter to exit...")
             return
 
-        # Phase 3: Travel (skipped)
+        # Phase 3: Travel
         clear_screen()
-        render_state(engine, phase_header=f"Round {engine.state.round_number} — Phase 3: Travel (skipped)")
+        render_state(engine, phase_header=f"Round {engine.state.round_number} — Phase 3: Travel")
         print("")
         print("--- Event log ---")
+        camped = engine.phase3_travel()
         display_and_clear_messages(engine)
 
         # Check if day ended during Phase 3
         if engine.day_has_ended:
-            print("\nThe day has ended. Demo complete!")
-            input("Press Enter to exit...")
-            return
+            if camped:
+                print("\nThe day has ended by camping. Demo complete!")
+                input("Press Enter to exit...")
+                return
+            else:
+                print("\nThe day has ended without camping. Demo complete!")
+                input("Press Enter to exit...")
+                return
 
         input("Press Enter to proceed to Phase 4...")
 
@@ -263,10 +269,31 @@ def main() -> None:
     # Configure display options
     set_show_art_descriptions(args.show_art)
 
-    state = build_demo_state()
+    #state = build_demo_state()
+    ranger_deck = pick_demo_cards()
+    ranger_fatigue = pick_demo_cards()[0:5]
+    ranger = RangerState(name="Demo Ranger", hand=[], aspects={Aspect.AWA: 99, Aspect.FIT: 99, Aspect.SPI: 99, Aspect.FOC: 99}, deck=ranger_deck, fatigue_stack=ranger_fatigue)
+    role_card = PeerlessPathfinder()
+    state = GameState(ranger=ranger, role_card=role_card)
     engine = GameEngine(state, card_chooser=choose_target, response_decider=choose_response)
-    # Reconstruct listeners from cards in hand
-    engine.add_message(f"Setup: Draw starting hand.")
+    engine.add_message(f"===BEGIN SETUP===")
+    engine.add_message(f"Step 1: Set up player area (skipped)")
+    #TODO: simulate ranger setup
+    engine.add_message(f"Step 2: Draw starting hand")
+    for _ in range(5):
+        card, msg, _ = state.ranger.draw_card()  # Draw cards during setup
+        if card is not None and msg is not None:
+            engine.add_message(msg)
+            card.enters_hand(engine)
+        else:
+            raise RuntimeError(f"Deck should not run out during setup!")
+    
+    engine.add_message(f"Step 3: Elect lead Ranger (skipped)")
+    engine.add_message(f"Step 4: Shuffle challenge deck (skipped)")
+    #TODO: trigger stuff that cares about challenge deck being shuffled
+    #or well, whatever method eventually gets called here should trigger that
+
+    engine.arrival_setup(start_of_day=True)
     menu_and_run(engine)
 
 

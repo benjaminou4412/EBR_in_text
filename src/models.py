@@ -280,14 +280,13 @@ class Card:
         
     def enters_hand(self, engine: GameEngine) -> list[EventListener] | None:
         """Called when card enters hand. Shows art description. Override to add listeners."""
-        engine.add_message(f"You draw a copy of {self.title}.")
         if self.art_description:
             engine.add_message(f"   Art description: {self.art_description}")
         return None
 
     def enters_play(self, engine: GameEngine, area: Area) -> list[ConstantAbility] | None:
         """Called when card enters play. Adds narrative messages and can be overridden for enter-play effects."""
-        engine.add_message(f"{get_display_id(engine.state.all_cards_in_play(), self)} enters play {area.value}.")
+        engine.add_message(f"{get_display_id(engine.state.all_cards_in_play(), self)} enters play in {area.value}.")
         if self.art_description:
             engine.add_message(f"   Art description: {self.art_description}")
     
@@ -422,6 +421,9 @@ class Card:
             return f"{self.title} readies."
         
     def clear_if_threshold(self, state: GameState) -> str | None:
+        if CardType.LOCATION in self.card_types:
+            return None #locations never clear
+        
         prog_threshold = self.get_progress_threshold()
         harm_threshold = self.get_harm_threshold()
 
@@ -470,10 +472,9 @@ class Card:
             engine.state.path_discard.append(self)
         elif CardType.RANGER in self.card_types:
             engine.state.ranger.discard.append(self)
-        else:
-            # Weather, location, mission cards might have different discard rules
-            # For now, treat as path cards
-            engine.state.path_discard.append(self)
+
+        # Weather, Location, and Mission cards never go to a discard pile
+            
 
         # Clean up attachment state
         self.attached_card_ids.clear()
@@ -548,6 +549,7 @@ class RangerState:
 class GameState:
     ranger: RangerState
     role_card: Card = field(default_factory=lambda: Card()) #pointer to a card that always exists in the Player Area
+    location: Card = field(default_factory=lambda: Card()) #pointer to a card that always exists in the Surroundings
     areas: dict[Area, list[Card]] = field(
         default_factory=lambda: cast(
             dict[Area, list[Card]], 
@@ -563,6 +565,8 @@ class GameState:
 
     def __post_init__(self) -> None:
         self.ranger.ranger_token_location=self.role_card.id #ranger token begins on the Role Card
+        if self.role_card not in self.areas[Area.PLAYER_AREA]:
+            self.areas[Area.PLAYER_AREA].append(self.role_card)
 
     #Card getter methods
 

@@ -89,7 +89,7 @@ class AttachmentMechanicsTests(unittest.TestCase):
         attachment = Card(
             id="attachment_1",
             title="Test Attachment",
-            card_types={CardType.ATTACHMENT},
+            card_types={CardType.RANGER, CardType.ATTACHMENT},
             keywords=set()
         )
         target = Card(
@@ -107,7 +107,7 @@ class AttachmentMechanicsTests(unittest.TestCase):
 
         # Verify attachment was auto-discarded
         self.assertNotIn(attachment, state.areas[Area.WITHIN_REACH])
-        self.assertIn(attachment, state.path_discard)
+        self.assertIn(attachment, state.ranger.discard)
         self.assertIsNone(attachment.attached_to_id)
         self.assertNotIn(attachment.id, target.attached_card_ids)
 
@@ -157,13 +157,13 @@ class AttachmentMechanicsTests(unittest.TestCase):
         attachment1 = Card(
             id="attachment_1",
             title="Attachment 1",
-            card_types={CardType.ATTACHMENT},
+            card_types={CardType.RANGER, CardType.ATTACHMENT},
             keywords=set()
         )
         attachment2 = Card(
             id="attachment_2",
             title="Attachment 2",
-            card_types={CardType.ATTACHMENT},
+            card_types={CardType.RANGER, CardType.ATTACHMENT},
             keywords=set()
         )
 
@@ -176,8 +176,8 @@ class AttachmentMechanicsTests(unittest.TestCase):
 
         # Verify all were discarded
         self.assertIn(target, state.path_discard)
-        self.assertIn(attachment1, state.path_discard)
-        self.assertIn(attachment2, state.path_discard)
+        self.assertIn(attachment1, state.ranger.discard)
+        self.assertIn(attachment2, state.ranger.discard)
         self.assertEqual(len(state.areas[Area.WITHIN_REACH]), 0)
 
     def test_multiple_attachments_on_one_card(self):
