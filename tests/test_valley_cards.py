@@ -1,3 +1,4 @@
+#type: ignore
 import unittest
 from src.models import *
 from src.engine import GameEngine
