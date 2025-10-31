@@ -286,7 +286,6 @@ class EventListenerOrderingTests(unittest.TestCase):
         self.assertEqual(len(order_decider_calls), 1, "order_decider should be called once for listeners")
         items, prompt = order_decider_calls[0]
         self.assertEqual(len(items), 2, "Should be ordering 2 listeners")
-        self.assertIn("listeners", prompt.lower(), "Prompt should mention listeners")
 
     def test_single_listener_skips_order_decider(self):
         """Test that a single listener doesn't call order_decider"""

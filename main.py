@@ -178,6 +178,7 @@ def menu_and_run(engine: GameEngine) -> None:
                         act = None
 
             if act.id == "system-rest":
+                engine.resolve_fatiguing_keyword()
                 print("\nYou rest and end your turn.")
                 input("Press Enter to proceed to Phase 3...")
                 break

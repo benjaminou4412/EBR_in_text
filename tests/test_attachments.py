@@ -227,7 +227,7 @@ class CausticMulcherConstantAbilitiesTests(unittest.TestCase):
         state.areas[Area.WITHIN_REACH].extend([mulcher, being])
 
         # Register abilities
-        abilities = mulcher.enters_play(engine, Area.WITHIN_REACH)
+        abilities, _ = mulcher.enters_play(engine, Area.WITHIN_REACH)
         if abilities:
             engine.register_constant_abilities(abilities)
 
@@ -257,7 +257,7 @@ class CausticMulcherConstantAbilitiesTests(unittest.TestCase):
         state.areas[Area.WITHIN_REACH].extend([mulcher, being])
 
         # Register abilities
-        abilities = mulcher.enters_play(engine, Area.WITHIN_REACH)
+        abilities, _ = mulcher.enters_play(engine, Area.WITHIN_REACH)
         if abilities:
             engine.register_constant_abilities(abilities)
 
@@ -284,7 +284,7 @@ class CausticMulcherConstantAbilitiesTests(unittest.TestCase):
         state.areas[Area.WITHIN_REACH].append(mulcher)
 
         # Register abilities
-        abilities = mulcher.enters_play(engine, Area.WITHIN_REACH)
+        abilities, _ = mulcher.enters_play(engine, Area.WITHIN_REACH)
         if abilities:
             engine.register_constant_abilities(abilities)
 
@@ -314,7 +314,7 @@ class CausticMulcherConstantAbilitiesTests(unittest.TestCase):
         state.areas[Area.WITHIN_REACH].append(mulcher)
 
         # Register abilities
-        abilities = mulcher.enters_play(engine, Area.WITHIN_REACH)
+        abilities, _ = mulcher.enters_play(engine, Area.WITHIN_REACH)
         if abilities:
             engine.register_constant_abilities(abilities)
 
@@ -349,7 +349,7 @@ class CausticMulcherConstantAbilitiesTests(unittest.TestCase):
         state.areas[Area.WITHIN_REACH].extend([mulcher, other_card])
 
         # Register abilities
-        abilities = mulcher.enters_play(engine, Area.WITHIN_REACH)
+        abilities, _ = mulcher.enters_play(engine, Area.WITHIN_REACH)
         if abilities:
             engine.register_constant_abilities(abilities)
 
@@ -385,7 +385,7 @@ class CausticMulcherConstantAbilitiesTests(unittest.TestCase):
         state.areas[Area.WITHIN_REACH].extend([mulcher, other_card])
 
         # Register abilities
-        abilities = mulcher.enters_play(engine, Area.WITHIN_REACH)
+        abilities, _ = mulcher.enters_play(engine, Area.WITHIN_REACH)
         if abilities:
             engine.register_constant_abilities(abilities)
 
@@ -423,7 +423,7 @@ class CausticMulcherConstantAbilitiesTests(unittest.TestCase):
         state.areas[Area.WITHIN_REACH].extend([mulcher, other_card])
 
         # Register abilities
-        abilities = mulcher.enters_play(engine, Area.WITHIN_REACH)
+        abilities, _ = mulcher.enters_play(engine, Area.WITHIN_REACH)
         if abilities:
             engine.register_constant_abilities(abilities)
 
@@ -464,7 +464,7 @@ class CausticMulcherConstantAbilitiesTests(unittest.TestCase):
         state.areas[Area.WITHIN_REACH].extend([mulcher, card1, card2])
 
         # Register abilities
-        abilities = mulcher.enters_play(engine, Area.WITHIN_REACH)
+        abilities, _ = mulcher.enters_play(engine, Area.WITHIN_REACH)
         if abilities:
             engine.register_constant_abilities(abilities)
 
@@ -763,7 +763,7 @@ class CausticMulcherCleanupTests(unittest.TestCase):
         state.areas[Area.WITHIN_REACH].append(mulcher)
 
         # Register abilities
-        abilities = mulcher.enters_play(engine, Area.WITHIN_REACH)
+        abilities, _ = mulcher.enters_play(engine, Area.WITHIN_REACH)
         if abilities:
             engine.register_constant_abilities(abilities)
 

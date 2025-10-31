@@ -3,18 +3,14 @@
 A living checklist. Roughly prioritized.
 
 
+- Implement at least two other Valley NPCs
+- Implement Ambush with listeners
 
-
-- Implement ordering selection:
-  -scouting/remember
-  -challenge effects in the same zone
-  -response abilities at the same timing point
-  -go back and implement arrival setup now that we have scouting
 - Implement actual challenge card objects and challenge deck behaviors
 
 - Arrival setup for locations
 
-- Implement at least two other Valley NPCs
+
 - Implement Refresh abilites and single-sided weather
 - Implement weather-flipping
 - Implement faceup/facedown cards

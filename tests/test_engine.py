@@ -1107,17 +1107,16 @@ class WalkWithMeTests(unittest.TestCase):
         eng = GameEngine(state)
 
         listeners = wwm.enters_hand(eng)
-        if listeners is not None:
-            listener = listeners[0]
+        listener = listeners[0]
 
-            self.assertIsNotNone(listener, "Walk With Me should create a listener")
-            # Type assertion for tests - we know it's not None after the check
-            assert listener is not None
-            self.assertEqual(listener.event_type, EventType.TEST_SUCCEED, "Should listen for test success")
-            self.assertEqual(listener.timing_type, TimingType.AFTER, "Should trigger after test")
-            self.assertEqual(listener.test_type, "Traverse", "Should only trigger on Traverse tests")
-            self.assertEqual(listener.source_card_id, wwm.id, "Should have card's ID")
-            self.assertIsNotNone(listener.effect_fn, "Should have an effect function")
+        self.assertIsNotNone(listener, "Walk With Me should create a listener")
+        # Type assertion for tests - we know it's not None after the check
+        assert listener is not None
+        self.assertEqual(listener.event_type, EventType.TEST_SUCCEED, "Should listen for test success")
+        self.assertEqual(listener.timing_type, TimingType.AFTER, "Should trigger after test")
+        self.assertEqual(listener.test_type, "Traverse", "Should only trigger on Traverse tests")
+        self.assertEqual(listener.source_card_id, wwm.id, "Should have card's ID")
+        self.assertIsNotNone(listener.effect_fn, "Should have an effect function")
 
 
 class CalypsaRangerMentorTests(unittest.TestCase):

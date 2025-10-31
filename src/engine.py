@@ -402,18 +402,24 @@ class GameEngine:
 
     # Listener management methods
 
-    def trigger_listeners(self, event_type: EventType, timing_type: TimingType, action: Action, effort: int):
+    def trigger_listeners(self, event_type: EventType, timing_type: TimingType, action: Action | None, effort: int):
         triggered : list[EventListener]= []
         for listener in self.listeners:
                 if listener.event_type == event_type and listener.timing_type == timing_type:
-                    if action.verb is not None and listener.test_type is not None:
-                        if action.verb.casefold() == listener.test_type.casefold():
-                            triggered.append(listener)
+                    if action is not None:
+                        if action.verb is not None and listener.test_type is not None:
+                            if action.verb.casefold() == listener.test_type.casefold():
+                                triggered.append(listener)
+                        else:
+                            raise RuntimeError(f"A listener that triggers during an action should have a verb and test_type to compare.")
+                    else:
+                        #trigger happens outside of tests, no need to compare
+                        triggered.append(listener)
 
         # If multiple listeners trigger simultaneously, let player choose order
         if len(triggered) > 1:
             triggered = cast(list[EventListener], self.order_decider(self, triggered,
-                f"Choose order to resolve {event_type.value} listeners ({timing_type.value})"))
+                f"Choose order to resolve {event_type.value} triggers."))
 
         for listener in triggered:
             listener.effect_fn(self, effort)
@@ -507,12 +513,15 @@ class GameEngine:
                 self.add_message(f"{target_display_id} moves to {target_area.value}.")
                 curr_presence = target_card.get_current_presence(self)
                 if target_area == Area.WITHIN_REACH and target_card.has_keyword(Keyword.AMBUSH) and curr_presence is not None:
+                    self.add_message(f"...and Ambushes you!")
                     self.fatigue_ranger(self.state.ranger, curr_presence)
                 return True
         return False
 
-    def fatigue_ranger(self, ranger: RangerState, amount: int) -> None:
+    def fatigue_ranger(self, ranger: RangerState, amount: int | None) -> None:
         """Move top amount cards from ranger deck to top of fatigue pile (one at a time)"""
+        if amount is None:
+            raise RuntimeError(f"Can't fatigue a ranger by None amount")
         if amount > len(ranger.deck):
             # Can't fatigue more than remaining deck - end the day
             self.add_message(f"Ranger needs to suffer {amount} fatigue, but only {len(self.state.ranger.deck)} cards remain in deck.")
@@ -579,9 +588,11 @@ class GameEngine:
         card = self.state.path_deck.pop(0)
         if card.starting_area is not None:
                 self.state.areas[card.starting_area].append(card)
-                constant_abilities: list[ConstantAbility] | None = card.enters_play(self, card.starting_area)
+                constant_abilities, listeners = card.enters_play(self, card.starting_area)
                 if constant_abilities:
                     self.register_constant_abilities(constant_abilities)
+                if listeners:
+                    self.register_listeners(listeners)
         else:
             raise AttributeError("Path card drawn is missing a starting area.")
 
@@ -684,6 +695,10 @@ class GameEngine:
                 to_unattach.discard_from_play(self) #attachments cannot exist in play without being attached
             #generally, cards in play should stay in area of the card they were just attached to
 
+    def resolve_fatiguing_keyword(self):
+        if any(EventType.REST==listener.event_type for listener in self.listeners):
+            self.add_message(f"Fatiguing cards in play may fatigue you.")
+            self.trigger_listeners(EventType.REST, TimingType.WHEN, None, 0) #unused 0; no effort
 
     # Round/Phase helpers
     def phase1_draw_paths(self, count: int = 1):
@@ -831,9 +846,7 @@ class GameEngine:
         if draw_message:
             self.add_message(draw_message)
         if card is not None:
-            listener = card.enters_hand(self)
-            if listener is not None:
-                self.register_listeners(listener)
+            self.register_listeners(card.enters_hand(self))
         #Step 3: Refill energy
         self.state.ranger.refresh_all_energy()
         self.add_message("Your energy is restored.")

@@ -64,24 +64,24 @@ class CardType(str, Enum):
 
 class EventType(str, Enum):
     #timing windows shared by multiple cards
-    TAKE_FATIGUE = "take_fatigue"
-    PERFORM_TEST = "perform_test"
-    COMMIT_EFFORT = "commit_effort"
-    AFTER_TEST = "after_test"
-    TEST_SUCCEED = "test_succeed"
-    PLAY_CARD = "play_card"
-    USE_TOKEN = "use_token"
+    TAKE_FATIGUE = "take-fatigue"
+    PERFORM_TEST = "perform-test"
+    COMMIT_EFFORT = "commit-effort"
+    AFTER_TEST = "after-test"
+    TEST_SUCCEED = "test-succeed"
+    PLAY_CARD = "play-card"
+    USE_TOKEN = "use-token"
     REST = "rest"
-    SUFFER_INJURY = "suffer_injury"
-    ADD_HARM = "add_harm"
-    ADD_PROGRESS = "add_progress"
+    SUFFER_INJURY = "suffer-injury"
+    ADD_HARM = "add-harm"
+    ADD_PROGRESS = "add-progress"
     CLEAR = "clear"
-    CHALLENGE_EFFECT = "challenge_effect"
+    CHALLENGE_EFFECT = "challenge-effect"
     SCOUT = "scout"
     TRAVEL = "travel"
     READY = "ready"
-    CHALLENGE_DECK_SHUFFLE = "challenge_deck_shuffle"
-    DRAW_CHALLENGE_CARD = "draw_challenge_card"
+    CHALLENGE_DECK_SHUFFLE = "challenge-deck-shuffle"
+    DRAW_CHALLENGE_CARD = "draw-challenge-card"
 
 class Keyword(str, Enum):
     """Keywords that modify card behavior and game rules."""
@@ -212,6 +212,21 @@ class Card:
     def get_exhaust_abilities(self) -> list[Action] | None:
         return None
     
+    def get_listeners(self, engine: GameEngine) -> list[EventListener] | None:
+        if self.keywords:
+            result: list[EventListener] = []
+            for keyword in self.keywords:
+                if keyword == Keyword.FATIGUING:
+                    #TODO: take into account Fatiguing X, which doesn't exist yet
+                    result.append(EventListener(event_type=EventType.REST,
+                                                effect_fn=lambda e, x: e.fatigue_ranger(e.state.ranger, self.get_current_presence(e)),
+                                                source_card_id=self.id,
+                                                timing_type=TimingType.WHEN))
+                
+            return result
+        else:
+            return None
+
     def get_constant_abilities(self) -> list[ConstantAbility] | None:
         if self.keywords:
             result: list[ConstantAbility] = []
@@ -223,6 +238,7 @@ class Card:
                     result.append(ConstantAbility(ConstantAbilityType.PREVENT_TRAVEL,
                                                   self.id,
                                                   lambda _s, _c: self.is_ready()))
+                
             return result
         else:
             return None
@@ -281,17 +297,22 @@ class Card:
         else:
             return None
         
-    def enters_hand(self, engine: GameEngine) -> list[EventListener] | None:
+    def enters_hand(self, engine: GameEngine) -> list[EventListener]:
         """Called when card enters hand. Shows art description. Override to add listeners."""
         if self.art_description:
             engine.add_message(f"   Art description: {self.art_description}")
-        return None
+        return []
 
-    def enters_play(self, engine: GameEngine, area: Area) -> list[ConstantAbility] | None:
-        """Called when card enters play. Adds narrative messages and can be overridden for enter-play effects."""
+    def enters_play(self, engine: GameEngine, area: Area) -> tuple[list[ConstantAbility], list[EventListener]]:
+        """Called when card enters play. Adds narrative messages, 
+        and can be overridden for enter-play effects, listeners, and in-play ConstantAbilities."""
         engine.add_message(f"{get_display_id(engine.state.all_cards_in_play(), self)} enters play in {area.value}.")
         if self.art_description:
             engine.add_message(f"   Art description: {self.art_description}")
+        if self.has_keyword(Keyword.AMBUSH) and self.starting_area == Area.WITHIN_REACH:
+            engine.add_message(f"   {self.title} Ambushes you!")
+            engine.fatigue_ranger(engine.state.ranger, self.get_current_presence(engine))
+        return ([],[])
     
     #path card only methods
     def get_current_presence(self, engine: GameEngine) -> int | None:
@@ -313,8 +334,8 @@ class Card:
     def harm_from_predator(self, engine: GameEngine, symbol: ChallengeIcon, harm_target: Card) -> bool:
         """Common challenge effect where an active predator exhausts and adds harm to a harm_target (usually this card)"""
         predators = engine.state.get_cards_by_trait("Predator")
-        self_display_id = get_display_id(engine.state.all_cards_in_play(), self)
-        harm_target_display_id = get_display_id(engine.state.all_cards_in_play(), harm_target)
+        self_display_id = engine.get_display_id_cached(self)
+        harm_target_display_id = engine.get_display_id_cached(harm_target)
         if predators is not None:
             active_predators = [predator for predator in predators if predator.is_ready()]
             if not active_predators:
@@ -341,10 +362,10 @@ class Card:
     
     def harm_from_prey(self, engine: GameEngine, symbol: ChallengeIcon, harm_target: Card) -> bool:
         """Common challenge effect form where an active prey exhausts and adds harm to a harm_target (usually this card),
-        as well as progress to itself.."""
+        as well as progress to itself."""
         prey_list = engine.state.get_cards_by_trait("Prey")
-        self_display_id = get_display_id(engine.state.all_cards_in_play(), self)
-        harm_target_display_id = get_display_id(engine.state.all_cards_in_play(), harm_target)
+        self_display_id = engine.get_display_id_cached(self)
+        harm_target_display_id = engine.get_display_id_cached(harm_target)
         if prey_list is not None:
             active_prey = [prey for prey in prey_list if prey.is_ready()]
             if not active_prey:

@@ -58,7 +58,7 @@ class WalkWithMe(Card):
         "back, and in the distance you see the small figures of the rest of its pack just exiting a copse " \
         "of snow-topped firs."
 
-    def enters_hand(self, engine: GameEngine) -> list[EventListener] | None:
+    def enters_hand(self, engine: GameEngine) -> list[EventListener]:
         """Override to add listener. Call super() to show art description."""
         super().enters_hand(engine)
         return [EventListener(EventType.TEST_SUCCEED, self.play, self.id, TimingType.AFTER, "Traverse")]
