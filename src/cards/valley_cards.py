@@ -59,8 +59,8 @@ class QuisiVosRascal(Card):
         "force-field technology."
         
 
-    def get_listeners(self, engine: GameEngine) -> list[EventListener] | None:
-        listeners = super().get_listeners(engine)
+    def get_listeners(self) -> list[EventListener] | None:
+        listeners = super().get_listeners()
         return listeners
     
     def get_challenge_handlers(self) -> dict[ChallengeIcon, Callable[[GameEngine], bool]] | None:

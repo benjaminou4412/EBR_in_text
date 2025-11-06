@@ -212,7 +212,7 @@ class Card:
     def get_exhaust_abilities(self) -> list[Action] | None:
         return None
     
-    def get_listeners(self, engine: GameEngine) -> list[EventListener] | None:
+    def get_listeners(self) -> list[EventListener] | None:
         if self.keywords:
             result: list[EventListener] = []
             for keyword in self.keywords:

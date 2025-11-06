@@ -49,7 +49,7 @@ class QuisiVosTests(unittest.TestCase):
         })
         eng = GameEngine(state)
 
-        listeners = quisi.get_listeners(eng)
+        listeners = quisi.get_listeners()
         self.assertIsNotNone(listeners, "Quisi should generate listeners from Fatiguing keyword")
         self.assertEqual(len(listeners), 1, "Should have exactly 1 listener")
         self.assertEqual(listeners[0].event_type, EventType.REST, "Listener should be REST type")
@@ -68,7 +68,7 @@ class QuisiVosTests(unittest.TestCase):
         eng = GameEngine(state)
 
         # Get listeners from Quisi
-        listeners = quisi.get_listeners(eng)
+        listeners = quisi.get_listeners()
 
         self.assertIsNotNone(listeners, "Should return listeners")
         assert listeners is not None  # Type narrowing for mypy
@@ -97,7 +97,7 @@ class QuisiVosTests(unittest.TestCase):
         eng = GameEngine(state)
 
         # Register Quisi's listeners
-        listeners = quisi.get_listeners(eng)
+        listeners = quisi.get_listeners()
         eng.register_listeners(listeners)
 
         # Trigger REST event
@@ -127,8 +127,8 @@ class QuisiVosTests(unittest.TestCase):
         eng = GameEngine(state)
 
         # Register both cards' listeners
-        eng.register_listeners(quisi1.get_listeners(eng))
-        eng.register_listeners(quisi2.get_listeners(eng))
+        eng.register_listeners(quisi1.get_listeners())
+        eng.register_listeners(quisi2.get_listeners())
 
         # Trigger REST event
         eng.resolve_fatiguing_keyword()
