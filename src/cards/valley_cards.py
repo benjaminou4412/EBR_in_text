@@ -73,14 +73,37 @@ class QuisiVosRascal(Card):
 
     def _sun_effect(self, engine: GameEngine) -> bool:
         """Sun effect: Discard either 1 progress or 1 token from a flora, insect, or gear."""
-        #TODO: implement unique tokens and offer the choice
-        targets: list[Card] = [target for target in engine.state.all_cards_in_play() 
+        # Find valid targets: flora, insect, or gear with at least one token (progress or unique)
+        targets: list[Card] = [target for target in engine.state.all_cards_in_play()
                    if (target.has_trait("Flora") or target.has_trait("Insect") or target.has_type(CardType.GEAR))
-                   and target.progress > 0]
+                   and (target.progress > 0 or target.has_any_unique_tokens())]
         if targets:
             engine.add_message(f"Challenge (Sun) on {self.title}: Quisi discards a token from a flora, insect, or gear. Choose one:")
             target = engine.card_chooser(engine, targets)
-            _removed, msg = target.remove_progress(1)
+
+            # Build list of token removal options
+            options: list[str] = []
+            if target.progress > 0:
+                options.append("progress")
+
+            # Add each unique token type that has at least 1 token
+            for token_type, count in target.unique_tokens.items():
+                if count > 0:
+                    options.append(token_type)
+
+            # Let player choose which token type to discard
+            if len(options) > 1:
+                chosen_token = engine.option_chooser(engine, options,
+                                                     f"Choose which token type to discard from {target.title}:")
+            else:
+                chosen_token = options[0]
+
+            # Remove the chosen token type
+            if chosen_token == "progress":
+                _removed, msg = target.remove_progress(1)
+            else:
+                _removed, msg = target.remove_unique_tokens(chosen_token, 1)
+
             engine.add_message(msg)
             return True
         else:

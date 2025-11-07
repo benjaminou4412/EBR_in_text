@@ -451,6 +451,51 @@ def choose_order(engine: GameEngine, items: list[Any], prompt: str) -> list[Any]
     return ordered
 
 
+def choose_option(engine: GameEngine, options: list[str], prompt: str | None = None) -> str:
+    """Prompt player to choose from among several string options.
+
+    This is a generic choice function for situations where the player needs to select
+    from text descriptions rather than Card objects (e.g., choosing between different
+    token types to discard).
+
+    Args:
+        engine: GameEngine for context and message display
+        options: List of string descriptions to choose from
+        prompt: Optional context message to display before options
+
+    Returns:
+        The chosen string option
+    """
+    display_and_clear_messages(engine)
+
+    if not options:
+        raise ValueError("Cannot choose from empty list of options")
+
+    if len(options) == 1:
+        # Only one option, auto-select
+        return options[0]
+
+    if prompt:
+        print(f"\n{prompt}")
+
+    while True:
+        for i, option in enumerate(options, start=1):
+            print(f" {i}. {option}")
+
+        try:
+            choice = input("> ").strip()
+            if not choice:
+                continue
+
+            idx = int(choice) - 1
+            if 0 <= idx < len(options):
+                return options[idx]
+            else:
+                print(f"Please enter a number between 1 and {len(options)}.")
+        except ValueError:
+            print("Invalid input. Please enter a number.")
+
+
 def choose_commit(action: Action, hand_size: int, state: GameState, engine: GameEngine) -> CommitDecision:
     """Prompt player to commit energy and cards for a test"""
     display_and_clear_messages(engine)

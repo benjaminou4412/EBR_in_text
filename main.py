@@ -10,7 +10,7 @@ from src.registry import provide_common_tests, provide_card_tests, provide_exhau
 from src.view import (
     render_state, choose_action, choose_action_target, choose_commit,
     choose_target, display_and_clear_messages, choose_response, set_show_art_descriptions,
-    choose_order
+    choose_order, choose_option
 )
 from src.decks import build_woods_path_deck
 from src.cards import (
@@ -277,7 +277,7 @@ def main() -> None:
     ranger = RangerState(name="Demo Ranger", hand=[], aspects={Aspect.AWA: 99, Aspect.FIT: 99, Aspect.SPI: 99, Aspect.FOC: 99}, deck=ranger_deck, fatigue_stack=ranger_fatigue)
     role_card = PeerlessPathfinder()
     state = GameState(ranger=ranger, role_card=role_card)
-    engine = GameEngine(state, card_chooser=choose_target, response_decider=choose_response, order_decider=choose_order)
+    engine = GameEngine(state, card_chooser=choose_target, response_decider=choose_response, order_decider=choose_order, option_chooser=choose_option)
     engine.add_message(f"===BEGIN SETUP===")
     engine.add_message(f"Step 1: Set up player area (skipped)")
     #TODO: simulate ranger setup

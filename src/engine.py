@@ -29,11 +29,13 @@ class GameEngine:
                   state: GameState,
                   card_chooser: Callable[[GameEngine, list[Card]], Card] | None = None,
                   response_decider: Callable[[GameEngine, str],bool] | None = None,
-                  order_decider: Callable[[GameEngine, Any, str], Any] | None = None):
+                  order_decider: Callable[[GameEngine, Any, str], Any] | None = None,
+                  option_chooser: Callable[[GameEngine, list[str], str | None], str] | None = None):
         self.state = state
         self.card_chooser = card_chooser if card_chooser is not None else self._default_chooser
         self.response_decider = response_decider if response_decider is not None else self._default_decider
         self.order_decider = order_decider if order_decider is not None else self._default_order_decider
+        self.option_chooser = option_chooser if option_chooser is not None else self._default_option_chooser
         # Event listeners and message queue (game engine concerns, not board state)
         self.listeners: list[EventListener] = []
         self.constant_abilities: list[ConstantAbility] = []
@@ -54,6 +56,10 @@ class GameEngine:
     def _default_order_decider(self, _engine: 'GameEngine', items: Any, _prompt: str) -> Any:  # noqa: ARG002
         """Default: maintain current order (no rearrangement)"""
         return items
+
+    def _default_option_chooser(self, _engine: 'GameEngine', options: list[str], _prompt: str | None) -> str:  # noqa: ARG002
+        """Default: choose first option (for tests)"""
+        return options[0]
 
     def get_display_id_cached(self, card: Card) -> str:
         """Get display ID for a card, using cache if available (during challenge resolution).

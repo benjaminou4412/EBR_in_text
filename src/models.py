@@ -357,8 +357,35 @@ class Card:
         #TODO: take into account harm threshold modifiers
         return self.harm_threshold
 
-
-    #todo: methods for adding/removing unique tokens
+    def add_unique_tokens(self, token_type: str, amount: int) -> str:
+        if amount < 0:
+            raise ValueError(f"Amount cannot be negative, use remove_unique_tokens instead!")
+        if self.has_unique_token_type(token_type):
+            self.unique_tokens[token_type] = self.unique_tokens[token_type] + amount
+        else:
+            self.unique_tokens[token_type] = amount
+        return(f"Added {amount} {token_type} token(s) to {self.title}, now at {self.unique_tokens[token_type]}.")
+    
+    def remove_unique_tokens(self, token_type: str, amount: int) -> tuple[int,str]:
+        if self.has_unique_token_type(token_type):
+            amount_removed = min(self.unique_tokens[token_type], amount)
+            self.unique_tokens[token_type] = self.unique_tokens[token_type] - amount_removed
+            return amount_removed, f"Removed {amount} {token_type} token(s) from {self.title}. Now at {self.unique_tokens[token_type]}."
+        else:
+            return 0, f"No {token_type} tokens on {self.title}."
+    
+    def get_unique_token_count(self, token_type: str) -> int:
+        if self.has_unique_token_type(token_type):
+            return self.unique_tokens[token_type]
+        else:
+            return 0
+    
+    def has_unique_token_type(self, token_type: str) -> bool:
+        return token_type in self.unique_tokens.keys()
+    
+    def has_any_unique_tokens(self) -> bool:
+        return len(self.unique_tokens) > 0 and any(x > 0 for x in self.unique_tokens.values())
+        
 
     #location only methods
     def do_arrival_setup(self, engine:GameEngine) -> None:

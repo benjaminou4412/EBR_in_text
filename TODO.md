@@ -2,6 +2,9 @@
 
 A living checklist. Roughly prioritized.
 
+- Implement unique tokens and according setters/getters
+  -adding tokens to the card when it enters play
+  -making quisi interact with them
 - Implement Refresh abilites and single-sided weather
 - Implement weather-flipping
 - Implement faceup/facedown cards
