@@ -7,6 +7,7 @@ Comprehensive tests for Woods terrain set card behaviors
 import unittest
 from src.models import *
 from src.engine import GameEngine
+from tests.test_utils import MockChallengeDeck, make_challenge_card
 from src.cards.woods_cards import *
 
 
@@ -14,6 +15,24 @@ def fixed_draw(mod: int, sym: ChallengeIcon):
     """Helper to create fixed challenge draws for testing"""
     return lambda: (mod, sym)
 
+
+
+
+def stack_deck(state: GameState, aspect: Aspect, mod: int, symbol: ChallengeIcon) -> None:
+    """Helper to stack the challenge deck with a single predetermined card."""
+    # Build mods based on which aspect is being tested
+    awa_mod = mod if aspect == Aspect.AWA else 0
+    fit_mod = mod if aspect == Aspect.FIT else 0
+    spi_mod = mod if aspect == Aspect.SPI else 0
+    foc_mod = mod if aspect == Aspect.FOC else 0
+
+    state.challenge_deck = MockChallengeDeck([make_challenge_card(
+        icon=symbol,
+        awa=awa_mod,
+        fit=fit_mod,
+        spi=spi_mod,
+        foc=foc_mod
+    )])
 
 class ProwlingWolhundTests(unittest.TestCase):
     """Tests for Prowling Wolhund card"""
@@ -31,7 +50,9 @@ class ProwlingWolhundTests(unittest.TestCase):
                 Area.PLAYER_AREA: [],
             }
         )
-        eng = GameEngine(state, challenge_drawer=fixed_draw(0, ChallengeIcon.SUN))
+        stack_deck(state, Aspect.AWA, 0, ChallengeIcon.SUN)
+
+        eng = GameEngine(state)
 
         # Manually call enters_play
         wolhund.enters_play(eng, Area.WITHIN_REACH)
@@ -53,7 +74,9 @@ class ProwlingWolhundTests(unittest.TestCase):
                 Area.PLAYER_AREA: [],
             }
         )
-        eng = GameEngine(state, challenge_drawer=fixed_draw(0, ChallengeIcon.SUN))
+        stack_deck(state, Aspect.AWA, 0, ChallengeIcon.SUN)
+
+        eng = GameEngine(state)
 
         # Second wolhund enters play
         wolhund2.enters_play(eng, Area.WITHIN_REACH)
@@ -84,7 +107,10 @@ class ProwlingWolhundTests(unittest.TestCase):
         def mock_chooser(engine, cards):
             return wolhund2
 
-        eng = GameEngine(state, challenge_drawer=fixed_draw(0, ChallengeIcon.SUN), card_chooser=mock_chooser)
+        stack_deck(state, Aspect.AWA, 0, ChallengeIcon.SUN)
+
+
+        eng = GameEngine(state, card_chooser=mock_chooser)
 
         # Trigger sun effect
         handlers = wolhund1.get_challenge_handlers()
@@ -106,7 +132,9 @@ class ProwlingWolhundTests(unittest.TestCase):
                 Area.PLAYER_AREA: [],
             }
         )
-        eng = GameEngine(state, challenge_drawer=fixed_draw(0, ChallengeIcon.SUN))
+        stack_deck(state, Aspect.AWA, 0, ChallengeIcon.SUN)
+
+        eng = GameEngine(state)
 
         handlers = wolhund.get_challenge_handlers()
         resolved = handlers[ChallengeIcon.SUN](eng)
@@ -129,7 +157,9 @@ class ProwlingWolhundTests(unittest.TestCase):
                 Area.PLAYER_AREA: [],
             }
         )
-        eng = GameEngine(state, challenge_drawer=fixed_draw(0, ChallengeIcon.SUN))
+        stack_deck(state, Aspect.AWA, 0, ChallengeIcon.SUN)
+
+        eng = GameEngine(state)
 
         handlers = wolhund1.get_challenge_handlers()
         resolved = handlers[ChallengeIcon.SUN](eng)
@@ -155,7 +185,9 @@ class ProwlingWolhundTests(unittest.TestCase):
                 Area.PLAYER_AREA: [],
             }
         )
-        eng = GameEngine(state, challenge_drawer=fixed_draw(0, ChallengeIcon.CREST))
+        stack_deck(state, Aspect.AWA, 0, ChallengeIcon.CREST)
+
+        eng = GameEngine(state)
 
         handlers = wolhund.get_challenge_handlers()
         resolved = handlers[ChallengeIcon.CREST](eng)
@@ -184,7 +216,9 @@ class ProwlingWolhundTests(unittest.TestCase):
                 Area.PLAYER_AREA: [],
             }
         )
-        eng = GameEngine(state, challenge_drawer=fixed_draw(0, ChallengeIcon.CREST))
+        stack_deck(state, Aspect.AWA, 0, ChallengeIcon.CREST)
+
+        eng = GameEngine(state)
 
         handlers = wolhund.get_challenge_handlers()
         resolved = handlers[ChallengeIcon.CREST](eng)
@@ -218,7 +252,10 @@ class SitkaBuckTests(unittest.TestCase):
         def mock_chooser(engine, cards):
             return buck2
 
-        eng = GameEngine(state, challenge_drawer=fixed_draw(0, ChallengeIcon.SUN), card_chooser=mock_chooser)
+        stack_deck(state, Aspect.AWA, 0, ChallengeIcon.SUN)
+
+
+        eng = GameEngine(state, card_chooser=mock_chooser)
 
         handlers = buck1.get_challenge_handlers()
         resolved = handlers[ChallengeIcon.SUN](eng)
@@ -244,7 +281,9 @@ class SitkaBuckTests(unittest.TestCase):
                 Area.PLAYER_AREA: [],
             }
         )
-        eng = GameEngine(state, challenge_drawer=fixed_draw(0, ChallengeIcon.SUN))
+        stack_deck(state, Aspect.AWA, 0, ChallengeIcon.SUN)
+
+        eng = GameEngine(state)
 
         handlers = buck1.get_challenge_handlers()
         resolved = handlers[ChallengeIcon.SUN](eng)
@@ -272,7 +311,10 @@ class SitkaBuckTests(unittest.TestCase):
         def mock_chooser(engine, cards):
             return wolhund
 
-        eng = GameEngine(state, challenge_drawer=fixed_draw(0, ChallengeIcon.MOUNTAIN), card_chooser=mock_chooser)
+        stack_deck(state, Aspect.AWA, 0, ChallengeIcon.MOUNTAIN)
+
+
+        eng = GameEngine(state, card_chooser=mock_chooser)
 
         handlers = buck.get_challenge_handlers()
         resolved = handlers[ChallengeIcon.MOUNTAIN](eng)
@@ -296,7 +338,9 @@ class SitkaBuckTests(unittest.TestCase):
                 Area.PLAYER_AREA: [],
             }
         )
-        eng = GameEngine(state, challenge_drawer=fixed_draw(0, ChallengeIcon.MOUNTAIN))
+        stack_deck(state, Aspect.AWA, 0, ChallengeIcon.MOUNTAIN)
+
+        eng = GameEngine(state)
 
         handlers = buck.get_challenge_handlers()
         resolved = handlers[ChallengeIcon.MOUNTAIN](eng)
@@ -318,7 +362,9 @@ class SitkaBuckTests(unittest.TestCase):
                 Area.PLAYER_AREA: [],
             }
         )
-        eng = GameEngine(state, challenge_drawer=fixed_draw(0, ChallengeIcon.CREST))
+        stack_deck(state, Aspect.AWA, 0, ChallengeIcon.CREST)
+
+        eng = GameEngine(state)
 
         handlers = buck.get_challenge_handlers()
         resolved = handlers[ChallengeIcon.CREST](eng)
@@ -342,7 +388,9 @@ class SitkaBuckTests(unittest.TestCase):
                 Area.PLAYER_AREA: [],
             }
         )
-        eng = GameEngine(state, challenge_drawer=fixed_draw(0, ChallengeIcon.CREST))
+        stack_deck(state, Aspect.AWA, 0, ChallengeIcon.CREST)
+
+        eng = GameEngine(state)
 
         handlers = buck.get_challenge_handlers()
         resolved = handlers[ChallengeIcon.CREST](eng)
@@ -367,7 +415,9 @@ class SitkaDoeTests(unittest.TestCase):
                 Area.PLAYER_AREA: [],
             }
         )
-        eng = GameEngine(state, challenge_drawer=fixed_draw(0, ChallengeIcon.SUN))
+        stack_deck(state, Aspect.SPI, 0, ChallengeIcon.SUN)
+
+        eng = GameEngine(state)
 
         # Manually invoke on_success
         doe._on_spook_success(eng, 1, None)
@@ -392,7 +442,9 @@ class SitkaDoeTests(unittest.TestCase):
                 Area.PLAYER_AREA: [],
             }
         )
-        eng = GameEngine(state, challenge_drawer=fixed_draw(0, ChallengeIcon.SUN))
+        stack_deck(state, Aspect.AWA, 0, ChallengeIcon.SUN)
+
+        eng = GameEngine(state)
 
         handlers = doe.get_challenge_handlers()
         resolved = handlers[ChallengeIcon.SUN](eng)
@@ -416,7 +468,9 @@ class SitkaDoeTests(unittest.TestCase):
                 Area.PLAYER_AREA: [],
             }
         )
-        eng = GameEngine(state, challenge_drawer=fixed_draw(0, ChallengeIcon.SUN))
+        stack_deck(state, Aspect.AWA, 0, ChallengeIcon.SUN)
+
+        eng = GameEngine(state)
 
         handlers = doe.get_challenge_handlers()
         resolved = handlers[ChallengeIcon.SUN](eng)
@@ -438,7 +492,9 @@ class SitkaDoeTests(unittest.TestCase):
                 Area.PLAYER_AREA: [],
             }
         )
-        eng = GameEngine(state, challenge_drawer=fixed_draw(0, ChallengeIcon.SUN))
+        stack_deck(state, Aspect.AWA, 0, ChallengeIcon.SUN)
+
+        eng = GameEngine(state)
 
         handlers = doe.get_challenge_handlers()
         resolved = handlers[ChallengeIcon.SUN](eng)
@@ -464,7 +520,10 @@ class SitkaDoeTests(unittest.TestCase):
         def mock_chooser(engine, cards):
             return wolhund
 
-        eng = GameEngine(state, challenge_drawer=fixed_draw(0, ChallengeIcon.MOUNTAIN), card_chooser=mock_chooser)
+        stack_deck(state, Aspect.AWA, 0, ChallengeIcon.MOUNTAIN)
+
+
+        eng = GameEngine(state, card_chooser=mock_chooser)
 
         handlers = doe.get_challenge_handlers()
         resolved = handlers[ChallengeIcon.MOUNTAIN](eng)
@@ -497,7 +556,9 @@ class SunberryBrambleTests(unittest.TestCase):
                 Area.PLAYER_AREA: [],
             }
         )
-        eng = GameEngine(state, challenge_drawer=fixed_draw(0, ChallengeIcon.SUN))
+        stack_deck(state, Aspect.AWA, 0, ChallengeIcon.SUN)
+
+        eng = GameEngine(state)
 
         # Invoke on_success
         bramble._on_pluck_success(eng, 2, None)
@@ -524,7 +585,9 @@ class SunberryBrambleTests(unittest.TestCase):
                 Area.PLAYER_AREA: [],
             }
         )
-        eng = GameEngine(state, challenge_drawer=fixed_draw(0, ChallengeIcon.SUN))
+        stack_deck(state, Aspect.AWA, 0, ChallengeIcon.SUN)
+
+        eng = GameEngine(state)
 
         # Invoke fail effect
         bramble._fail_effect(eng, 0, None)
@@ -551,7 +614,10 @@ class SunberryBrambleTests(unittest.TestCase):
         def mock_chooser(engine, cards):
             return buck
 
-        eng = GameEngine(state, challenge_drawer=fixed_draw(0, ChallengeIcon.MOUNTAIN), card_chooser=mock_chooser)
+        stack_deck(state, Aspect.AWA, 0, ChallengeIcon.MOUNTAIN)
+
+
+        eng = GameEngine(state, card_chooser=mock_chooser)
 
         handlers = bramble.get_challenge_handlers()
         resolved = handlers[ChallengeIcon.MOUNTAIN](eng)
@@ -575,7 +641,9 @@ class SunberryBrambleTests(unittest.TestCase):
                 Area.PLAYER_AREA: [],
             }
         )
-        eng = GameEngine(state, challenge_drawer=fixed_draw(0, ChallengeIcon.MOUNTAIN))
+        stack_deck(state, Aspect.AWA, 0, ChallengeIcon.MOUNTAIN)
+
+        eng = GameEngine(state)
 
         handlers = bramble.get_challenge_handlers()
         resolved = handlers[ChallengeIcon.MOUNTAIN](eng)
@@ -599,7 +667,9 @@ class OvergrownThicketTests(unittest.TestCase):
                 Area.PLAYER_AREA: [],
             }
         )
-        eng = GameEngine(state, challenge_drawer=fixed_draw(0, ChallengeIcon.SUN))
+        stack_deck(state, Aspect.AWA, 0, ChallengeIcon.SUN)
+
+        eng = GameEngine(state)
 
         # Invoke on_success with 3 effort
         thicket._on_hunt_success(eng, 3, None)
@@ -626,7 +696,9 @@ class OvergrownThicketTests(unittest.TestCase):
                 Area.PLAYER_AREA: [],
             }
         )
-        eng = GameEngine(state, challenge_drawer=fixed_draw(0, ChallengeIcon.MOUNTAIN))
+        stack_deck(state, Aspect.AWA, 0, ChallengeIcon.MOUNTAIN)
+
+        eng = GameEngine(state)
 
         handlers = thicket.get_challenge_handlers()
         resolved = handlers[ChallengeIcon.MOUNTAIN](eng)
@@ -651,7 +723,9 @@ class OvergrownThicketTests(unittest.TestCase):
                 Area.PLAYER_AREA: [],
             }
         )
-        eng = GameEngine(state, challenge_drawer=fixed_draw(0, ChallengeIcon.MOUNTAIN))
+        stack_deck(state, Aspect.AWA, 0, ChallengeIcon.MOUNTAIN)
+
+        eng = GameEngine(state)
 
         handlers = thicket.get_challenge_handlers()
         resolved = handlers[ChallengeIcon.MOUNTAIN](eng)
@@ -683,7 +757,9 @@ class WoodsCardInteractionTests(unittest.TestCase):
                 Area.PLAYER_AREA: [],
             }
         )
-        eng = GameEngine(state, challenge_drawer=fixed_draw(0, ChallengeIcon.SUN))
+        stack_deck(state, Aspect.AWA, 0, ChallengeIcon.SUN)
+
+        eng = GameEngine(state)
 
         # First wolhund enters play
         state.areas[Area.WITHIN_REACH].append(wolhund1)
@@ -716,7 +792,9 @@ class WoodsCardInteractionTests(unittest.TestCase):
                 Area.PLAYER_AREA: [],
             }
         )
-        eng = GameEngine(state, challenge_drawer=fixed_draw(0, ChallengeIcon.SUN))
+        stack_deck(state, Aspect.AWA, 0, ChallengeIcon.SUN)
+
+        eng = GameEngine(state)
 
         handlers = doe.get_challenge_handlers()
         handlers[ChallengeIcon.SUN](eng)
@@ -741,7 +819,9 @@ class WoodsCardInteractionTests(unittest.TestCase):
                 Area.PLAYER_AREA: [],
             }
         )
-        eng = GameEngine(state, challenge_drawer=fixed_draw(0, ChallengeIcon.CREST))
+        stack_deck(state, Aspect.AWA, 0, ChallengeIcon.CREST)
+
+        eng = GameEngine(state)
 
         handlers = buck.get_challenge_handlers()
         resolved = handlers[ChallengeIcon.CREST](eng)
@@ -768,7 +848,10 @@ class WoodsCardInteractionTests(unittest.TestCase):
         def mock_chooser(engine, cards):
             return wolhund
 
-        eng = GameEngine(state, challenge_drawer=fixed_draw(0, ChallengeIcon.MOUNTAIN), card_chooser=mock_chooser)
+        stack_deck(state, Aspect.AWA, 0, ChallengeIcon.MOUNTAIN)
+
+
+        eng = GameEngine(state, card_chooser=mock_chooser)
 
         handlers = buck.get_challenge_handlers()
         handlers[ChallengeIcon.MOUNTAIN](eng)

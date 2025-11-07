@@ -4,6 +4,7 @@ from typing import Optional, Callable, cast, TYPE_CHECKING
 from enum import Enum
 from .utils import get_display_id
 import uuid
+import random
 
 if TYPE_CHECKING:
     from .engine import GameEngine
@@ -133,7 +134,77 @@ class ConstantAbilityType(Enum):
     GRANT_ABILITY = "grant_ability" #deep woods
     GRANT_TEST = "grant_test" #trained stilt-horse
     GRANT_KEYWORD = "grant_keyword" #puffercrawler, bloodbeckoned velox, trained stilt-horse
-    
+
+
+# Challenge deck classes
+
+@dataclass
+class ChallengeCard:
+    """A card in the challenge deck with modifiers for each aspect and a symbol."""
+    icon: ChallengeIcon
+    mods: dict[Aspect, int]
+    reshuffle: bool
+
+
+class ChallengeDeck:
+    """The challenge deck used for test resolution.
+
+    Cards are drawn one at a time, and some cards trigger a reshuffle when drawn.
+    """
+
+    def __init__(self, deck: list[ChallengeCard] | None = None):
+        if deck is None:
+            deck = _build_challenge_deck()
+        self.deck: list[ChallengeCard] = deck
+        random.shuffle(self.deck)
+        self.discard: list[ChallengeCard] = []
+
+    def reshuffle(self) -> None:
+        """Shuffle discard pile back into deck."""
+        self.deck.extend(self.discard)
+        self.discard.clear()
+        random.shuffle(self.deck)
+
+    def draw_challenge_card(self) -> ChallengeCard:
+        """Draw a card from the deck, reshuffling if necessary."""
+        if len(self.deck) == 0:
+            self.reshuffle()
+        drawn = self.deck.pop(0)
+        self.discard.append(drawn)
+        if drawn.reshuffle:
+            self.reshuffle()
+        return drawn
+
+
+def _build_challenge_deck() -> list[ChallengeCard]:
+    """Build the standard 24-card challenge deck."""
+    card_0 =  ChallengeCard(ChallengeIcon.SUN,      {Aspect.AWA: 0,  Aspect.FIT: -2, Aspect.SPI: 1,  Aspect.FOC: 1},  True)
+    card_1 =  ChallengeCard(ChallengeIcon.CREST,    {Aspect.AWA: 0,  Aspect.FIT: -1, Aspect.SPI: 1,  Aspect.FOC: 0},  False)
+    card_2 =  ChallengeCard(ChallengeIcon.MOUNTAIN, {Aspect.AWA: -1, Aspect.FIT: 0,  Aspect.SPI: 0,  Aspect.FOC: -1}, False)
+    card_3 =  ChallengeCard(ChallengeIcon.CREST,    {Aspect.AWA: -1, Aspect.FIT: 0,  Aspect.SPI: -1, Aspect.FOC: 0},  False)
+    card_4 =  ChallengeCard(ChallengeIcon.CREST,    {Aspect.AWA: 1,  Aspect.FIT: 1,  Aspect.SPI: -2, Aspect.FOC: 0},  True)
+    card_5 =  ChallengeCard(ChallengeIcon.MOUNTAIN, {Aspect.AWA: 1,  Aspect.FIT: -1, Aspect.SPI: -1, Aspect.FOC: 1},  False)
+    card_6 =  ChallengeCard(ChallengeIcon.CREST,    {Aspect.AWA: -1, Aspect.FIT: 0,  Aspect.SPI: 0,  Aspect.FOC: 1},  False)
+    card_7 =  ChallengeCard(ChallengeIcon.SUN,      {Aspect.AWA: 0,  Aspect.FIT: -1, Aspect.SPI: 0,  Aspect.FOC: -1}, False)
+    card_8 =  ChallengeCard(ChallengeIcon.SUN,      {Aspect.AWA: 0,  Aspect.FIT: 0,  Aspect.SPI: -1, Aspect.FOC: -1}, False)
+    card_9 =  ChallengeCard(ChallengeIcon.MOUNTAIN, {Aspect.AWA: -1, Aspect.FIT: 1,  Aspect.SPI: 1,  Aspect.FOC: -1}, False)
+    card_10 = ChallengeCard(ChallengeIcon.SUN,      {Aspect.AWA: 1,  Aspect.FIT: 0,  Aspect.SPI: 0,  Aspect.FOC: -1}, False)
+    card_11 = ChallengeCard(ChallengeIcon.CREST,    {Aspect.AWA: 1,  Aspect.FIT: 0,  Aspect.SPI: 1,  Aspect.FOC: -2}, True)
+    card_12 = ChallengeCard(ChallengeIcon.MOUNTAIN, {Aspect.AWA: 1,  Aspect.FIT: -1, Aspect.SPI: 0,  Aspect.FOC: 0},  False)
+    card_13 = ChallengeCard(ChallengeIcon.SUN,      {Aspect.AWA: -2, Aspect.FIT: 1,  Aspect.SPI: 0,  Aspect.FOC: 1},  True)
+    card_14 = ChallengeCard(ChallengeIcon.SUN,      {Aspect.AWA: 0,  Aspect.FIT: 1,  Aspect.SPI: -1, Aspect.FOC: 0},  False)
+    card_15 = ChallengeCard(ChallengeIcon.MOUNTAIN, {Aspect.AWA: 1,  Aspect.FIT: 0,  Aspect.SPI: -1, Aspect.FOC: 0},  False)
+    card_16 = ChallengeCard(ChallengeIcon.MOUNTAIN, {Aspect.AWA: 0,  Aspect.FIT: -1, Aspect.SPI: -1, Aspect.FOC: 0},  False)
+    card_17 = ChallengeCard(ChallengeIcon.SUN,      {Aspect.AWA: -1, Aspect.FIT: 1,  Aspect.SPI: 0,  Aspect.FOC: 0},  False)
+    card_18 = ChallengeCard(ChallengeIcon.CREST,    {Aspect.AWA: 0,  Aspect.FIT: 0,  Aspect.SPI: -1, Aspect.FOC: 1},  False)
+    card_19 = ChallengeCard(ChallengeIcon.CREST,    {Aspect.AWA: -1, Aspect.FIT: -1, Aspect.SPI: 0,  Aspect.FOC: 0},  False)
+    card_20 = ChallengeCard(ChallengeIcon.SUN,      {Aspect.AWA: -1, Aspect.FIT: 0,  Aspect.SPI: 1,  Aspect.FOC: 0},  False)
+    card_21 = ChallengeCard(ChallengeIcon.MOUNTAIN, {Aspect.AWA: 0,  Aspect.FIT: 0,  Aspect.SPI: 1,  Aspect.FOC: -1}, False)
+    card_22 = ChallengeCard(ChallengeIcon.CREST,    {Aspect.AWA: 0,  Aspect.FIT: 1,  Aspect.SPI: 0,  Aspect.FOC: -1}, False)
+    card_23 = ChallengeCard(ChallengeIcon.MOUNTAIN, {Aspect.AWA: 0,  Aspect.FIT: -1, Aspect.SPI: 0,  Aspect.FOC: 1},  False)
+    return [card_0, card_1, card_2, card_3, card_4, card_5, card_6, card_7, card_8, card_9, card_10, card_11, card_12,
+            card_13, card_14, card_15, card_16, card_17, card_18, card_19, card_20, card_21, card_22, card_23]
+
 
 # Core data structures: pure state and card data
 
@@ -581,6 +652,7 @@ class GameState:
     ranger: RangerState
     role_card: Card = field(default_factory=lambda: Card()) #pointer to a card that always exists in the Player Area
     location: Card = field(default_factory=lambda: Card()) #pointer to a card that always exists in the Surroundings
+    challenge_deck: ChallengeDeck = field(default_factory=lambda: ChallengeDeck())
     areas: dict[Area, list[Card]] = field(
         default_factory=lambda: cast(
             dict[Area, list[Card]], 

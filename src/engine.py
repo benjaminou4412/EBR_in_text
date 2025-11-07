@@ -5,10 +5,9 @@ from typing import Callable, Optional, Any, cast
 from .models import (
     GameState, Action, CommitDecision, RangerState, Card, ChallengeIcon,
     Aspect, Approach, Area, CardType, EventType, TimingType, EventListener,
-    MessageEvent, Keyword, ConstantAbility, ConstantAbilityType
+    MessageEvent, Keyword, ConstantAbility, ConstantAbilityType, ChallengeCard
 )
 
-from .challenge import draw_challenge
 from .utils import get_display_id
 from .decks import build_woods_path_deck, select_three_random_valley_cards, get_new_location
 
@@ -28,12 +27,10 @@ class ChallengeOutcome:
 class GameEngine:
     def __init__(self,
                   state: GameState,
-                  challenge_drawer: Callable[[], tuple[int, ChallengeIcon]] = draw_challenge,
                   card_chooser: Callable[[GameEngine, list[Card]], Card] | None = None,
                   response_decider: Callable[[GameEngine, str],bool] | None = None,
                   order_decider: Callable[[GameEngine, Any, str], Any] | None = None):
         self.state = state
-        self.draw_challenge = challenge_drawer
         self.card_chooser = card_chooser if card_chooser is not None else self._default_chooser
         self.response_decider = response_decider if response_decider is not None else self._default_decider
         self.order_decider = order_decider if order_decider is not None else self._default_order_decider
@@ -229,11 +226,12 @@ class GameEngine:
 
         # Step 3: Apply modifiers. TODO: Take into account modifiers from non-challenge-card sources.
 
-        mod, symbol = self.draw_challenge()
+        challenge_card_drawn: ChallengeCard = self.state.challenge_deck.draw_challenge_card()
+        mod, icon = challenge_card_drawn.mods[aspect], challenge_card_drawn.icon
         effort = max(0, base_effort + mod)
         difficulty = action.difficulty_fn(self, target_card)
         self.add_message(f"Step 3: Draw a challenge card and apply modifiers.")
-        self.add_message(f"You drew: [{aspect.value}]{mod:+d}, symbol [{symbol.upper()}]")
+        self.add_message(f"You drew: [{aspect.value}]{mod:+d}, symbol [{icon.upper()}]")
 
 
 
@@ -266,7 +264,7 @@ class GameEngine:
         # TODO: Future challenge resolution features:
         #   - If new cards enter play during challenge resolution, their effects should trigger
         #   - If cards move areas during challenge resolution and become active, their effects should trigger
-        self.add_message(f"Step 5: Resolve [{symbol.upper()}] challenge effects, if any.")
+        self.add_message(f"Step 5: Resolve [{icon.upper()}] challenge effects, if any.")
         challenge_areas : list[Area] = [
             Area.SURROUNDINGS,     # Weather, Location, Mission
             Area.ALONG_THE_WAY,
@@ -291,21 +289,21 @@ class GameEngine:
             for card in self.state.areas[area]:
                 if card.is_ready():
                     handlers = card.get_challenge_handlers()
-                    if handlers and symbol in handlers and (card.id, symbol) not in already_resolved_ids:
+                    if handlers and icon in handlers and (card.id, icon) not in already_resolved_ids:
                         cards_with_effects.append(card)
 
             # If multiple cards have effects in the same area, let player choose order
             if len(cards_with_effects) > 1:
                 cards_with_effects = cast(list[Card], self.order_decider(self, cards_with_effects,
-                    f"Choose order to resolve {symbol.upper()} challenge effects in {area.value}"))
+                    f"Choose order to resolve {icon.upper()} challenge effects in {area.value}"))
 
             # Resolve effects in the chosen order
             for card in cards_with_effects:
                 handlers = card.get_challenge_handlers()
-                if handlers and symbol in handlers and (card.id, symbol) not in already_resolved_ids:
-                    resolved = handlers[symbol](self)
+                if handlers and icon in handlers and (card.id, icon) not in already_resolved_ids:
+                    resolved = handlers[icon](self)
                     if resolved:
-                        already_resolved_ids.append((card.id, symbol))
+                        already_resolved_ids.append((card.id, icon))
                         zero_challenge_effects_resolved = False
                     cleared.extend(self.check_and_process_clears())
 
@@ -321,7 +319,7 @@ class GameEngine:
         return ChallengeOutcome(
             difficulty=difficulty,
             base_effort=base_effort,
-            modifier=mod, symbol=symbol,
+            modifier=mod, symbol=icon,
             resulting_effort=effort,
             success=success
         )

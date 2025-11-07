@@ -3,10 +3,24 @@ from src.models import *
 from src.engine import GameEngine
 from src.cards import *
 from src.registry import *
+from tests.test_utils import MockChallengeDeck, make_challenge_card
 
 
-def fixed_draw(mod : int, sym: ChallengeIcon):
-    return lambda: (mod, sym)
+def stack_deck(state: GameState, aspect: Aspect, mod: int, symbol: ChallengeIcon) -> None:
+    """Helper to stack the challenge deck with a single predetermined card."""
+    # Build mods based on which aspect is being tested
+    awa_mod = mod if aspect == Aspect.AWA else 0
+    fit_mod = mod if aspect == Aspect.FIT else 0
+    spi_mod = mod if aspect == Aspect.SPI else 0
+    foc_mod = mod if aspect == Aspect.FOC else 0
+
+    state.challenge_deck = MockChallengeDeck([make_challenge_card(
+        icon=symbol,
+        awa=awa_mod,
+        fit=fit_mod,
+        spi=spi_mod,
+        foc=foc_mod
+    )])
 
 
 class EngineTests(unittest.TestCase):
@@ -28,7 +42,9 @@ class EngineTests(unittest.TestCase):
                 Area.PLAYER_AREA: [],
             }
         )
-        eng = GameEngine(state, challenge_drawer=fixed_draw(0, ChallengeIcon.SUN))
+        stack_deck(state, Aspect.AWA, 0, ChallengeIcon.SUN)
+
+        eng = GameEngine(state)
 
 
         # Perform action using the engine API directly
@@ -59,7 +75,9 @@ class EngineTests(unittest.TestCase):
                 Area.PLAYER_AREA: [],
             }
         )
-        eng = GameEngine(state, challenge_drawer=fixed_draw(0, ChallengeIcon.SUN))
+        stack_deck(state, Aspect.AWA, 0, ChallengeIcon.SUN)
+
+        eng = GameEngine(state)
 
         # Perform action using the engine API directly
         thicket_test = thicket.get_tests()
@@ -95,7 +113,9 @@ class EngineTests(unittest.TestCase):
                 Area.PLAYER_AREA: [],
             }
         )
-        eng = GameEngine(state, challenge_drawer=fixed_draw(0, ChallengeIcon.CREST))
+        stack_deck(state, Aspect.FIT, 0, ChallengeIcon.CREST)
+
+        eng = GameEngine(state)
 
         tests = provide_common_tests(state)
         act = tests[0]
@@ -128,7 +148,9 @@ class EngineTests(unittest.TestCase):
                 Area.PLAYER_AREA: [],
             }
         )
-        eng = GameEngine(state, challenge_drawer=fixed_draw(0, ChallengeIcon.SUN))
+        stack_deck(state, Aspect.AWA, 0, ChallengeIcon.SUN)
+
+        eng = GameEngine(state)
 
         # Perform action that adds exactly enough progress to clear (1 energy + 1 icon = 2 effort)
         def add_progress_callback(_s: GameEngine, eff: int, _t: Card | None) -> None:
@@ -171,7 +193,9 @@ class EngineTests(unittest.TestCase):
                 Area.PLAYER_AREA: [],
             }
         )
-        eng = GameEngine(state, challenge_drawer=fixed_draw(0, ChallengeIcon.SUN))
+        stack_deck(state, Aspect.AWA, 0, ChallengeIcon.SUN)
+
+        eng = GameEngine(state)
 
         # Perform action that adds exactly enough harm to clear (1 energy + 1 icon = 2 effort = 2 harm)
         def add_harm_callback(_s: GameEngine, eff: int, _t: Card | None) -> None:
@@ -212,7 +236,9 @@ class EngineTests(unittest.TestCase):
                 Area.PLAYER_AREA: [],
             }
         )
-        eng = GameEngine(state, challenge_drawer=fixed_draw(0, ChallengeIcon.SUN))
+        stack_deck(state, Aspect.AWA, 0, ChallengeIcon.SUN)
+
+        eng = GameEngine(state)
 
         # Add progress that doesn't reach threshold (only 1 effort)
         def add_progress_callback(_s: GameEngine, eff: int, _t: Card | None) -> None:
@@ -261,7 +287,9 @@ class CommonTestsTests(unittest.TestCase):
                 Area.PLAYER_AREA: [],
             }
         )
-        eng = GameEngine(state, challenge_drawer=fixed_draw(0, ChallengeIcon.SUN))
+        stack_deck(state, Aspect.FIT, 0, ChallengeIcon.SUN)
+
+        eng = GameEngine(state)
 
         # Traverse: FIT + Exploration
         from src.registry import provide_common_tests
@@ -300,7 +328,9 @@ class CommonTestsTests(unittest.TestCase):
                 Area.PLAYER_AREA: [],
             }
         )
-        eng = GameEngine(state, challenge_drawer=fixed_draw(-1, ChallengeIcon.SUN))  # Negative modifier
+        stack_deck(state, Aspect.FIT, -1, ChallengeIcon.SUN)
+
+        eng = GameEngine(state)  # Negative modifier
 
         from src.registry import provide_common_tests
         actions = provide_common_tests(state)
@@ -337,7 +367,9 @@ class CommonTestsTests(unittest.TestCase):
                 Area.PLAYER_AREA: [],
             }
         )
-        eng = GameEngine(state, challenge_drawer=fixed_draw(0, ChallengeIcon.SUN))
+        stack_deck(state, Aspect.SPI, 0, ChallengeIcon.SUN)
+
+        eng = GameEngine(state)
 
         # Connect: SPI + Connection
         from src.registry import provide_common_tests
@@ -375,7 +407,9 @@ class CommonTestsTests(unittest.TestCase):
                 Area.PLAYER_AREA: [],
             }
         )
-        eng = GameEngine(state, challenge_drawer=fixed_draw(-2, ChallengeIcon.SUN))
+        stack_deck(state, Aspect.SPI, -2, ChallengeIcon.SUN)
+
+        eng = GameEngine(state)
 
         from src.registry import provide_common_tests
         actions = provide_common_tests(state)
@@ -412,7 +446,9 @@ class CommonTestsTests(unittest.TestCase):
                 Area.PLAYER_AREA: [],
             }
         )
-        eng = GameEngine(state, challenge_drawer=fixed_draw(0, ChallengeIcon.SUN))
+        stack_deck(state, Aspect.AWA, 0, ChallengeIcon.SUN)
+
+        eng = GameEngine(state)
 
         # Avoid: AWA + Conflict
         from src.registry import provide_common_tests
@@ -450,7 +486,9 @@ class CommonTestsTests(unittest.TestCase):
                 Area.PLAYER_AREA: [],
             }
         )
-        eng = GameEngine(state, challenge_drawer=fixed_draw(-2, ChallengeIcon.SUN))
+        stack_deck(state, Aspect.AWA, -2, ChallengeIcon.SUN)
+
+        eng = GameEngine(state)
 
         from src.registry import provide_common_tests
         actions = provide_common_tests(state)
@@ -482,7 +520,9 @@ class CommonTestsTests(unittest.TestCase):
                 Area.PLAYER_AREA: [],
             }
         )
-        eng = GameEngine(state, challenge_drawer=fixed_draw(0, ChallengeIcon.SUN))
+        stack_deck(state, Aspect.SPI, 0, ChallengeIcon.SUN)
+
+        eng = GameEngine(state)
 
         # Get the Sitka Doe spook action from registry
         from src.registry import provide_card_tests
@@ -519,7 +559,9 @@ class CommonTestsTests(unittest.TestCase):
                 Area.PLAYER_AREA: [],
             }
         )
-        eng = GameEngine(state, challenge_drawer=fixed_draw(-2, ChallengeIcon.SUN))  # Negative modifier to ensure failure
+        stack_deck(state, Aspect.SPI, -2, ChallengeIcon.SUN)
+
+        eng = GameEngine(state)  # Negative modifier to ensure failure
 
         # Get the Sitka Doe spook action from registry
         from src.registry import provide_card_tests
@@ -560,7 +602,9 @@ class CommonTestsTests(unittest.TestCase):
             }
         )
         # Draw SUN symbol to trigger sun effect
-        eng = GameEngine(state, challenge_drawer=fixed_draw(0, ChallengeIcon.SUN))
+        stack_deck(state, Aspect.AWA, 0, ChallengeIcon.SUN)
+
+        eng = GameEngine(state)
 
         # Perform any test to trigger challenge resolution
         dummy_action = Action(
@@ -605,7 +649,9 @@ class CommonTestsTests(unittest.TestCase):
         )
         # Draw MOUNTAIN symbol to trigger mountain effect
         # Use deterministic chooser (default picks first option)
-        eng = GameEngine(state, challenge_drawer=fixed_draw(0, ChallengeIcon.MOUNTAIN))
+        stack_deck(state, Aspect.AWA, 0, ChallengeIcon.MOUNTAIN)
+
+        eng = GameEngine(state)
 
         # Verify initial state
         self.assertFalse(wolhund.exhausted, "Wolhund should start active")
@@ -648,7 +694,9 @@ class CommonTestsTests(unittest.TestCase):
             }
         )
         # Draw MOUNTAIN symbol
-        eng = GameEngine(state, challenge_drawer=fixed_draw(0, ChallengeIcon.MOUNTAIN))
+        stack_deck(state, Aspect.AWA, 0, ChallengeIcon.MOUNTAIN)
+
+        eng = GameEngine(state)
 
         # Verify initial state
         self.assertEqual(doe.harm, 0, "Doe should start with 0 harm")
@@ -717,8 +765,10 @@ class WalkWithMeTests(unittest.TestCase):
         def pick_first(_engine: GameEngine, choices: list[Card]) -> Card:
             return choices[0]
 
+        stack_deck(state, Aspect.AWA, 0, ChallengeIcon.SUN)
+
+
         eng = GameEngine(state,
-                        challenge_drawer=fixed_draw(0, ChallengeIcon.SUN),
                         card_chooser=pick_first,
                         response_decider=always_yes)
 
@@ -791,8 +841,10 @@ class WalkWithMeTests(unittest.TestCase):
         def always_no(_engine: GameEngine, _prompt: str) -> bool:
             return False
 
+        stack_deck(state, Aspect.AWA, 0, ChallengeIcon.SUN)
+
+
         eng = GameEngine(state,
-                        challenge_drawer=fixed_draw(0, ChallengeIcon.SUN),
                         response_decider=always_no)
 
         
@@ -862,8 +914,10 @@ class WalkWithMeTests(unittest.TestCase):
         def always_yes(_engine: GameEngine, _prompt: str) -> bool:
             return True
 
+        stack_deck(state, Aspect.AWA, 0, ChallengeIcon.SUN)
+
+
         eng = GameEngine(state,
-                        challenge_drawer=fixed_draw(0, ChallengeIcon.SUN),
                         response_decider=always_yes)
 
         
@@ -926,8 +980,10 @@ class WalkWithMeTests(unittest.TestCase):
         def always_yes(_engine: GameEngine, _prompt: str) -> bool:
             return True
 
+        stack_deck(state, Aspect.AWA, 0, ChallengeIcon.SUN)
+
+
         eng = GameEngine(state,
-                        challenge_drawer=fixed_draw(0, ChallengeIcon.SUN),
                         response_decider=always_yes)
 
         
@@ -987,8 +1043,10 @@ class WalkWithMeTests(unittest.TestCase):
         def always_yes(_engine: GameEngine, _prompt: str) -> bool:
             return True
 
+        stack_deck(state, Aspect.FIT, 0, ChallengeIcon.SUN)
+
+
         eng = GameEngine(state,
-                        challenge_drawer=fixed_draw(0, ChallengeIcon.SUN),
                         response_decider=always_yes)
 
         # Perform CONNECT test (not Traverse!)
@@ -1066,8 +1124,10 @@ class WalkWithMeTests(unittest.TestCase):
         def always_yes(_engine: GameEngine, _prompt: str) -> bool:
             return True
 
+        stack_deck(state, Aspect.AWA, 0, ChallengeIcon.SUN)
+
+
         eng = GameEngine(state,
-                        challenge_drawer=fixed_draw(0, ChallengeIcon.SUN),
                         card_chooser=pick_being_b,
                         response_decider=always_yes)
 
@@ -1157,8 +1217,10 @@ class CalypsaRangerMentorTests(unittest.TestCase):
         def pick_feature(_engine: GameEngine, choices: list[Card]) -> Card:
             return next(c for c in choices if c.id == "test-feature")
 
+        stack_deck(state, Aspect.AWA, 0, ChallengeIcon.MOUNTAIN)
+
+
         eng = GameEngine(state,
-                        challenge_drawer=fixed_draw(0, ChallengeIcon.MOUNTAIN),
                         card_chooser=pick_feature)
 
         # Perform a test to trigger Mountain challenge
@@ -1201,8 +1263,9 @@ class CalypsaRangerMentorTests(unittest.TestCase):
         )
 
         # Default chooser picks first (only) option
-        eng = GameEngine(state,
-                        challenge_drawer=fixed_draw(0, ChallengeIcon.MOUNTAIN))
+        stack_deck(state, Aspect.AWA, 0, ChallengeIcon.MOUNTAIN)
+
+        eng = GameEngine(state)
 
         # Perform a test to trigger Mountain challenge
         dummy_action = Action(
@@ -1245,8 +1308,9 @@ class CalypsaRangerMentorTests(unittest.TestCase):
         )
 
         # Draw CREST symbol to trigger crest effect
-        eng = GameEngine(state,
-                        challenge_drawer=fixed_draw(0, ChallengeIcon.CREST))
+        stack_deck(state, Aspect.AWA, 0, ChallengeIcon.CREST)
+
+        eng = GameEngine(state)
 
         # Verify initial state
         self.assertFalse(wolhund.exhausted, "Wolhund should start active")
@@ -1293,8 +1357,9 @@ class CalypsaRangerMentorTests(unittest.TestCase):
         )
 
         # Draw CREST symbol
-        eng = GameEngine(state,
-                        challenge_drawer=fixed_draw(0, ChallengeIcon.CREST))
+        stack_deck(state, Aspect.AWA, 0, ChallengeIcon.CREST)
+
+        eng = GameEngine(state)
 
         # Perform a test to trigger Crest challenge
         dummy_action = Action(
@@ -1342,7 +1407,10 @@ class KeywordTests(unittest.TestCase):
             }
         )
 
-        eng = GameEngine(state, challenge_drawer=fixed_draw(0, ChallengeIcon.SUN))
+        stack_deck(state, Aspect.AWA, 0, ChallengeIcon.SUN)
+
+
+        eng = GameEngine(state)
 
         # Perform a test on the doe (Calypsa is between ranger and doe)
         spook_action = Action(
@@ -1480,7 +1548,9 @@ class ChallengeRetriggerPreventionTests(unittest.TestCase):
         )
 
         # Draw SUN symbol - this should trigger doe's Sun effect which moves buck to Within Reach
-        eng = GameEngine(state, challenge_drawer=fixed_draw(0, ChallengeIcon.SUN))
+        stack_deck(state, Aspect.AWA, 0, ChallengeIcon.SUN)
+
+        eng = GameEngine(state)
 
         # Perform a test to trigger challenge resolution
         dummy_action = Action(
@@ -1528,7 +1598,9 @@ class ChallengeRetriggerPreventionTests(unittest.TestCase):
         )
 
         # Draw SUN symbol - both does have Sun effects
-        eng = GameEngine(state, challenge_drawer=fixed_draw(0, ChallengeIcon.SUN))
+        stack_deck(state, Aspect.AWA, 0, ChallengeIcon.SUN)
+
+        eng = GameEngine(state)
 
         # Perform a test to trigger challenge resolution
         dummy_action = Action(
@@ -1571,7 +1643,9 @@ class ChallengeRetriggerPreventionTests(unittest.TestCase):
         )
 
         # First test with SUN symbol
-        eng = GameEngine(state, challenge_drawer=fixed_draw(0, ChallengeIcon.SUN))
+        stack_deck(state, Aspect.AWA, 0, ChallengeIcon.SUN)
+
+        eng = GameEngine(state)
 
         dummy_action = Action(
             id="dummy",

@@ -3,10 +3,7 @@ import unittest
 from src.models import *
 from src.engine import GameEngine
 from src.cards import QuisiVosRascal
-
-
-def fixed_draw(mod: int, sym: ChallengeIcon):
-    return lambda: (mod, sym)
+from tests.test_utils import MockChallengeDeck, make_challenge_card
 
 
 def make_test_ranger() -> RangerState:
@@ -18,6 +15,24 @@ def make_test_ranger() -> RangerState:
         aspects={Aspect.AWA: 3, Aspect.FIT: 2, Aspect.SPI: 2, Aspect.FOC: 1}
     )
 
+
+
+
+def stack_deck(state: GameState, aspect: Aspect, mod: int, symbol: ChallengeIcon) -> None:
+    """Helper to stack the challenge deck with a single predetermined card."""
+    # Build mods based on which aspect is being tested
+    awa_mod = mod if aspect == Aspect.AWA else 0
+    fit_mod = mod if aspect == Aspect.FIT else 0
+    spi_mod = mod if aspect == Aspect.SPI else 0
+    foc_mod = mod if aspect == Aspect.FOC else 0
+
+    state.challenge_deck = MockChallengeDeck([make_challenge_card(
+        icon=symbol,
+        awa=awa_mod,
+        fit=fit_mod,
+        spi=spi_mod,
+        foc=foc_mod
+    )])
 
 class QuisiVosTests(unittest.TestCase):
     """Tests for Quisi Vos, Rascal"""
@@ -162,8 +177,10 @@ class QuisiVosTests(unittest.TestCase):
         def choose_flora(_engine: GameEngine, targets: list[Card]) -> Card:
             return flora
 
+        stack_deck(state, Aspect.AWA, 0, ChallengeIcon.SUN)
+
+
         eng = GameEngine(state,
-                        challenge_drawer=fixed_draw(0, ChallengeIcon.SUN),
                         card_chooser=choose_flora)
 
         # Trigger Sun effect
@@ -201,8 +218,10 @@ class QuisiVosTests(unittest.TestCase):
         def choose_insect(_engine: GameEngine, targets: list[Card]) -> Card:
             return insect
 
+        stack_deck(state, Aspect.AWA, 0, ChallengeIcon.SUN)
+
+
         eng = GameEngine(state,
-                        challenge_drawer=fixed_draw(0, ChallengeIcon.SUN),
                         card_chooser=choose_insect)
 
         # Trigger Sun effect
@@ -239,8 +258,10 @@ class QuisiVosTests(unittest.TestCase):
         def choose_gear(_engine: GameEngine, targets: list[Card]) -> Card:
             return gear
 
+        stack_deck(state, Aspect.AWA, 0, ChallengeIcon.SUN)
+
+
         eng = GameEngine(state,
-                        challenge_drawer=fixed_draw(0, ChallengeIcon.SUN),
                         card_chooser=choose_gear)
 
         # Trigger Sun effect
@@ -273,7 +294,10 @@ class QuisiVosTests(unittest.TestCase):
             Area.PLAYER_AREA: [],
         })
 
-        eng = GameEngine(state, challenge_drawer=fixed_draw(0, ChallengeIcon.SUN))
+        stack_deck(state, Aspect.AWA, 0, ChallengeIcon.SUN)
+
+
+        eng = GameEngine(state)
 
         # Trigger Sun effect
         handlers = quisi.get_challenge_handlers()
@@ -318,8 +342,10 @@ class QuisiVosTests(unittest.TestCase):
             offered_targets.extend(targets)
             return insect
 
+        stack_deck(state, Aspect.AWA, 0, ChallengeIcon.SUN)
+
+
         eng = GameEngine(state,
-                        challenge_drawer=fixed_draw(0, ChallengeIcon.SUN),
                         card_chooser=track_and_choose)
 
         # Trigger Sun effect

@@ -5,6 +5,7 @@ Tests for card discard mechanics
 import unittest
 from src.models import *
 from src.engine import GameEngine
+from tests.test_utils import MockChallengeDeck, make_challenge_card
 from src.cards.woods_cards import *
 
 
@@ -12,6 +13,24 @@ def fixed_draw(mod: int, sym: ChallengeIcon):
     """Helper to create fixed challenge draws for testing"""
     return lambda: (mod, sym)
 
+
+
+
+def stack_deck(state: GameState, aspect: Aspect, mod: int, symbol: ChallengeIcon) -> None:
+    """Helper to stack the challenge deck with a single predetermined card."""
+    # Build mods based on which aspect is being tested
+    awa_mod = mod if aspect == Aspect.AWA else 0
+    fit_mod = mod if aspect == Aspect.FIT else 0
+    spi_mod = mod if aspect == Aspect.SPI else 0
+    foc_mod = mod if aspect == Aspect.FOC else 0
+
+    state.challenge_deck = MockChallengeDeck([make_challenge_card(
+        icon=symbol,
+        awa=awa_mod,
+        fit=fit_mod,
+        spi=spi_mod,
+        foc=foc_mod
+    )])
 
 class DiscardFromPlayTests(unittest.TestCase):
     """Tests for Card.discard_from_play() method"""
@@ -29,7 +48,9 @@ class DiscardFromPlayTests(unittest.TestCase):
                 Area.PLAYER_AREA: [],
             }
         )
-        eng = GameEngine(state, challenge_drawer=fixed_draw(0, ChallengeIcon.SUN))
+        stack_deck(state, Aspect.AWA, 0, ChallengeIcon.SUN)
+
+        eng = GameEngine(state)
 
         # Discard the thicket
         msg = thicket.discard_from_play(eng)
@@ -58,7 +79,9 @@ class DiscardFromPlayTests(unittest.TestCase):
                 Area.PLAYER_AREA: [ranger_card],
             }
         )
-        eng = GameEngine(state, challenge_drawer=fixed_draw(0, ChallengeIcon.SUN))
+        stack_deck(state, Aspect.AWA, 0, ChallengeIcon.SUN)
+
+        eng = GameEngine(state)
 
         # Discard the ranger card
         msg = ranger_card.discard_from_play(eng)
@@ -84,7 +107,9 @@ class DiscardFromPlayTests(unittest.TestCase):
                 }
             )
             state.areas[zone].append(bramble)
-            eng = GameEngine(state, challenge_drawer=fixed_draw(0, ChallengeIcon.SUN))
+            stack_deck(state, Aspect.AWA, 0, ChallengeIcon.SUN)
+
+            eng = GameEngine(state)
 
             # Discard the bramble
             bramble.discard_from_play(eng)
@@ -112,7 +137,9 @@ class ClearingTests(unittest.TestCase):
                 Area.PLAYER_AREA: [],
             }
         )
-        eng = GameEngine(state, challenge_drawer=fixed_draw(0, ChallengeIcon.SUN))
+        stack_deck(state, Aspect.AWA, 0, ChallengeIcon.SUN)
+
+        eng = GameEngine(state)
 
         # Check and process clears
         cleared = eng.check_and_process_clears()
@@ -138,7 +165,9 @@ class ClearingTests(unittest.TestCase):
                 Area.PLAYER_AREA: [],
             }
         )
-        eng = GameEngine(state, challenge_drawer=fixed_draw(0, ChallengeIcon.SUN))
+        stack_deck(state, Aspect.AWA, 0, ChallengeIcon.SUN)
+
+        eng = GameEngine(state)
 
         # Check and process clears
         cleared = eng.check_and_process_clears()
@@ -164,7 +193,9 @@ class ClearingTests(unittest.TestCase):
                 Area.PLAYER_AREA: [],
             }
         )
-        eng = GameEngine(state, challenge_drawer=fixed_draw(0, ChallengeIcon.SUN))
+        stack_deck(state, Aspect.AWA, 0, ChallengeIcon.SUN)
+
+        eng = GameEngine(state)
 
         # Check and process clears
         cleared = eng.check_and_process_clears()
@@ -192,7 +223,9 @@ class ClearingTests(unittest.TestCase):
                 Area.PLAYER_AREA: [],
             }
         )
-        eng = GameEngine(state, challenge_drawer=fixed_draw(0, ChallengeIcon.SUN))
+        stack_deck(state, Aspect.AWA, 0, ChallengeIcon.SUN)
+
+        eng = GameEngine(state)
 
         # Check and process clears
         cleared = eng.check_and_process_clears()
@@ -225,7 +258,9 @@ class SeparationOfClearAndDiscardTests(unittest.TestCase):
                 Area.PLAYER_AREA: [],
             }
         )
-        eng = GameEngine(state, challenge_drawer=fixed_draw(0, ChallengeIcon.SUN))
+        stack_deck(state, Aspect.AWA, 0, ChallengeIcon.SUN)
+
+        eng = GameEngine(state)
 
         # Process clears
         eng.check_and_process_clears()
@@ -248,7 +283,9 @@ class SeparationOfClearAndDiscardTests(unittest.TestCase):
                 Area.PLAYER_AREA: [],
             }
         )
-        eng = GameEngine(state, challenge_drawer=fixed_draw(0, ChallengeIcon.SUN))
+        stack_deck(state, Aspect.AWA, 0, ChallengeIcon.SUN)
+
+        eng = GameEngine(state)
 
         # Directly discard (simulating some effect that discards without clearing)
         buck.discard_from_play(eng)

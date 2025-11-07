@@ -4,10 +4,7 @@ from src.models import *
 from src.engine import GameEngine
 from src.cards import *
 from src.registry import provide_common_tests
-
-
-def fixed_draw(mod: int, sym: ChallengeIcon):
-    return lambda: (mod, sym)
+from tests.test_utils import MockChallengeDeck, make_challenge_card
 
 
 def make_test_ranger() -> RangerState:
@@ -19,6 +16,24 @@ def make_test_ranger() -> RangerState:
         aspects={Aspect.AWA: 3, Aspect.FIT: 2, Aspect.SPI: 2, Aspect.FOC: 1}
     )
 
+
+
+
+def stack_deck(state: GameState, aspect: Aspect, mod: int, symbol: ChallengeIcon) -> None:
+    """Helper to stack the challenge deck with a single predetermined card."""
+    # Build mods based on which aspect is being tested
+    awa_mod = mod if aspect == Aspect.AWA else 0
+    fit_mod = mod if aspect == Aspect.FIT else 0
+    spi_mod = mod if aspect == Aspect.SPI else 0
+    foc_mod = mod if aspect == Aspect.FOC else 0
+
+    state.challenge_deck = MockChallengeDeck([make_challenge_card(
+        icon=symbol,
+        awa=awa_mod,
+        fit=fit_mod,
+        spi=spi_mod,
+        foc=foc_mod
+    )])
 
 class ChallengeEffectOrderingTests(unittest.TestCase):
     """Tests for ordering multiple challenge effects in the same area"""
@@ -50,8 +65,10 @@ class ChallengeEffectOrderingTests(unittest.TestCase):
             # Return reversed order
             return list(reversed(items))
 
+        stack_deck(state, Aspect.AWA, 0, ChallengeIcon.SUN)
+
+
         eng = GameEngine(state,
-                        challenge_drawer=fixed_draw(0, ChallengeIcon.SUN),
                         order_decider=tracking_order_decider)
 
         # Perform a test to trigger SUN challenge
@@ -96,8 +113,10 @@ class ChallengeEffectOrderingTests(unittest.TestCase):
             order_decider_called = True
             return items
 
+        stack_deck(state, Aspect.AWA, 0, ChallengeIcon.SUN)
+
+
         eng = GameEngine(state,
-                        challenge_drawer=fixed_draw(0, ChallengeIcon.SUN),
                         order_decider=tracking_order_decider)
 
         dummy_action = Action(
@@ -137,8 +156,10 @@ class ChallengeEffectOrderingTests(unittest.TestCase):
         def reverse_order(_engine: GameEngine, items: list, _prompt: str) -> list:
             return list(reversed(items))
 
+        stack_deck(state, Aspect.AWA, 0, ChallengeIcon.SUN)
+
+
         eng = GameEngine(state,
-                        challenge_drawer=fixed_draw(0, ChallengeIcon.SUN),
                         order_decider=reverse_order)
 
         # Trigger SUN - bucks harm each other, then all move within reach
@@ -187,8 +208,10 @@ def test_challenge_effects_resolve_in_specified_order(self):
         def maintain_order(_engine: GameEngine, items: list, _prompt: str) -> list:
             return list(items)
 
+        stack_deck(state, Aspect.AWA, 0, ChallengeIcon.SUN)
+
+
         eng = GameEngine(state,
-                        challenge_drawer=fixed_draw(0, ChallengeIcon.SUN),
                         order_decider=maintain_order)
 
         # Trigger SUN - bucks harm each other, then all move within reach
@@ -265,8 +288,10 @@ class EventListenerOrderingTests(unittest.TestCase):
         def always_yes(_engine: GameEngine, _prompt: str) -> bool:
             return True
 
+        stack_deck(state, Aspect.AWA, 0, ChallengeIcon.SUN)
+
+
         eng = GameEngine(state,
-                        challenge_drawer=fixed_draw(0, ChallengeIcon.SUN),
                         response_decider=always_yes,
                         order_decider=tracking_order_decider)
 
@@ -335,8 +360,10 @@ class EventListenerOrderingTests(unittest.TestCase):
         def always_yes(_engine: GameEngine, _prompt: str) -> bool:
             return True
 
+        stack_deck(state, Aspect.AWA, 0, ChallengeIcon.SUN)
+
+
         eng = GameEngine(state,
-                        challenge_drawer=fixed_draw(0, ChallengeIcon.SUN),
                         response_decider=always_yes,
                         order_decider=tracking_order_decider)
 
@@ -391,8 +418,10 @@ class RememberTestTests(unittest.TestCase):
             # Say yes (top) for all cards
             return True
 
+        stack_deck(state, Aspect.FOC, 0, ChallengeIcon.SUN)
+
+
         eng = GameEngine(state,
-                        challenge_drawer=fixed_draw(0, ChallengeIcon.SUN),
                         response_decider=mock_response_decider,
                         order_decider=mock_order_decider)
 
@@ -441,8 +470,10 @@ class RememberTestTests(unittest.TestCase):
         def mock_order_decider(_engine: GameEngine, items: list, _prompt: str) -> list:
             return items
 
+        stack_deck(state, Aspect.FOC, 0, ChallengeIcon.SUN)
+
+
         eng = GameEngine(state,
-                        challenge_drawer=fixed_draw(0, ChallengeIcon.SUN),
                         response_decider=mock_response_decider,
                         order_decider=mock_order_decider)
 

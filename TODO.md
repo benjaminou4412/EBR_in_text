@@ -3,9 +3,10 @@
 A living checklist. Roughly prioritized.
 
 
+
 - Implement at least one other Valley NPCs
 
-- Implement actual challenge card objects and challenge deck behaviors, including challenge deck scouting
+
 
 - Arrival setup for locations
 
