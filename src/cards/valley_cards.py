@@ -75,7 +75,7 @@ class QuisiVosRascal(Card):
         """Sun effect: Discard either 1 progress or 1 token from a flora, insect, or gear."""
         #TODO: implement unique tokens and offer the choice
         targets: list[Card] = [target for target in engine.state.all_cards_in_play() 
-                   if (target.has_trait("Flora") or target.has_trait("Insect") or CardType.GEAR in target.card_types)
+                   if (target.has_trait("Flora") or target.has_trait("Insect") or target.has_type(CardType.GEAR))
                    and target.progress > 0]
         if targets:
             engine.add_message(f"Challenge (Sun) on {self.title}: Quisi discards a token from a flora, insect, or gear. Choose one:")
@@ -110,7 +110,7 @@ class TheFundamentalist(Card):
         results: list[ConstantAbility] | None = super().get_constant_abilities()
         return [ConstantAbility(ConstantAbilityType.MODIFY_PRESENCE,
                                     source_card_id=self.id,
-                                    condition_fn=lambda s, c: (CardType.BEING in c.card_types 
+                                    condition_fn=lambda s, c: (c.has_type(CardType.BEING) 
                                                             and s.get_card_area_by_id(c.id) == s.get_card_area_by_id(self.id)
                                                             and c.id != self.id),
                                     modifier=ValueModifier(target="presence",

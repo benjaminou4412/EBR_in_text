@@ -2,13 +2,6 @@
 
 A living checklist. Roughly prioritized.
 
-
-
-- Implement at least one other Valley NPC
-
-- Arrival setup for locations
-
-
 - Implement Refresh abilites and single-sided weather
 - Implement weather-flipping
 - Implement faceup/facedown cards

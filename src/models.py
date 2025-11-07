@@ -145,6 +145,18 @@ class ChallengeCard:
     mods: dict[Aspect, int]
     reshuffle: bool
 
+    def __repr__(self):
+        def mod_to_string(mod: int) -> str:
+            if mod >= 0:
+                return f"+{mod}"
+            else:
+                return f"{mod}"
+        awa_mod = mod_to_string(self.mods[Aspect.AWA])
+        fit_mod = mod_to_string(self.mods[Aspect.FIT])
+        foc_mod = mod_to_string(self.mods[Aspect.FOC])
+        spi_mod = mod_to_string(self.mods[Aspect.SPI])
+        return(f"AWA{awa_mod} | FIT{fit_mod} | FOC{foc_mod} | SPI{spi_mod} | {self.icon.value.upper()}" + (" | Reshuffle" if self.reshuffle else ""))
+
 
 class ChallengeDeck:
     """The challenge deck used for test resolution.
@@ -165,14 +177,18 @@ class ChallengeDeck:
         self.discard.clear()
         random.shuffle(self.deck)
 
-    def draw_challenge_card(self) -> ChallengeCard:
+    def draw_challenge_card(self, engine: GameEngine) -> ChallengeCard:
         """Draw a card from the deck, reshuffling if necessary."""
+        engine.add_message(f"Drawing challenge card...")
         if len(self.deck) == 0:
+            engine.add_message(f"Challenge deck empty; reshuffling.")
             self.reshuffle()
         drawn = self.deck.pop(0)
         self.discard.append(drawn)
+        engine.add_message(f"Drew {drawn}.")
         if drawn.reshuffle:
             self.reshuffle()
+            engine.add_message(f"Challenge deck reshuffled.")
         return drawn
 
 
@@ -322,6 +338,9 @@ class Card:
         #TODO: take into account stuff that says to "Treat cards as ready"
         return not self.exhausted
     
+    def has_type(self, type: CardType) -> bool:
+        return type in self.card_types
+    
     def has_keyword(self, keyword: Keyword) -> bool:
         #TODO: take into account keywords added by ConstantAbilities
         return keyword in self.keywords
@@ -340,6 +359,12 @@ class Card:
 
 
     #todo: methods for adding/removing unique tokens
+
+    #location only methods
+    def do_arrival_setup(self, engine:GameEngine) -> None:
+        """Implemented by locations and executed during Step 5 of Travel or Step 10 of Setup"""
+        return None
+
 
     #ranger card only methods
     def get_current_equip_value(self) -> int | None:
@@ -526,7 +551,7 @@ class Card:
             return f"{self.title} readies."
         
     def clear_if_threshold(self, state: GameState) -> str | None:
-        if CardType.LOCATION in self.card_types:
+        if self.has_type(CardType.LOCATION):
             return None #locations never clear
         
         prog_threshold = self.get_progress_threshold()
@@ -563,7 +588,7 @@ class Card:
             else:
                 engine.unattach(card)
                 #unattach() already auto-discards attachments
-                if CardType.ATTACHMENT not in card.card_types:
+                if not card.has_type(CardType.ATTACHMENT):
                     card.discard_from_play(engine)
 
         # Remove from area
@@ -573,9 +598,9 @@ class Card:
                 break
 
         # Determine correct discard pile (polymorphism!)
-        if CardType.PATH in self.card_types:
+        if self.has_type(CardType.PATH):
             engine.state.path_discard.append(self)
-        elif CardType.RANGER in self.card_types:
+        elif self.has_type(CardType.RANGER):
             engine.state.ranger.discard.append(self)
 
         # Weather, Location, and Mission cards never go to a discard pile
@@ -592,9 +617,9 @@ class Card:
         # TODO: If this is a facedown placeholder, handle original (when facedown system implemented)
         # if self.is_facedown():
         #     original = self.facedown_original
-        #     if CardType.PATH in original.card_types:
+        #     if original.has_type(CardType.PATH):
         #         engine.state.path_discard.append(original)
-        #     elif CardType.RANGER in original.card_types:
+        #     elif origina.has_type(CardType.RANGER):
         #         engine.state.ranger.discard.append(original)
 
         return f"{self.title} discarded."

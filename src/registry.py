@@ -9,7 +9,7 @@ def provide_common_tests(state: GameState) -> list[Action]:
 
     # Traverse: FIT + [Exploration], target Feature or Location, diff X=presence
     def traverse_success(e: GameEngine, eff: int, card: Card | None) -> None:
-        if card and (CardType.FEATURE in card.card_types or CardType.LOCATION in card.card_types):
+        if card and (card.has_type(CardType.FEATURE) or card.has_type(CardType.LOCATION)):
             msg = card.add_progress(eff)
             e.add_message(msg)
 
@@ -40,7 +40,7 @@ def provide_common_tests(state: GameState) -> list[Action]:
 
     # Connect: SPI + [Connection], target Being, diff X=presence
     def connect_success(e: GameEngine, eff: int, card: Card | None) -> None:
-        if card and CardType.BEING in card.card_types:
+        if card and card.has_type(CardType.BEING):
             msg = card.add_progress(eff)
             e.add_message(msg)
 

@@ -21,6 +21,37 @@ class AncestorsGrove(Card):
         "atop the dome, their roots snaking down over the grassy roof of the dome. Several people " \
         "gather around the entrance to the closest dome, each wearing hooded robes of a different color."
 
+    def do_arrival_setup(self, engine: GameEngine) -> None:
+        engine.add_message(f"Search the path deck for the next card with a presence of 3 and discard it.")
+        target = None
+        engine.add_message(f"Searching...")
+        for card in engine.state.path_deck:
+            if card.get_current_presence(engine) == 3:
+                target = card
+                break
+        if target is not None:
+            engine.add_message(f"Found {target.title} with presence of 3. Discarding...")
+            engine.state.path_deck.remove(target)
+            engine.state.path_discard.append(target)
+        else:
+            engine.add_message(f"No card with presence of 3 found in path deck.")
+        
+        engine.add_message(f"Lead Ranger: Search the path deck for the next prey and put it into play.")
+        target = None
+        for card in engine.state.path_deck:
+            if card.has_trait("Prey"):
+                target = card
+                break
+        if target is not None:
+            engine.add_message(f"Found prey {target.title}. Putting into play...")
+            engine.state.path_deck.remove(target)
+            engine.draw_path_card(target)
+        else:
+            engine.add_message(f"No prey found in path deck.")
+
+        engine.add_message(f"Next Ranger: Search the path deck for the next prey and put it into play. (Skipped)")
+
+
     def get_challenge_handlers(self) -> dict[ChallengeIcon, Callable[[GameEngine], bool]] | None:
         """Returns challenge symbol effects for this card"""
         return {
@@ -47,11 +78,31 @@ class BoulderField(Card):
         "The skull of a horned being - perhaps a Sitka Buck? - lies in the center of the scene."
 
 
+    def do_arrival_setup(self, engine: GameEngine) -> None:
+        engine.add_message(f"Lead Ranger: Draw 1 challenge card and do the following based on the challenge icon on that card:")
+        engine.add_message(f"Sun: Scout 2 path cards, then draw 1 path card.")
+        engine.add_message(f"Mountain: Draw 1 path card.")
+        engine.add_message(f"Crest: Scout 3 path cards, then draw 2 path cards.")
+        drawn = engine.state.challenge_deck.draw_challenge_card(engine)
+        icon = drawn.icon
+        if icon == ChallengeIcon.SUN:
+            engine.scout_cards(engine.state.path_deck, 2)
+            engine.draw_path_card(None)
+        elif icon == ChallengeIcon.MOUNTAIN:
+            engine.draw_path_card(None)
+        elif icon == ChallengeIcon.CREST:
+            engine.scout_cards(engine.state.path_deck, 3)
+            engine.draw_path_card(None)
+            engine.draw_path_card(None)
+        else:
+            raise RuntimeError(f"Challenge card drawn due to Boulder Field has no icon!")
+
+    
     def get_constant_abilities(self) -> list[ConstantAbility] | None:
         """Reduce the presence of all beings in play by 1."""
         return [ConstantAbility(ConstantAbilityType.MODIFY_PRESENCE,
                                 source_card_id=self.id,
-                                condition_fn=lambda _s, c: CardType.BEING in c.card_types,
+                                condition_fn=lambda _s, c: c.has_type(CardType.BEING),
                                 modifier=ValueModifier(target="presence",
                                                        amount = -1,
                                                        source_id=self.id))]

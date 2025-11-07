@@ -5,7 +5,7 @@ from typing import Callable, Optional, Any, cast
 from .models import (
     GameState, Action, CommitDecision, RangerState, Card, ChallengeIcon,
     Aspect, Approach, Area, CardType, EventType, TimingType, EventListener,
-    MessageEvent, Keyword, ConstantAbility, ConstantAbilityType, ChallengeCard
+    MessageEvent, Keyword, ConstantAbility, ConstantAbilityType
 )
 
 from .utils import get_display_id
@@ -226,7 +226,7 @@ class GameEngine:
 
         # Step 3: Apply modifiers. TODO: Take into account modifiers from non-challenge-card sources.
 
-        challenge_card_drawn: ChallengeCard = self.state.challenge_deck.draw_challenge_card()
+        challenge_card_drawn = self.state.challenge_deck.draw_challenge_card(self)
         mod, icon = challenge_card_drawn.mods[aspect], challenge_card_drawn.icon
         effort = max(0, base_effort + mod)
         difficulty = action.difficulty_fn(self, target_card)
@@ -340,7 +340,7 @@ class GameEngine:
 
         for area in self.state.areas:
             for card in self.state.areas[area]:
-                if CardType.PATH in card.card_types:
+                if card.has_type(CardType.PATH):
                     clear_type = card.clear_if_threshold(self.state)
                     if clear_type == "progress":
                         # TODO: Check for clear-by-progress entry (on_progress_clear_log)
@@ -576,23 +576,36 @@ class GameEngine:
         self.add_message(f"Day {self.state.day_number} has ended after {self.state.round_number} rounds.")
         self.add_message("Thank you for playing!")
 
-    def draw_path_card(self) -> None:
+    def draw_path_card(self, target_card: Card | None) -> None:
         """Draw one path card and put it into play, reshuffling path discard if necessary"""
-        if not self.state.path_deck:
-            self.add_message(f"Path deck empty; shuffling in path discard.")
-            random.shuffle(self.state.path_discard)
-            self.state.path_deck.extend(self.state.path_discard)
-            self.state.path_discard.clear()
-        card = self.state.path_deck.pop(0)
-        if card.starting_area is not None:
-                self.state.areas[card.starting_area].append(card)
-                constant_abilities, listeners = card.enters_play(self, card.starting_area)
-                if constant_abilities:
-                    self.register_constant_abilities(constant_abilities)
-                if listeners:
-                    self.register_listeners(listeners)
+        """If target_card parameter is given, put it into play without drawing from path deck."""
+        if target_card is None:
+            if not self.state.path_deck:
+                self.add_message(f"Path deck empty; shuffling in path discard.")
+                random.shuffle(self.state.path_discard)
+                self.state.path_deck.extend(self.state.path_discard)
+                self.state.path_discard.clear()
+            card = self.state.path_deck.pop(0)
+            if card.starting_area is not None:
+                    self.state.areas[card.starting_area].append(card)
+                    constant_abilities, listeners = card.enters_play(self, card.starting_area)
+                    if constant_abilities:
+                        self.register_constant_abilities(constant_abilities)
+                    if listeners:
+                        self.register_listeners(listeners)
+            else:
+                raise AttributeError("Path card drawn is missing a starting area.")
         else:
-            raise AttributeError("Path card drawn is missing a starting area.")
+            card = target_card
+            if card.starting_area is not None:
+                    self.state.areas[card.starting_area].append(card)
+                    constant_abilities, listeners = card.enters_play(self, card.starting_area)
+                    if constant_abilities:
+                        self.register_constant_abilities(constant_abilities)
+                    if listeners:
+                        self.register_listeners(listeners)
+            else:
+                raise AttributeError("Path card drawn is missing a starting area.")
 
     def scout_cards(self, deck: list[Card], count: int) -> None:
         """Scout X cards from a deck: look at top X cards, then place each on top or bottom in any order.
@@ -702,7 +715,7 @@ class GameEngine:
     def phase1_draw_paths(self, count: int = 1):
         self.add_message(f"Begin Phase 1: Draw Path Cards")
         for _ in range(count):
-            self.draw_path_card()
+            self.draw_path_card(None)
 
     def phase3_travel(self) -> bool: #returns whether day ended by camping
         self.add_message(f"Begin Phase 3: Travel")
@@ -746,7 +759,7 @@ class GameEngine:
 
         self.add_message(f"   Discarding all non-persistent path cards from play...")
         for card in [card for card in list(self.state.all_cards_in_play()) 
-                     if CardType.PATH in card.card_types and not card.has_keyword(Keyword.PERSISTENT)]:
+                     if card.has_type(CardType.PATH) and not card.has_keyword(Keyword.PERSISTENT)]:
             card.discard_from_play(self) #ignore return messages b/c spammy
 
         self.add_message(f"   Discarding all non-persistent ranger cards from path areas...")
@@ -754,7 +767,7 @@ class GameEngine:
             path_areas = [Area.WITHIN_REACH, Area.ALONG_THE_WAY, Area.SURROUNDINGS]
             if area in path_areas:
                 ranger_cards = [card for card in cards 
-                                if CardType.RANGER in card.card_types and not card.has_keyword(Keyword.PERSISTENT)]
+                                if card.has_type(CardType.RANGER) and not card.has_keyword(Keyword.PERSISTENT)]
                 for card in list(ranger_cards):
                     card.discard_from_play(self) #ignore return messages b/c spammy
 
@@ -822,10 +835,8 @@ class GameEngine:
 
         #TODO: display campaign log entry and resolve decisions; may be overridden by missions
         #TODO: resolve missions to "arrive at" the new location
-        #TODO: resolve arrival setup
-        #for now, default to drawing 1 path card:
-        self.add_message(f"Arrival Setup:")
-        self.draw_path_card()
+        self.add_message(f"--- Arrival Setup ---")
+        self.state.location.do_arrival_setup(self)
 
     def phase4_refresh(self):
         self.add_message(f"Begin Phase 4: Refresh")
