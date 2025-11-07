@@ -4,9 +4,7 @@ A living checklist. Roughly prioritized.
 
 
 
-- Implement at least one other Valley NPCs
-
-
+- Implement at least one other Valley NPC
 
 - Arrival setup for locations
 

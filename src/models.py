@@ -383,7 +383,10 @@ class Card:
         if self.has_keyword(Keyword.AMBUSH) and self.starting_area == Area.WITHIN_REACH:
             engine.add_message(f"   {self.title} Ambushes you!")
             engine.fatigue_ranger(engine.state.ranger, self.get_current_presence(engine))
-        return ([],[])
+        constant_abilities = self.get_constant_abilities()
+        event_listeners = self.get_listeners()
+        return ((constant_abilities if constant_abilities is not None else []),
+                event_listeners if event_listeners is not None else [])
     
     #path card only methods
     def get_current_presence(self, engine: GameEngine) -> int | None:

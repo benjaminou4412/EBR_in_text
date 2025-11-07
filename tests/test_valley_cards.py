@@ -2,7 +2,7 @@
 import unittest
 from src.models import *
 from src.engine import GameEngine
-from src.cards import QuisiVosRascal
+from src.cards import QuisiVosRascal, TheFundamentalist, ProwlingWolhund
 from tests.test_utils import MockChallengeDeck, make_challenge_card
 
 
@@ -561,6 +561,310 @@ class AmbushKeywordTests(unittest.TestCase):
         # Should trigger again on the move back
         self.assertEqual(len(ranger.fatigue_stack), 4,
                         "Should trigger again on move back to Within Reach (2 + 2 = 4)")
+
+
+class TheFundamentalistTests(unittest.TestCase):
+    """Tests for The Fundamentalist"""
+
+    def test_fundamentalist_has_friendly_keyword(self):
+        """Test that The Fundamentalist has the Friendly keyword"""
+        fundamentalist = TheFundamentalist()
+        self.assertTrue(fundamentalist.has_keyword(Keyword.FRIENDLY))
+
+    def test_fundamentalist_presence_reduction_same_area(self):
+        """Test that The Fundamentalist reduces presence of beings in the same area by 1"""
+        fundamentalist = TheFundamentalist()
+        being = Card(
+            id="test-being",
+            title="Test Being",
+            card_types={CardType.PATH, CardType.BEING},
+            presence=3,
+            starting_area=Area.WITHIN_REACH
+        )
+
+        ranger = make_test_ranger()
+        state = GameState(ranger=ranger, areas={
+            Area.SURROUNDINGS: [],
+            Area.ALONG_THE_WAY: [],
+            Area.WITHIN_REACH: [fundamentalist, being],
+            Area.PLAYER_AREA: [],
+        })
+        eng = GameEngine(state)
+
+        # Verify base presence
+        self.assertEqual(being.presence, 3, "Being should have base presence of 3")
+
+        # Check current presence with Fundamentalist in same area
+        current_presence = being.get_current_presence(eng)
+        self.assertEqual(current_presence, 2, "Being's presence should be reduced by 1 (3 - 1 = 2)")
+
+    def test_fundamentalist_no_reduction_different_area(self):
+        """Test that The Fundamentalist does NOT reduce presence of beings in different areas"""
+        fundamentalist = TheFundamentalist()
+        being = Card(
+            id="test-being",
+            title="Test Being",
+            card_types={CardType.PATH, CardType.BEING},
+            presence=3,
+            starting_area=Area.ALONG_THE_WAY
+        )
+
+        ranger = make_test_ranger()
+        state = GameState(ranger=ranger, areas={
+            Area.SURROUNDINGS: [],
+            Area.ALONG_THE_WAY: [being],
+            Area.WITHIN_REACH: [fundamentalist],  # Different area
+            Area.PLAYER_AREA: [],
+        })
+        eng = GameEngine(state)
+
+        # Check current presence - should NOT be reduced
+        current_presence = being.get_current_presence(eng)
+        self.assertEqual(current_presence, 3, "Being's presence should not be reduced (different area)")
+
+    def test_fundamentalist_does_not_reduce_own_presence(self):
+        """Test that The Fundamentalist does not reduce his own presence"""
+        fundamentalist = TheFundamentalist()
+
+        ranger = make_test_ranger()
+        state = GameState(ranger=ranger, areas={
+            Area.SURROUNDINGS: [],
+            Area.ALONG_THE_WAY: [],
+            Area.WITHIN_REACH: [fundamentalist],
+            Area.PLAYER_AREA: [],
+        })
+        eng = GameEngine(state)
+
+        # Check Fundamentalist's own presence (should be base 2)
+        current_presence = fundamentalist.get_current_presence(eng)
+        self.assertEqual(current_presence, 2, "Fundamentalist should not reduce his own presence")
+
+    def test_fundamentalist_reduces_multiple_beings(self):
+        """Test that The Fundamentalist reduces presence of multiple beings in same area"""
+        fundamentalist = TheFundamentalist()
+        being1 = Card(
+            id="being-1",
+            title="Being 1",
+            card_types={CardType.PATH, CardType.BEING},
+            presence=3,
+            starting_area=Area.WITHIN_REACH
+        )
+        being2 = Card(
+            id="being-2",
+            title="Being 2",
+            card_types={CardType.PATH, CardType.BEING},
+            presence=2,
+            starting_area=Area.WITHIN_REACH
+        )
+
+        ranger = make_test_ranger()
+        state = GameState(ranger=ranger, areas={
+            Area.SURROUNDINGS: [],
+            Area.ALONG_THE_WAY: [],
+            Area.WITHIN_REACH: [fundamentalist, being1, being2],
+            Area.PLAYER_AREA: [],
+        })
+        eng = GameEngine(state)
+
+        # Both beings should have reduced presence
+        self.assertEqual(being1.get_current_presence(eng), 2, "Being 1 presence should be 3 - 1 = 2")
+        self.assertEqual(being2.get_current_presence(eng), 1, "Being 2 presence should be 2 - 1 = 1")
+
+    def test_fundamentalist_does_not_affect_features(self):
+        """Test that The Fundamentalist only affects beings, not features"""
+        fundamentalist = TheFundamentalist()
+        feature = Card(
+            id="test-feature",
+            title="Test Feature",
+            card_types={CardType.PATH, CardType.FEATURE},
+            presence=3,
+            starting_area=Area.WITHIN_REACH
+        )
+
+        ranger = make_test_ranger()
+        state = GameState(ranger=ranger, areas={
+            Area.SURROUNDINGS: [],
+            Area.ALONG_THE_WAY: [],
+            Area.WITHIN_REACH: [fundamentalist, feature],
+            Area.PLAYER_AREA: [],
+        })
+        eng = GameEngine(state)
+
+        # Feature presence should NOT be affected
+        current_presence = feature.get_current_presence(eng)
+        self.assertEqual(current_presence, 3, "Feature presence should not be reduced")
+
+    def test_fundamentalist_mountain_effect_removes_harm(self):
+        """Test that The Fundamentalist's Mountain effect removes 1 harm when he has harm"""
+        fundamentalist = TheFundamentalist()
+        fundamentalist.harm = 2
+
+        ranger = make_test_ranger()
+        state = GameState(ranger=ranger, areas={
+            Area.SURROUNDINGS: [],
+            Area.ALONG_THE_WAY: [],
+            Area.WITHIN_REACH: [fundamentalist],
+            Area.PLAYER_AREA: [],
+        })
+
+        stack_deck(state, Aspect.AWA, 0, ChallengeIcon.MOUNTAIN)
+
+        eng = GameEngine(state)
+
+        # Trigger Mountain effect
+        handlers = fundamentalist.get_challenge_handlers()
+        self.assertIsNotNone(handlers)
+        self.assertIn(ChallengeIcon.MOUNTAIN, handlers)
+
+        resolved = handlers[ChallengeIcon.MOUNTAIN](eng)
+
+        self.assertTrue(resolved, "Mountain effect should resolve successfully")
+        self.assertEqual(fundamentalist.harm, 1, "Fundamentalist should have 1 less harm (2 - 1 = 1)")
+
+    def test_fundamentalist_mountain_effect_no_harm(self):
+        """Test that The Fundamentalist's Mountain effect does nothing when he has no harm"""
+        fundamentalist = TheFundamentalist()
+        fundamentalist.harm = 0
+
+        ranger = make_test_ranger()
+        state = GameState(ranger=ranger, areas={
+            Area.SURROUNDINGS: [],
+            Area.ALONG_THE_WAY: [],
+            Area.WITHIN_REACH: [fundamentalist],
+            Area.PLAYER_AREA: [],
+        })
+
+        stack_deck(state, Aspect.AWA, 0, ChallengeIcon.MOUNTAIN)
+
+        eng = GameEngine(state)
+
+        # Trigger Mountain effect
+        handlers = fundamentalist.get_challenge_handlers()
+        resolved = handlers[ChallengeIcon.MOUNTAIN](eng)
+
+        self.assertFalse(resolved, "Mountain effect should not resolve when no harm")
+        self.assertEqual(fundamentalist.harm, 0, "Fundamentalist should still have 0 harm")
+
+    def test_fundamentalist_crest_effect_with_predator(self):
+        """Test that The Fundamentalist's Crest effect exhausts predator and adds harm"""
+        fundamentalist = TheFundamentalist()
+        wolhund = ProwlingWolhund()
+        wolhund.exhausted = False
+
+        ranger = make_test_ranger()
+        state = GameState(ranger=ranger, areas={
+            Area.SURROUNDINGS: [],
+            Area.ALONG_THE_WAY: [wolhund],  # Active predator
+            Area.WITHIN_REACH: [fundamentalist],
+            Area.PLAYER_AREA: [],
+        })
+
+        stack_deck(state, Aspect.AWA, 0, ChallengeIcon.CREST)
+
+        eng = GameEngine(state)
+
+        # Verify initial state
+        self.assertFalse(wolhund.exhausted, "Wolhund should start active")
+        self.assertEqual(fundamentalist.harm, 0, "Fundamentalist should start with 0 harm")
+
+        # Get wolhund's presence
+        wolhund_presence = wolhund.get_current_presence(eng)
+
+        # Trigger Crest effect
+        handlers = fundamentalist.get_challenge_handlers()
+        self.assertIsNotNone(handlers)
+        self.assertIn(ChallengeIcon.CREST, handlers)
+
+        resolved = handlers[ChallengeIcon.CREST](eng)
+
+        self.assertTrue(resolved, "Crest effect should resolve successfully")
+        self.assertTrue(wolhund.exhausted, "Wolhund should be exhausted")
+        self.assertEqual(fundamentalist.harm, wolhund_presence,
+                        f"Fundamentalist should have harm equal to wolhund's presence ({wolhund_presence})")
+
+    def test_fundamentalist_crest_effect_no_predator(self):
+        """Test that The Fundamentalist's Crest effect does nothing when no predator"""
+        fundamentalist = TheFundamentalist()
+
+        ranger = make_test_ranger()
+        state = GameState(ranger=ranger, areas={
+            Area.SURROUNDINGS: [],
+            Area.ALONG_THE_WAY: [],
+            Area.WITHIN_REACH: [fundamentalist],
+            Area.PLAYER_AREA: [],
+        })
+
+        stack_deck(state, Aspect.AWA, 0, ChallengeIcon.CREST)
+
+        eng = GameEngine(state)
+
+        # Trigger Crest effect
+        handlers = fundamentalist.get_challenge_handlers()
+        resolved = handlers[ChallengeIcon.CREST](eng)
+
+        self.assertFalse(resolved, "Crest effect should not resolve when no predator")
+        self.assertEqual(fundamentalist.harm, 0, "Fundamentalist should still have 0 harm")
+
+    def test_fundamentalist_presence_reduction_during_ambush(self):
+        """Test that Fundamentalist's presence reduction applies during Ambush fatigue calculation"""
+        fundamentalist = TheFundamentalist()
+        ambush_being = Card(
+            id="ambush-being",
+            title="Ambush Being",
+            card_types={CardType.PATH, CardType.BEING},
+            keywords={Keyword.AMBUSH},
+            presence=3,
+            starting_area=Area.ALONG_THE_WAY  # Will move to Within Reach
+        )
+
+        ranger = make_test_ranger()
+        initial_deck_size = len(ranger.deck)
+
+        state = GameState(ranger=ranger, areas={
+            Area.SURROUNDINGS: [],
+            Area.ALONG_THE_WAY: [ambush_being],
+            Area.WITHIN_REACH: [fundamentalist],
+            Area.PLAYER_AREA: [],
+        })
+        eng = GameEngine(state)
+
+        # Move ambush being to same area as Fundamentalist
+        eng.move_card(ambush_being.id, Area.WITHIN_REACH)
+
+        # Ambush should trigger with REDUCED presence (3 - 1 = 2)
+        self.assertEqual(len(ranger.fatigue_stack), 2,
+                        "Ranger should be fatigued by reduced presence (3 - 1 = 2)")
+        self.assertEqual(len(ranger.deck), initial_deck_size - 2,
+                        "Ranger deck should be reduced by 2 (reduced presence)")
+
+    def test_fundamentalist_constant_ability_registers_on_play(self):
+        """Test that Fundamentalist's constant ability is registered when he enters play"""
+        fundamentalist = TheFundamentalist()
+
+        ranger = make_test_ranger()
+        state = GameState(ranger=ranger, areas={
+            Area.SURROUNDINGS: [],
+            Area.ALONG_THE_WAY: [],
+            Area.WITHIN_REACH: [],
+            Area.PLAYER_AREA: [],
+        })
+        eng = GameEngine(state)
+
+        # Get constant abilities
+        abilities = fundamentalist.get_constant_abilities()
+        self.assertIsNotNone(abilities, "Fundamentalist should have constant abilities")
+        self.assertEqual(len(abilities), 1, "Should have exactly 1 constant ability")
+        self.assertEqual(abilities[0].ability_type, ConstantAbilityType.MODIFY_PRESENCE,
+                        "Should be MODIFY_PRESENCE type")
+
+        # Register the ability
+        eng.register_constant_abilities(abilities)
+
+        # Verify ability is in engine's constant abilities list
+        presence_abilities = [a for a in eng.constant_abilities
+                            if a.ability_type == ConstantAbilityType.MODIFY_PRESENCE]
+        self.assertEqual(len(presence_abilities), 1,
+                        "Engine should have 1 MODIFY_PRESENCE ability registered")
 
 
 if __name__ == '__main__':

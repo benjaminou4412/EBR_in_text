@@ -16,10 +16,10 @@ def build_woods_path_deck() -> list[Card]:
 
 def select_three_random_valley_cards() -> list[Card]:
     # Import inside function to avoid circular import
-    from .cards import CalypsaRangerMentor
+    from .cards import CalypsaRangerMentor, QuisiVosRascal, TheFundamentalist
 
     #TODO: actually select three random valley cards
-    return [CalypsaRangerMentor()]
+    return [CalypsaRangerMentor(), QuisiVosRascal(), TheFundamentalist()]
 
 def get_new_location(current_location: Card) -> Card:
     # Import inside function to avoid circular import

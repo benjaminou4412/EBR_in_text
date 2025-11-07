@@ -90,3 +90,51 @@ class QuisiVosRascal(Card):
     def _crest_effect(self, engine: GameEngine) -> bool:
         """If there is an active predator, exhaust it. »» Add [harm] to this being equal to that predator's presence."""
         return self.harm_from_predator(engine, ChallengeIcon.CREST, self)
+    
+class TheFundamentalist(Card):
+    def __init__(self):
+        # Load all common PathCard fields from JSON
+        super().__init__(**load_card_fields("The Fundamentalist", "Valley")) #type:ignore
+        self.keywords = {Keyword.FRIENDLY}
+        self.art_description = "A tensed-up man turns to look at you, his shoulders slightly hunched and his right arm " \
+        "clenched upwards. His face is almost entirely obscured by a heavy-duty set of goggles over his eyes and nose and " \
+        "the enormous collar of his coat covering his mouth, cheeks, and chin. He wears a wide-brimmed conical hat in teal, " \
+        "the same color as his coat and gloves; you get the sense that barely any of his body is exposed to the elements. His " \
+        "backpack is unusual, resembling a tiered miniature garden strapped to his back, rimmed by what could be earthenware " \
+        "or stone. All sorts of plants sprout out into the open air; you count at least a dozen varieties, ranging from flowering " \
+        "cacti to spindly mushrooms to leafy bushels and ferns."
+        
+
+    def get_constant_abilities(self) -> list[ConstantAbility] | None:
+        """Reduce the presence of all other beings in the same area as the Fundamentalist by 1."""
+        results: list[ConstantAbility] | None = super().get_constant_abilities()
+        return [ConstantAbility(ConstantAbilityType.MODIFY_PRESENCE,
+                                    source_card_id=self.id,
+                                    condition_fn=lambda s, c: (CardType.BEING in c.card_types 
+                                                            and s.get_card_area_by_id(c.id) == s.get_card_area_by_id(self.id)
+                                                            and c.id != self.id),
+                                    modifier=ValueModifier(target="presence",
+                                                        amount = -1,
+                                                        source_id=self.id))] + (results if results is not None else [])
+    
+    def get_challenge_handlers(self) -> dict[ChallengeIcon, Callable[[GameEngine], bool]] | None:
+        """Returns challenge symbol effects for this card"""
+        return {
+            ChallengeIcon.MOUNTAIN: self._mountain_effect,
+            ChallengeIcon.CREST: self._crest_effect
+        }
+            
+
+    def _mountain_effect(self, engine: GameEngine) -> bool:
+        """If this being has 1 or more harm >> Remove 1 harm from this being"""
+        if self.harm >= 1:
+            engine.add_message(f"{self.title} has 1 or more harm, so he chews on an herb harvested from his backpack.")
+            self.remove_harm(1)
+            return True
+        else:
+            engine.add_message(f"Challenge (Mountain) on {self.title}: (no harm on The Fundamentalist)")
+            return False
+
+    def _crest_effect(self, engine: GameEngine) -> bool:
+        """If there is an active predator, exhaust it. »» Add [harm] to this being equal to that predator's presence."""
+        return self.harm_from_predator(engine, ChallengeIcon.CREST, self)

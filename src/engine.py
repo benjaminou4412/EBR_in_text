@@ -808,7 +808,6 @@ class GameEngine:
         
         
         #TODO: load location set or 3 random Valley NPCs 
-        #For now, just load in Calypsa
         if self.state.location.has_trait("Pivotal"):
             location_set_or_valley: list[Card] = select_three_random_valley_cards() #TODO: replace with pivotal card set
         else:

@@ -48,6 +48,7 @@ class BoulderField(Card):
 
 
     def get_constant_abilities(self) -> list[ConstantAbility] | None:
+        """Reduce the presence of all beings in play by 1."""
         return [ConstantAbility(ConstantAbilityType.MODIFY_PRESENCE,
                                 source_card_id=self.id,
                                 condition_fn=lambda _s, c: CardType.BEING in c.card_types,

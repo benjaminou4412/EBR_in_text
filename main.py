@@ -16,7 +16,7 @@ from src.decks import build_woods_path_deck
 from src.cards import (
     OvergrownThicket, SunberryBramble, SitkaDoe, WalkWithMe, ADearFriend,
     ProwlingWolhund, SitkaBuck, CalypsaRangerMentor, PeerlessPathfinder,
-    CausticMulcher, BoulderField
+    CausticMulcher, BoulderField, TheFundamentalist
 )
 
 
@@ -26,16 +26,16 @@ def pick_demo_cards() -> list[Card]:
     walk_with_me_0 : Card = WalkWithMe()
     a_dear_friend_0 : Card= ADearFriend()
     exploration_dummies : list[Card] = []
-    for _ in range(2):
+    for _ in range(5):
         exploration_dummies.append(Card(title="Demo Explore +1", approach_icons={Approach.EXPLORATION: 1}))
     conflict_dummies : list[Card]  = []
-    for _ in range(2):
+    for _ in range(5):
         conflict_dummies.append(Card(title="Demo Conflict +1", approach_icons={Approach.CONFLICT: 1}))
     reason_dummies : list[Card]  = []
-    for _ in range(2):
+    for _ in range(5):
         reason_dummies.append(Card(title="Demo Reason +1", approach_icons={Approach.REASON: 1}))
     connection_dummies : list[Card]  = []
-    for _ in range(2):
+    for _ in range(5):
         connection_dummies.append(Card(title="Demo Connection +1", approach_icons={Approach.CONNECTION: 1}))
 
     deck = exploration_dummies + conflict_dummies + reason_dummies + connection_dummies
@@ -296,6 +296,8 @@ def main() -> None:
     #or well, whatever method eventually gets called here should trigger that
 
     engine.arrival_setup(start_of_day=True)
+    #force a copy of a card on top of the deck for quick testing
+    state.path_deck.insert(0, TheFundamentalist())
     menu_and_run(engine)
 
 
