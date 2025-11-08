@@ -9,7 +9,7 @@ from .models import (
 )
 
 from .utils import get_display_id
-from .decks import build_woods_path_deck, select_three_random_valley_cards, get_new_location
+from .decks import build_woods_path_deck, select_three_random_valley_cards, get_new_location, get_current_weather
 
 
 @dataclass
@@ -43,6 +43,10 @@ class GameEngine:
         self.day_has_ended: bool = False
         # Display ID cache for challenge resolution (maintains consistent IDs even if cards clear)
         self._display_id_cache: dict[str, str] = {}
+        # Test outcome tracking (for edge case challenge effects like "A Perfect Day")
+        # These are set during test resolution and available during challenge effect resolution
+        self.last_test_added_progress: bool = False
+        self.last_test_target: Card | None = None
         self.reconstruct()
 
     def _default_chooser(self, _engine: 'GameEngine', choices: list[Card]) -> Card:  # noqa: ARG002
@@ -247,11 +251,20 @@ class GameEngine:
         self.add_message(f"Test difficulty: {difficulty}")
         success = effort >= difficulty
 
+        # Track test outcome and target (for edge case challenge effects)
+        self.last_test_added_progress = False
+        self.last_test_target = target_card
+        progress_before = target_card.progress if target_card else 0
+
         if success:
             self.add_message(f"Result: {base_effort} + ({mod:d}) = {effort} >= {difficulty}")
             self.add_message(f"Test succeeded!")
             action.on_success(self, effort, target_card)
             self.trigger_listeners(EventType.TEST_SUCCEED, TimingType.AFTER, action, effort)
+
+            # Check if progress was added to the target
+            if target_card:
+                self.last_test_added_progress = (target_card.progress > progress_before)
 
         else:
             self.add_message(f"Result: {base_effort} + ({mod:d}) = {effort} < {difficulty}")
@@ -594,22 +607,14 @@ class GameEngine:
             card = self.state.path_deck.pop(0)
             if card.starting_area is not None:
                     self.state.areas[card.starting_area].append(card)
-                    constant_abilities, listeners = card.enters_play(self, card.starting_area)
-                    if constant_abilities:
-                        self.register_constant_abilities(constant_abilities)
-                    if listeners:
-                        self.register_listeners(listeners)
+                    card.enters_play(self, card.starting_area)
             else:
                 raise AttributeError("Path card drawn is missing a starting area.")
         else:
             card = target_card
             if card.starting_area is not None:
                     self.state.areas[card.starting_area].append(card)
-                    constant_abilities, listeners = card.enters_play(self, card.starting_area)
-                    if constant_abilities:
-                        self.register_constant_abilities(constant_abilities)
-                    if listeners:
-                        self.register_listeners(listeners)
+                    card.enters_play(self, card.starting_area)
             else:
                 raise AttributeError("Path card drawn is missing a starting area.")
 
@@ -816,7 +821,9 @@ class GameEngine:
             self.state.areas[Area.SURROUNDINGS].append(self.state.location)
             self.state.location.enters_play(self, Area.SURROUNDINGS)
             self.add_message(f"Step 6: Set up the weather card (skipped)")
-            #TODO: setup start of day weather
+            self.state.weather = get_current_weather()
+            self.state.areas[Area.SURROUNDINGS].insert(0, self.state.weather)
+            self.state.weather.enters_play(self, Area.SURROUNDINGS)
             self.add_message(f"Step 7: Set up mission cards (skipped)")
             #TODO: setup missions
             self.add_message(f"Steps 8, 9, and 10: Build path deck, resolve arrival setup, and finishing touches.")
@@ -865,7 +872,8 @@ class GameEngine:
         self.state.ranger.refresh_all_energy()
         self.add_message("Your energy is restored.")
         #Step 4: Resolve Refresh effects (TODO)
-        self.add_message("Todo: resolve Refresh abilities.")
+        self.add_message("Resolving refresh effects...")
+        self.trigger_listeners(EventType.REFRESH, TimingType.WHEN, None, 0)
         #Step 5: Ready all cards in play
         for area in self.state.areas:
             for card in self.state.areas[area]:

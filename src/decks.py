@@ -26,3 +26,8 @@ def get_new_location(current_location: Card) -> Card:
     from .cards import BoulderField, AncestorsGrove
 
     return BoulderField() if current_location.title == "Ancestor's Grove" else AncestorsGrove()
+
+def get_current_weather() -> Card:
+    #TODO: Reference campaign log for today's weather
+    from .cards import APerfectDay
+    return APerfectDay()

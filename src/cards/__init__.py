@@ -8,6 +8,7 @@ from .conciliator_cards import ADearFriend
 from .woods_cards import SitkaBuck, OvergrownThicket, SunberryBramble, SitkaDoe, ProwlingWolhund, CausticMulcher
 from .valley_cards import CalypsaRangerMentor, QuisiVosRascal, TheFundamentalist
 from .location_cards import BoulderField, AncestorsGrove
+from .weather_cards import APerfectDay, MiddaySun
 
 __all__ = ["WalkWithMe",
             "ADearFriend",
@@ -23,4 +24,6 @@ __all__ = ["WalkWithMe",
             "BoulderField",
             "AncestorsGrove",
             "QuisiVosRascal",
-            "TheFundamentalist"]
+            "TheFundamentalist",
+            "APerfectDay",
+            "MiddaySun"]

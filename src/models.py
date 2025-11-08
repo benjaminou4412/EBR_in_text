@@ -83,6 +83,7 @@ class EventType(str, Enum):
     READY = "ready"
     CHALLENGE_DECK_SHUFFLE = "challenge-deck-shuffle"
     DRAW_CHALLENGE_CARD = "draw-challenge-card"
+    REFRESH = "refresh"
 
 class Keyword(str, Enum):
     """Keywords that modify card behavior and game rules."""
@@ -358,6 +359,7 @@ class Card:
         return self.harm_threshold
 
     def add_unique_tokens(self, token_type: str, amount: int) -> str:
+        token_type = token_type.casefold()
         if amount < 0:
             raise ValueError(f"Amount cannot be negative, use remove_unique_tokens instead!")
         if self.has_unique_token_type(token_type):
@@ -367,6 +369,7 @@ class Card:
         return(f"Added {amount} {token_type} token(s) to {self.title}, now at {self.unique_tokens[token_type]}.")
     
     def remove_unique_tokens(self, token_type: str, amount: int) -> tuple[int,str]:
+        token_type = token_type.casefold()
         if self.has_unique_token_type(token_type):
             amount_removed = min(self.unique_tokens[token_type], amount)
             self.unique_tokens[token_type] = self.unique_tokens[token_type] - amount_removed
@@ -375,16 +378,23 @@ class Card:
             return 0, f"No {token_type} tokens on {self.title}."
     
     def get_unique_token_count(self, token_type: str) -> int:
+        token_type = token_type.casefold()
         if self.has_unique_token_type(token_type):
             return self.unique_tokens[token_type]
         else:
             return 0
     
     def has_unique_token_type(self, token_type: str) -> bool:
+        token_type = token_type.casefold()
         return token_type in self.unique_tokens.keys()
     
     def has_any_unique_tokens(self) -> bool:
+        """Used to check for actual presence of tokens on card"""
         return len(self.unique_tokens) > 0 and any(x > 0 for x in self.unique_tokens.values())
+    
+    def has_unique_tokens(self) -> bool:
+        """Used to check for if card uses unique tokens, regardless of whether it currently has any."""
+        return len(self.unique_tokens) > 0
         
 
     #location only methods
@@ -426,7 +436,7 @@ class Card:
             engine.add_message(f"   Art description: {self.art_description}")
         return []
 
-    def enters_play(self, engine: GameEngine, area: Area) -> tuple[list[ConstantAbility], list[EventListener]]:
+    def enters_play(self, engine: GameEngine, area: Area) -> None:
         """Called when card enters play. Adds narrative messages, 
         and can be overridden for enter-play effects, listeners, and in-play ConstantAbilities."""
         engine.add_message(f"{get_display_id(engine.state.all_cards_in_play(), self)} enters play in {area.value}.")
@@ -437,8 +447,10 @@ class Card:
             engine.fatigue_ranger(engine.state.ranger, self.get_current_presence(engine))
         constant_abilities = self.get_constant_abilities()
         event_listeners = self.get_listeners()
-        return ((constant_abilities if constant_abilities is not None else []),
-                event_listeners if event_listeners is not None else [])
+        if constant_abilities:
+            engine.register_constant_abilities(constant_abilities)
+        if event_listeners:
+            engine.register_listeners(event_listeners)
     
     #path card only methods
     def get_current_presence(self, engine: GameEngine) -> int | None:
@@ -707,6 +719,7 @@ class GameState:
     ranger: RangerState
     role_card: Card = field(default_factory=lambda: Card()) #pointer to a card that always exists in the Player Area
     location: Card = field(default_factory=lambda: Card()) #pointer to a card that always exists in the Surroundings
+    weather: Card = field(default_factory=lambda: Card()) #pointer to a card that always exists in the Surroundings
     challenge_deck: ChallengeDeck = field(default_factory=lambda: ChallengeDeck())
     areas: dict[Area, list[Card]] = field(
         default_factory=lambda: cast(

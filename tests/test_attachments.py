@@ -227,9 +227,7 @@ class CausticMulcherConstantAbilitiesTests(unittest.TestCase):
         state.areas[Area.WITHIN_REACH].extend([mulcher, being])
 
         # Register abilities
-        abilities, _ = mulcher.enters_play(engine, Area.WITHIN_REACH)
-        if abilities:
-            engine.register_constant_abilities(abilities)
+        mulcher.enters_play(engine, Area.WITHIN_REACH)
 
         # Attach being to mulcher
         engine.attach(being, mulcher)
@@ -257,9 +255,7 @@ class CausticMulcherConstantAbilitiesTests(unittest.TestCase):
         state.areas[Area.WITHIN_REACH].extend([mulcher, being])
 
         # Register abilities
-        abilities, _ = mulcher.enters_play(engine, Area.WITHIN_REACH)
-        if abilities:
-            engine.register_constant_abilities(abilities)
+        mulcher.enters_play(engine, Area.WITHIN_REACH)
 
         # Don't attach - just exhaust being
         being.exhausted = True
@@ -284,9 +280,7 @@ class CausticMulcherConstantAbilitiesTests(unittest.TestCase):
         state.areas[Area.WITHIN_REACH].append(mulcher)
 
         # Register abilities
-        abilities, _ = mulcher.enters_play(engine, Area.WITHIN_REACH)
-        if abilities:
-            engine.register_constant_abilities(abilities)
+        mulcher.enters_play(engine, Area.WITHIN_REACH)
 
         # Move ranger token to mulcher
         engine.move_ranger_token_to_card(mulcher)
@@ -314,9 +308,7 @@ class CausticMulcherConstantAbilitiesTests(unittest.TestCase):
         state.areas[Area.WITHIN_REACH].append(mulcher)
 
         # Register abilities
-        abilities, _ = mulcher.enters_play(engine, Area.WITHIN_REACH)
-        if abilities:
-            engine.register_constant_abilities(abilities)
+        mulcher.enters_play(engine, Area.WITHIN_REACH)
 
         # Ranger token starts on role (not on mulcher)
 
@@ -349,9 +341,7 @@ class CausticMulcherConstantAbilitiesTests(unittest.TestCase):
         state.areas[Area.WITHIN_REACH].extend([mulcher, other_card])
 
         # Register abilities
-        abilities, _ = mulcher.enters_play(engine, Area.WITHIN_REACH)
-        if abilities:
-            engine.register_constant_abilities(abilities)
+        mulcher.enters_play(engine, Area.WITHIN_REACH)
 
         # Move ranger token to mulcher
         engine.move_ranger_token_to_card(mulcher)
@@ -385,9 +375,7 @@ class CausticMulcherConstantAbilitiesTests(unittest.TestCase):
         state.areas[Area.WITHIN_REACH].extend([mulcher, other_card])
 
         # Register abilities
-        abilities, _ = mulcher.enters_play(engine, Area.WITHIN_REACH)
-        if abilities:
-            engine.register_constant_abilities(abilities)
+        mulcher.enters_play(engine, Area.WITHIN_REACH)
 
         # Move ranger token to mulcher
         engine.move_ranger_token_to_card(mulcher)
@@ -423,9 +411,7 @@ class CausticMulcherConstantAbilitiesTests(unittest.TestCase):
         state.areas[Area.WITHIN_REACH].extend([mulcher, other_card])
 
         # Register abilities
-        abilities, _ = mulcher.enters_play(engine, Area.WITHIN_REACH)
-        if abilities:
-            engine.register_constant_abilities(abilities)
+        mulcher.enters_play(engine, Area.WITHIN_REACH)
 
         # Move ranger token to mulcher and exhaust it
         engine.move_ranger_token_to_card(mulcher)
@@ -464,9 +450,7 @@ class CausticMulcherConstantAbilitiesTests(unittest.TestCase):
         state.areas[Area.WITHIN_REACH].extend([mulcher, card1, card2])
 
         # Register abilities
-        abilities, _ = mulcher.enters_play(engine, Area.WITHIN_REACH)
-        if abilities:
-            engine.register_constant_abilities(abilities)
+        mulcher.enters_play(engine, Area.WITHIN_REACH)
 
         # Move ranger token to card1 (not the mulcher)
         engine.move_ranger_token_to_card(card1)
@@ -763,9 +747,7 @@ class CausticMulcherCleanupTests(unittest.TestCase):
         state.areas[Area.WITHIN_REACH].append(mulcher)
 
         # Register abilities
-        abilities, _ = mulcher.enters_play(engine, Area.WITHIN_REACH)
-        if abilities:
-            engine.register_constant_abilities(abilities)
+        mulcher.enters_play(engine, Area.WITHIN_REACH)
 
         # Verify abilities are registered
         self.assertGreater(len(engine.get_constant_abilities_by_type(ConstantAbilityType.PREVENT_READYING)), 0)

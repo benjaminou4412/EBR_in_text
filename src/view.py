@@ -94,8 +94,13 @@ def render_card_detail(card: Card, engine: GameEngine, displayed_ids: set[str], 
             print(f"{indent}   {' | '.join(parts)}")
 
     # State line for path cards
-    if card.presence is not None or card.progress_threshold is not None or card.harm_threshold is not None:
+    if card.presence is not None or card.progress_threshold is not None or card.harm_threshold is not None or card.has_unique_tokens():
         parts = []
+        if card.has_unique_tokens():
+            token_types = card.unique_tokens.keys()
+            for token_type in token_types:
+                parts.append(f"{token_type.capitalize()} tokens: {card.get_unique_token_count(token_type)}")
+
         if card.presence is not None:
             if card.presence == card.get_current_presence(engine):
                 parts.append(f"Presence: {card.get_current_presence(engine)}")
@@ -121,6 +126,7 @@ def render_card_detail(card: Card, engine: GameEngine, displayed_ids: set[str], 
             parts.append(f"Harm: {card.harm}; no Harm Threshold.")
         else:
             parts.append(f"Cannot put Harm on this card.")
+
         if parts:
             print(f"{indent}   {' | '.join(parts)}")
 

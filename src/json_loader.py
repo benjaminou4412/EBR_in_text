@@ -14,7 +14,8 @@ CARD_JSON_FILES = {
     "conciliator": "reference JSON/Ranger Cards/conciliator_cards.json",
     "valley": "reference JSON/Path Sets/valley.json",
     "woods": "reference JSON/Path Sets/Terrain sets/woods.json",
-    "locations": "reference JSON/locations.json"
+    "locations": "reference JSON/locations.json",
+    "weather": "reference JSON/weather.json"
     # Add more as needed
 }
 
@@ -141,7 +142,7 @@ def load_card_json_by_title(title: str, card_set: str) -> dict: #type: ignore
 def parse_starting_tokens(card_data : dict) -> tuple[str,int]: #type:ignore
     enters_play_with = card_data.get("enters_play_with", {}) #type:ignore
     if enters_play_with:
-        token_type = enters_play_with.get("type", "") #type:ignore
+        token_type = enters_play_with.get("type", "").lower() #type:ignore
         token_amount = enters_play_with.get("amount", 0) #type:ignore
         return (token_type, token_amount) #type:ignore
     return ("", 0)
