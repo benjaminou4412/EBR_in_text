@@ -10,12 +10,17 @@ from ..json_loader import load_card_fields #type:ignore
 from ..engine import GameEngine
 
 class APerfectDay(Card):
-    def __init__(self):
+    def __init__(self, fresh: bool = True): #"fresh" flag to prevent infinite recursion
         # Load all common PathCard fields from JSON
         super().__init__(**load_card_fields("A Perfect Day", "Weather")) #type:ignore
         self.art_description = "A gentle pair of streams runs amongst a small gathering " \
         "of stylized trees, joining together in the distance. The sun just peeks out over " \
         "the treetops amidst a clear blue sky, flanked by a smattering of thinning clouds."
+        if fresh:
+            self.backside = MiddaySun(fresh=False)
+            self.backside.backside = self
+
+
 
     def get_challenge_handlers(self) -> dict[ChallengeIcon, Callable[[GameEngine], bool]] | None:
         """Returns challenge symbol effects for this card"""
@@ -34,13 +39,6 @@ class APerfectDay(Card):
             engine.add_message(f"Challenge (Mountain) on {self.title}: The test did not add progress.")
             return False
     
-    def flip(self, engine:GameEngine):
-        self.discard_from_play(engine) #return value ignored for custom messaging
-        new_weather = MiddaySun()
-        engine.state.areas[Area.SURROUNDINGS].insert(0, new_weather)
-        engine.state.weather = new_weather
-        engine.add_message(f"A Perfect Day flips into Midday Sun.")
-        new_weather.enters_play(engine, Area.SURROUNDINGS)
 
     def get_listeners(self) -> list[EventListener] | None:
         return [EventListener(EventType.REFRESH,
@@ -54,13 +52,22 @@ class APerfectDay(Card):
         if self.get_unique_token_count("Cloud") == 0:
             self.flip(engine)
 
+    def flip(self, engine: GameEngine) -> None:
+        super().flip(engine)
+        if self.backside is None:
+            raise RuntimeError(f"Weather should always have a backside!")
+        engine.state.weather = self.backside
+
     
 class MiddaySun(Card):
-    def __init__(self):
+    def __init__(self, fresh: bool = True): #"fresh" flag to prevent infinite recursion
         # Load all common PathCard fields from JSON
         super().__init__(**load_card_fields("Midday Sun", "Weather")) #type:ignore
         self.art_description = "The sun blazes high above mountain peaks, sending tendrils of heat " \
         "snaking through a sky coated with heat-haze."
+        if fresh:
+            self.backside = APerfectDay(fresh=False)
+            self.backside.backside = self
     
     def get_challenge_handlers(self) -> dict[ChallengeIcon, Callable[[GameEngine], bool]] | None:
         """Returns challenge symbol effects for this card"""
@@ -97,13 +104,6 @@ class MiddaySun(Card):
         engine.soothe_ranger(engine.state.ranger, 1)
         return None
     
-    def flip(self, engine:GameEngine):
-        self.discard_from_play(engine) #return value ignored for custom messaging
-        new_weather = APerfectDay()
-        engine.state.areas[Area.SURROUNDINGS].insert(0, new_weather)
-        engine.state.weather = new_weather
-        new_weather.enters_play(engine, Area.SURROUNDINGS)
-        engine.add_message(f"Midday Sun flips into A Perfect Day.")
 
     def get_listeners(self) -> list[EventListener] | None:
         return [EventListener(EventType.REFRESH,
@@ -116,3 +116,9 @@ class MiddaySun(Card):
         self.add_unique_tokens("Cloud", 1)
         if self.get_unique_token_count("Cloud") >= 3:
             self.flip(engine)
+    
+    def flip(self, engine: GameEngine) -> None:
+        super().flip(engine)
+        if self.backside is None:
+            raise RuntimeError(f"Weather should always have a backside!")
+        engine.state.weather = self.backside

@@ -242,6 +242,7 @@ class Card:
     abilities_text: list[str] = field(default_factory=lambda: cast(list[str], [])) #will be mutable in expansion content (mycileal). includes keywords, tests, rules, and challenge effects
     starting_tokens: tuple[str, int] = field(default_factory=lambda: cast(tuple[str, int], {})) #a card only ever has a single type of starting token
     starting_area: Area | None = None #None for cards that don't enter play, like moments, attributes, etc. Attachments default to None and use targeting to determine their area
+    backside: Card | None = None
     #ranger cards only
     aspect: Aspect | None = None
     requirement: int = 0 #required aspect level to be legal for deckbuilding; 1-3 are valid values, 0 is null
@@ -287,6 +288,9 @@ class Card:
         
         if self.starting_tokens:
             self.unique_tokens = {self.starting_tokens[0]: self.starting_tokens[1]}
+        
+        if self.backside is None:
+            self.backside = FacedownCard(self)
     
     def __str__(self):
         return f"{self.title}"
@@ -653,15 +657,61 @@ class Card:
         engine.remove_constant_abilities_by_id(self.id)
         engine.remove_listeners_by_id(self.id)
 
-        # TODO: If this is a facedown placeholder, handle original (when facedown system implemented)
-        # if self.is_facedown():
-        #     original = self.facedown_original
-        #     if original.has_type(CardType.PATH):
-        #         engine.state.path_discard.append(original)
-        #     elif origina.has_type(CardType.RANGER):
-        #         engine.state.ranger.discard.append(original)
+        if isinstance(self, FacedownCard):
+            original = self.backside
+            if original is None:
+                raise RuntimeError(f"Facedown cards should have a front side!")
+            if original.has_type(CardType.PATH):
+                engine.state.path_discard.append(original)
+            elif original.has_type(CardType.RANGER):
+                engine.state.ranger.discard.append(original)
+            return f"{original.title} discarded."
+        else:
+            return f"{self.title} discarded."
 
-        return f"{self.title} discarded."
+        
+    
+    def flip(self, engine: GameEngine) -> None:
+        current_area = engine.state.get_card_area_by_id(self.id)
+        if current_area is None:
+            raise RuntimeError(f"Any card that flips should be in an area!")
+        if self.backside is None:
+            raise RuntimeError(f"All cards should have a backside!")
+        
+        #can't use discard_from_play because flipping a card facedown retains its tokens/attachments and doesn't go in discard piles
+        engine.state.areas[current_area].remove(self)
+        engine.remove_constant_abilities_by_id(self.id)
+        engine.remove_listeners_by_id(self.id)
+
+
+        engine.state.areas[current_area].append(self.backside)
+        self.backside.progress = self.progress
+        self.backside.harm = self.harm
+        self.backside.unique_tokens = dict(self.unique_tokens)  # Copy
+        self.backside.attached_card_ids = list(self.attached_card_ids)  # Copy
+        if isinstance(self.backside, FacedownCard):
+            engine.add_message(f"{self.title} flips over facedown.")
+        else:
+            engine.add_message(f"{self.title} flips over into {self.backside.title}")
+            #can't use enters_play because flipping a card faceup technically doesn't have it enter play
+            constant_abilities = self.backside.get_constant_abilities()
+            event_listeners = self.backside.get_listeners()
+            if constant_abilities:
+                engine.register_constant_abilities(constant_abilities)
+            if event_listeners:
+                engine.register_listeners(event_listeners)
+
+    
+@dataclass
+class FacedownCard(Card):
+    def __init__(self, frontside: Card):
+        super().__init__(
+            title="Facedown Card",
+            id=f"{frontside.id}-facedown",
+            backside=frontside
+            # All other fields use Card's defaults (empty sets, None, etc.)
+        )
+
 
 @dataclass
 class ValueModifier:
@@ -669,9 +719,6 @@ class ValueModifier:
     amount : int = 0 #for now, "set to 0" will be implemented as amount=-9999
     source_id : str = ""
     minimum_result : int = 0 #these go first in the order of operations
-
-
-
 
 @dataclass
 class RangerState:
