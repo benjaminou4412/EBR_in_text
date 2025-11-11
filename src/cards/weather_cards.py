@@ -112,7 +112,7 @@ class MiddaySun(Card):
                               TimingType.WHEN
                               )]
     
-    def _tick_up_clouds(self, engine: GameEngine, effort: int) -> None:
+    def _tick_up_clouds(self, engine: GameEngine, effort: int):
         self.add_unique_tokens("Cloud", 1)
         if self.get_unique_token_count("Cloud") >= 3:
             self.flip(engine)

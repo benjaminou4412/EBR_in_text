@@ -1,7 +1,7 @@
 """
 Explorer card implementations
 """
-from ..models import Card, EventListener, EventType, TimingType, Aspect, Action
+from ..models import Card, EventListener, EventType, TimingType, Action, GameState
 from ..engine import GameEngine
 from ..json_loader import load_card_fields #type:ignore
 
@@ -61,25 +61,29 @@ class WalkWithMe(Card):
     def enters_hand(self, engine: GameEngine) -> list[EventListener]:
         """Override to add listener. Call super() to show art description."""
         super().enters_hand(engine)
-        return [EventListener(EventType.TEST_SUCCEED, self.play, self.id, TimingType.AFTER, "Traverse")]
+        def trigger_play_prompt(eng: GameEngine, effort: int) -> None:
+            self.play_prompt(eng, effort, "You succeeded at a Traverse test.")
+        return [EventListener(EventType.TEST_SUCCEED,
+                            trigger_play_prompt,
+                            self.id, TimingType.AFTER, "Traverse")]
+
+    def get_play_targets(self, state: GameState) -> list[Card] | None:
+        """Returns valid beings to add progress to"""
+        return state.beings_in_play()
 
     def play(self, engine: GameEngine, effort: int) -> None:
         """
-        Effect: Add progress to a Being equal to the resulting effort of the Traverse test
+        Effect: Add progress to a Being equal to the resulting effort of the Traverse test.
+        Called by play_prompt() after user confirms and energy is paid.
+        Targets are guaranteed to exist by play_prompt().
         """
-        targets_list = engine.state.beings_in_play()
-        if not targets_list:
-            engine.add_message("No Beings in play; Walk With Me cannot be played.")
-            return
-        decision = engine.response_decider(engine, "You succeeded at a Traverse test. Will you play Walk With Me for 1 SPI?")
-        if decision:
-            success, error = engine.state.ranger.spend_energy(1, Aspect.SPI)
-            if success:
-                engine.add_message(f"Please choose a Being to add {effort} [Progress] to.")
-                target = engine.card_chooser(engine, targets_list)
-                # Move Walk With Me to discard and clean up listener
-                engine.discard_from_hand(self)
-                msg = target.add_progress(effort)
-                engine.add_message(f"Played Walk With Me: {msg}")
-            elif error:
-                engine.add_message(error)
+        targets_list = self.get_play_targets(engine.state)
+        engine.add_message(f"Please choose a Being to add {effort} [Progress] to.")
+        if targets_list is not None:
+            target = engine.card_chooser(engine, targets_list)
+            # Move Walk With Me to discard
+            engine.discard_from_hand(self)
+            msg = target.add_progress(effort)
+            engine.add_message(f"Played Walk With Me: {msg}")
+        else:
+            raise RuntimeError(f"Targets should exist past play_prompt!")

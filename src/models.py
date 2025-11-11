@@ -332,6 +332,58 @@ class Card:
         # Non-response moments don't establish listeners
         return CardType.MOMENT in self.card_types and len(listeners) > 0
 
+    def get_play_targets(self, state: GameState) -> list[Card] | None:
+        """
+        Returns valid targets for playing this card, or None if no targeting required.
+        Override in cards that need targeting when played.
+        """
+        return None  # Default: no targeting required
+
+    def play(self, engine: GameEngine, effort: int) -> None:
+        """
+        Play this card. Override in card subclasses to implement specific play effects.
+        For response moments, this is called after prompting and energy payment.
+        effort parameter is used by response moments that care about test results.
+        """
+        raise NotImplementedError(f"Card {self.title} does not implement play()")
+
+    def play_prompt(self, engine: GameEngine, effort: int, context: str = "") -> bool:
+        """
+        Prompt user to play this card as a response moment.
+        Returns True if played, False if declined.
+        Used by response moment listeners.
+        """
+        current_cost = self.get_current_energy_cost()
+        if current_cost is None:
+            raise RuntimeError(f"Card {self.title} has no energy cost!")
+
+        # Check if ranger has enough energy (energy is dict[Aspect, int])
+        if self.aspect and engine.state.ranger.energy[self.aspect] < current_cost:
+            return False  # Can't afford
+
+        # Check for valid targets BEFORE prompting
+        targets = self.get_play_targets(engine.state)
+        if targets is not None and len(targets) == 0:
+            engine.add_message(f"No valid targets; {self.title} cannot be played.")
+            return False
+
+        # Now prompt for play
+        aspect_str = f"{self.aspect.value}" if self.aspect else ""
+        prompt = f"Play {self.title} for {current_cost} {aspect_str}?"
+        if context:
+            prompt = f"{context}\n{prompt}"
+
+        decision = engine.response_decider(engine, prompt)
+        if decision and self.aspect:
+            success, error = engine.state.ranger.spend_energy(current_cost, self.aspect)
+            if success:
+                self.play(engine, effort)  # Calls the card's play effect
+                return True
+            elif error:
+                engine.add_message(error)
+                return False
+        return False
+
     def get_constant_abilities(self) -> list[ConstantAbility] | None:
         if self.keywords:
             result: list[ConstantAbility] = []

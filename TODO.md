@@ -2,7 +2,8 @@
 
 A living checklist. Roughly prioritized.
 
-
+- Move "Interaction with {Card} in {Area}..." display is earlier in Test sequence
+- Make it so that only actually-going-to-resolve challenge effects will be valid choices for ordering simultaneous challenge effects
 
 - Implement at least one Gear + one non-response Moment + 1 attachment, and the Play action
   - Have the gear commit effort so we're forced to implement that system too (committing effort from in-play cards in CommitDecision, spending tokens/exhausting as needed)

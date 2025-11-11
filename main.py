@@ -285,7 +285,7 @@ def main() -> None:
         card, msg, _ = state.ranger.draw_card()  # Draw cards during setup
         if card is not None:
             engine.add_message(msg)
-            card.enters_hand(engine)
+            engine.register_listeners(card.enters_hand(engine))
         else:
             raise RuntimeError(f"Deck should not run out during setup!")
     
