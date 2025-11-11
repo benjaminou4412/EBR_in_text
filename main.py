@@ -271,7 +271,6 @@ def main() -> None:
     # Configure display options
     set_show_art_descriptions(args.show_art)
 
-    #state = build_demo_state()
     ranger_deck = pick_demo_cards()
     ranger_fatigue = pick_demo_cards()[0:5]
     ranger = RangerState(name="Demo Ranger", hand=[], aspects={Aspect.AWA: 99, Aspect.FIT: 99, Aspect.SPI: 99, Aspect.FOC: 99}, deck=ranger_deck, fatigue_stack=ranger_fatigue)

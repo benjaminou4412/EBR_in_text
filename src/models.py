@@ -314,10 +314,23 @@ class Card:
                                                 effect_fn=lambda e, x: e.fatigue_ranger(e.state.ranger, self.get_current_presence(e)),
                                                 source_card_id=self.id,
                                                 timing_type=TimingType.WHEN))
-                
+
             return result
         else:
             return None
+
+    def has_hand_based_listener(self) -> bool:
+        """
+        Returns True if this card establishes listeners while in hand.
+        Used to identify response moments that can't be played proactively.
+        """
+        listeners = self.get_listeners()
+        if not listeners:
+            return False
+
+        # Response moments are moments that have listeners
+        # Non-response moments don't establish listeners
+        return CardType.MOMENT in self.card_types and len(listeners) > 0
 
     def get_constant_abilities(self) -> list[ConstantAbility] | None:
         if self.keywords:
