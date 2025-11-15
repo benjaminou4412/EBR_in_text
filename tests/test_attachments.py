@@ -207,6 +207,152 @@ class AttachmentMechanicsTests(unittest.TestCase):
         self.assertEqual(attachment2.attached_to_id, target.id)
         self.assertEqual(attachment3.attached_to_id, target.id)
 
+    def test_attached_card_cannot_move_independently(self):
+        """Test that cards attached to other cards cannot move independently."""
+        ranger = make_test_ranger()
+        state = GameState(ranger=ranger)
+        engine = GameEngine(state)
+
+        target = Card(
+            id="target_1",
+            title="Test Target",
+            card_types={CardType.PATH},
+            keywords=set()
+        )
+        attachment = Card(
+            id="attachment_1",
+            title="Test Attachment",
+            card_types={CardType.ATTACHMENT},
+            keywords=set()
+        )
+
+        state.areas[Area.WITHIN_REACH].extend([target, attachment])
+        engine.attach(attachment, target)
+
+        # Try to move the attachment independently
+        result = engine.move_card(attachment.id, Area.ALONG_THE_WAY)
+
+        # Movement should fail
+        self.assertFalse(result)
+        # Attachment should still be in original area
+        self.assertIn(attachment, state.areas[Area.WITHIN_REACH])
+        self.assertNotIn(attachment, state.areas[Area.ALONG_THE_WAY])
+
+    def test_moving_card_moves_attachments(self):
+        """Test that when a card moves, all its attachments move with it."""
+        ranger = make_test_ranger()
+        state = GameState(ranger=ranger)
+        engine = GameEngine(state)
+
+        target = Card(
+            id="target_1",
+            title="Test Target",
+            card_types={CardType.PATH},
+            keywords=set()
+        )
+        attachment1 = Card(
+            id="att_1",
+            title="Attachment 1",
+            card_types={CardType.ATTACHMENT},
+            keywords=set()
+        )
+        attachment2 = Card(
+            id="att_2",
+            title="Attachment 2",
+            card_types={CardType.ATTACHMENT},
+            keywords=set()
+        )
+
+        state.areas[Area.WITHIN_REACH].extend([target, attachment1, attachment2])
+        engine.attach(attachment1, target)
+        engine.attach(attachment2, target)
+
+        # Move the target card
+        result = engine.move_card(target.id, Area.ALONG_THE_WAY)
+
+        # All cards should have moved
+        self.assertTrue(result)
+        self.assertIn(target, state.areas[Area.ALONG_THE_WAY])
+        self.assertIn(attachment1, state.areas[Area.ALONG_THE_WAY])
+        self.assertIn(attachment2, state.areas[Area.ALONG_THE_WAY])
+        # Original area should be empty
+        self.assertNotIn(target, state.areas[Area.WITHIN_REACH])
+        self.assertNotIn(attachment1, state.areas[Area.WITHIN_REACH])
+        self.assertNotIn(attachment2, state.areas[Area.WITHIN_REACH])
+
+    def test_moving_card_moves_nested_attachments(self):
+        """Test that moving a card recursively moves attachments to attachments."""
+        ranger = make_test_ranger()
+        state = GameState(ranger=ranger)
+        engine = GameEngine(state)
+
+        base_card = Card(
+            id="base",
+            title="Base Card",
+            card_types={CardType.PATH},
+            keywords=set()
+        )
+        attachment1 = Card(
+            id="att_1",
+            title="Attachment 1",
+            card_types={CardType.ATTACHMENT},
+            keywords=set()
+        )
+        attachment2 = Card(
+            id="att_2",
+            title="Attachment 2",
+            card_types={CardType.ATTACHMENT},
+            keywords=set()
+        )
+        attachment3 = Card(
+            id="att_3",
+            title="Attachment 3",
+            card_types={CardType.ATTACHMENT},
+            keywords=set()
+        )
+
+        state.areas[Area.WITHIN_REACH].extend([base_card, attachment1, attachment2, attachment3])
+
+        # Create nested attachment chain: base <- att1 <- att2 <- att3
+        engine.attach(attachment1, base_card)
+        engine.attach(attachment2, attachment1)
+        engine.attach(attachment3, attachment2)
+
+        # Move the base card
+        result = engine.move_card(base_card.id, Area.PLAYER_AREA)
+
+        # All cards in the chain should have moved
+        self.assertTrue(result)
+        self.assertIn(base_card, state.areas[Area.PLAYER_AREA])
+        self.assertIn(attachment1, state.areas[Area.PLAYER_AREA])
+        self.assertIn(attachment2, state.areas[Area.PLAYER_AREA])
+        self.assertIn(attachment3, state.areas[Area.PLAYER_AREA])
+        # All should be gone from original area
+        self.assertEqual(len(state.areas[Area.WITHIN_REACH]), 0)
+
+    def test_moving_card_with_no_attachments(self):
+        """Test that moving a card with no attachments works normally."""
+        ranger = make_test_ranger()
+        state = GameState(ranger=ranger)
+        engine = GameEngine(state)
+
+        card = Card(
+            id="card_1",
+            title="Test Card",
+            card_types={CardType.PATH},
+            keywords=set()
+        )
+
+        state.areas[Area.WITHIN_REACH].append(card)
+
+        # Move the card
+        result = engine.move_card(card.id, Area.ALONG_THE_WAY)
+
+        # Card should move normally
+        self.assertTrue(result)
+        self.assertIn(card, state.areas[Area.ALONG_THE_WAY])
+        self.assertNotIn(card, state.areas[Area.WITHIN_REACH])
+
 
 class CausticMulcherConstantAbilitiesTests(unittest.TestCase):
     """Tests for Caustic Mulcher's constant abilities."""

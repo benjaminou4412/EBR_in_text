@@ -569,7 +569,11 @@ class GameEngine:
     #Gamestate manipulation methods
 
     def move_card(self, card_id : str | None, target_area : Area) -> bool:
-        """Move a card from its current area to a target area. Returns whether it actually moved."""
+        """Move a card from its current area to a target area. Returns whether it actually moved.
+
+        When a card moves, all of its attachments (and recursive attachments) move with it.
+        Cards that are attached to other cards cannot move independently.
+        """
         target_card : Card | None = self.state.get_card_by_id(card_id)
         current_area : Area | None = self.state.get_card_area_by_id(card_id)
         if target_card is not None:
@@ -577,16 +581,43 @@ class GameEngine:
             if target_area==current_area:
                 self.add_message(f"{target_display_id} already in {target_area.value}.")
                 return False
+            if target_card.attached_to_id is not None:
+                #cards attached to other cards cannot move independently
+                self.add_message(f"{target_display_id} cannot move because it is attached to something else.")
+                return False
             if current_area is not None:
+                # Move the card itself
                 self.state.areas[current_area].remove(target_card)
                 self.state.areas[target_area].append(target_card)
                 self.add_message(f"{target_display_id} moves to {target_area.value}.")
+
+                # Recursively move all attachments
+                self._move_attachments_recursively(target_card, target_area)
+
                 curr_presence = target_card.get_current_presence(self)
                 if target_area == Area.WITHIN_REACH and target_card.has_keyword(Keyword.AMBUSH) and curr_presence is not None:
                     self.add_message(f"...and Ambushes you!")
                     self.fatigue_ranger(self.state.ranger, curr_presence)
                 return True
         return False
+
+    def _move_attachments_recursively(self, card: Card, target_area: Area) -> None:
+        """Helper method to recursively move all attachments when a card moves."""
+        for attached_id in card.attached_card_ids:
+            attached_card = self.state.get_card_by_id(attached_id)
+            if attached_card is None:
+                continue
+
+            current_area = self.state.get_card_area_by_id(attached_id)
+            if current_area is not None and current_area != target_area:
+                # Move the attachment
+                self.state.areas[current_area].remove(attached_card)
+                self.state.areas[target_area].append(attached_card)
+                attached_display_id = get_display_id(self.state.all_cards_in_play(), attached_card)
+                self.add_message(f"  {attached_display_id} (attached) moves to {target_area.value}.")
+
+                # Recursively move this attachment's attachments
+                self._move_attachments_recursively(attached_card, target_area)
 
     def fatigue_ranger(self, ranger: RangerState, amount: int | None) -> None:
         """Move top amount cards from ranger deck to top of fatigue pile (one at a time)"""
