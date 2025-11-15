@@ -904,7 +904,7 @@ class GameEngine:
             self.state.location = get_new_location(Card()) #TODO: reference campaign log for start of day location
             self.state.areas[Area.SURROUNDINGS].append(self.state.location)
             self.state.location.enters_play(self, Area.SURROUNDINGS)
-            self.add_message(f"Step 6: Set up the weather card (skipped)")
+            self.add_message(f"Step 6: Set up the weather card")
             self.state.weather = get_current_weather()
             self.state.areas[Area.SURROUNDINGS].insert(0, self.state.weather)
             self.state.weather.enters_play(self, Area.SURROUNDINGS)

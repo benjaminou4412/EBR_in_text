@@ -2,7 +2,6 @@
 Conciliator card implementations
 """
 from ..models import GameState, Card
-from ..engine import GameEngine
 from ..json_loader import load_card_fields #type:ignore
 
 
@@ -23,9 +22,3 @@ class ADearFriend(Card):
         """
         return False
 
-    def play(self, engine: GameEngine, effort: int) -> None:
-        """
-        Effect: Search path deck and discard for a human, put into play with this attached.
-        TODO: Implement deck search and attachment logic
-        """
-        pass

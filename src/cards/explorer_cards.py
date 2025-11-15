@@ -50,6 +50,17 @@ class PeerlessPathfinder(Card):
         if presence is not None and presence > 0:
             engine.fatigue_ranger(engine.state.ranger, presence)
 
+class BoundarySensor(Card):
+    def __init__(self):
+        # Load all common RangerCard fields from JSON
+        super().__init__(**load_card_fields("Boundary Sensor", "Explorer")) #type:ignore
+        self.art_description = "A gloved hand grips the lower half of a roughly cylindrical handheld device, " \
+        "about 8 inches in length. The gripped portion is only barely visible through the hand's fingers, and " \
+        "appears to be a simple grip point of smooth black material, perhaps rubber. The upper portion extends " \
+        "up through the hand's thumb and index finger wrapped around it, and consists of intricate metal parts " \
+        "and lights, with some exposed circuitry showing through. Topping the device is a transluscent red half-dome " \
+        "through which a gathering of what may be miniature antennae is darkly visible."
+
 class WalkWithMe(Card):
     def __init__(self):
         # Load all common RangerCard fields from JSON
@@ -67,23 +78,35 @@ class WalkWithMe(Card):
                             trigger_play_prompt,
                             self.id, TimingType.AFTER, "Traverse")]
 
-    def get_play_targets(self, state: GameState) -> list[Card] | None:
+    def get_play_targets(self, state: GameState) -> list[Card]:
         """Returns valid beings to add progress to"""
         return state.beings_in_play()
 
-    def play(self, engine: GameEngine, effort: int) -> None:
+    def get_play_action(self) -> Action | None:
         """
         Effect: Add progress to a Being equal to the resulting effort of the Traverse test.
         Called by play_prompt() after user confirms and energy is paid.
         Targets are guaranteed to exist by play_prompt().
         """
+        return Action(id=f"{self.id}_play_action",
+                      name=f"Play {self.title}",
+                      aspect="",
+                      approach="",
+                      is_test=False,
+                      target_provider=self.get_play_targets,
+                      on_success=self._play_action_effect,
+                      source_id=self.id,
+                      source_title=self.title
+                      )
+        
+        
+    def _play_action_effect(self, engine: GameEngine, effort: int, target: Card | None) -> None:
         targets_list = self.get_play_targets(engine.state)
         engine.add_message(f"Please choose a Being to add {effort} [Progress] to.")
-        if targets_list is not None:
+        if targets_list:
             target = engine.card_chooser(engine, targets_list)
-            # Move Walk With Me to discard
-            engine.discard_from_hand(self)
-            msg = target.add_progress(effort)
-            engine.add_message(f"Played Walk With Me: {msg}")
+            engine.add_message(target.add_progress(effort))
         else:
             raise RuntimeError(f"Targets should exist past play_prompt!")
+        
+    

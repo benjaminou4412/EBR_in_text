@@ -3,16 +3,14 @@
 A living checklist. Roughly prioritized.
 
 
-- Implement ruling "attached cards cannot move independently while attached"
 - Implement at least one Gear + one non-response Moment + 1 attachment, and the Play action
   - Have the gear commit effort so we're forced to implement that system too (committing effort from in-play cards in CommitDecision, spending tokens/exhausting as needed)
-  - Implement has_hand_based_listener() helper method
   - Implement attachment targeting logic
-  - Update Walk With Me to use play_prompt() instead of custom play() method
-  - Implement at least one example of each:
-  - Gear card with play functionality
-  - Non-response Moment card
-  - Attachment card
+  - Implement:
+    - Boundary Sensor
+    - Share in the Valley's Secrets
+    - A Dear Friend
+    - Passionate
   - Add Play action to main.py action menu
   - Handle "no gamestate change" filtering (future TODO - complex edge cases)
 - Implement missions, campaign log entries, clear entries, etc.

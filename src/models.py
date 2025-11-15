@@ -332,21 +332,73 @@ class Card:
         # Non-response moments don't establish listeners
         return CardType.MOMENT in self.card_types and len(listeners) > 0
 
-    def get_play_targets(self, state: GameState) -> list[Card] | None:
+    def get_play_targets(self, state: GameState) -> list[Card]:
         """
         Returns valid targets for playing this card, or None if no targeting required.
         Override in cards that need targeting when played.
         """
-        return None  # Default: no targeting required
+        return []  # Default: no targeting required
 
-    def play(self, engine: GameEngine, effort: int) -> None:
+    def play(self, engine: GameEngine, target_id: str | None = None, effort: int = 0) -> str:
         """
-        Play this card. Override in card subclasses to implement specific play effects.
-        For response moments, this is called after prompting and energy payment.
-        effort parameter is used by response moments that care about test results.
-        """
-        raise NotImplementedError(f"Card {self.title} does not implement play()")
+        Play this card from hand. Behavior depends on CardType:
+        - GEAR: Goes into play in Player Area, enters_play triggers
+        - MOMENT: Resolves effect via get_play_action().on_success, then discards
+        - ATTACHMENT: Attaches to target_id, enters_play triggers
+        - ATTRIBUTE: Raises error (cannot be played, only committed)
+        - BEING (ranger): Goes into play Within Reach, enters_play triggers
 
+        Returns a message describing what happened.
+        """
+        if CardType.ATTRIBUTE in self.card_types:
+            raise RuntimeError(f"Attributes cannot be played, only committed during tests!")
+
+        if CardType.GEAR in self.card_types:
+            engine.state.ranger.hand.remove(self)
+            engine.state.areas[Area.PLAYER_AREA].append(self)
+            self.enters_play(engine, Area.PLAYER_AREA)
+            return f"Played {self.title} into Player Area."
+
+        elif CardType.ATTACHMENT in self.card_types:
+            if target_id is None:
+                raise RuntimeError(f"Attachments require a target!")
+            target_card = engine.state.get_card_by_id(target_id)
+            target_card_area = engine.state.get_card_area_by_id(target_id)
+            if target_card is None:
+                raise RuntimeError(f"Attachment target not found!")
+            if target_card_area is None:
+                raise RuntimeError(f"Attachment target is in no area!")
+            else:
+                engine.state.ranger.hand.remove(self)
+                engine.attach(self, target_card)
+                self.enters_play(engine, target_card_area)
+                return f"Played {self.title}, attaching to target."
+            
+        elif CardType.BEING in self.card_types and CardType.RANGER in self.card_types:
+            engine.state.ranger.hand.remove(self)
+            engine.state.areas[Area.WITHIN_REACH].append(self)
+            self.enters_play(engine, Area.WITHIN_REACH)
+            return f"Played {self.title} Within Reach."
+
+        elif CardType.MOMENT in self.card_types:
+            # Both response and non-response moments use this path
+            play_action = self.get_play_action()
+            if play_action:
+                #Unlike attachments, targeting is handled inside on_success b/c some moments don't have targeting
+                play_action.on_success(engine, effort, None)  # Execute the moment's effect
+                engine.discard_from_hand(self)
+            return f"Played {self.title}."
+
+        else:
+            raise RuntimeError(f"Don't know how to play {self.title} with types {self.card_types}")
+        
+    def get_play_action(self) -> Action | None:
+        """
+        Returns the Action for playing this card from hand, or None if not playable.
+        Only Moments override this - Gear/Attachments/Beings don't need Actions.
+        """
+        return None
+    
     def play_prompt(self, engine: GameEngine, effort: int, context: str = "") -> bool:
         """
         Prompt user to play this card as a response moment.
@@ -363,7 +415,7 @@ class Card:
 
         # Check for valid targets BEFORE prompting
         targets = self.get_play_targets(engine.state)
-        if targets is not None and len(targets) == 0:
+        if len(targets) == 0:
             engine.add_message(f"No valid targets; {self.title} cannot be played.")
             return False
 
@@ -377,7 +429,7 @@ class Card:
         if decision and self.aspect:
             success, error = engine.state.ranger.spend_energy(current_cost, self.aspect)
             if success:
-                self.play(engine, effort)  # Calls the card's play effect
+                self.play(engine, target_id=None, effort=effort)  # Calls the card's play effect
                 return True
             elif error:
                 engine.add_message(error)
@@ -508,12 +560,16 @@ class Card:
     def enters_play(self, engine: GameEngine, area: Area) -> None:
         """Called when card enters play. Adds narrative messages, 
         and can be overridden for enter-play effects, listeners, and in-play ConstantAbilities."""
+
+        #Messaging
         engine.add_message(f"{get_display_id(engine.state.all_cards_in_play(), self)} enters play in {area.value}.")
         if self.art_description:
             engine.add_message(f"   Art description: {self.art_description}")
         if self.has_keyword(Keyword.AMBUSH) and self.starting_area == Area.WITHIN_REACH:
             engine.add_message(f"   {self.title} Ambushes you!")
             engine.fatigue_ranger(engine.state.ranger, self.get_current_presence(engine))
+
+        #Set up abilities and listeners
         constant_abilities = self.get_constant_abilities()
         event_listeners = self.get_listeners()
         if constant_abilities:

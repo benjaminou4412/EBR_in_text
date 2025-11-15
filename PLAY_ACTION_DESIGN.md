@@ -46,6 +46,7 @@ def play(self, engine: GameEngine, target_id: str | None = None) -> str:
         engine.state.ranger.hand.remove(self)
         engine.state.areas[Area.PLAYER_AREA].append(self)
         self.enters_play(engine, Area.PLAYER_AREA)
+        #in theory, starting tokens are already set up by the json loader
         return f"Played {self.title} into Player Area."
 
     elif CardType.ATTACHMENT in self.card_types:
@@ -314,11 +315,7 @@ def has_hand_based_listener(self) -> bool:
 
 ## TODO Items
 
-1. Implement `has_hand_based_listener()` helper method
 2. Implement attachment targeting logic
-3. Add `engine.spend_energy()` method
-4. Add `engine.yes_no_prompt()` method
-5. Update Walk With Me to use `play_prompt()` instead of custom `play()` method
 6. Implement at least one example of each:
    - Gear card with play functionality
    - Non-response Moment card
