@@ -586,6 +586,8 @@ class CommonTestsTests(unittest.TestCase):
         doe = SitkaDoe()
         buck_a = SitkaBuck()
         buck_b = SitkaBuck()
+        buck_a.exhausted = True
+        buck_b.exhausted = True #Suppress Sitka Buck challenge effect
 
         ranger = RangerState(
             name="Ranger",
@@ -1574,8 +1576,8 @@ class ChallengeRetriggerPreventionTests(unittest.TestCase):
         self.assertEqual(len(sun_triggers), 1,
                         "Doe's Sun effect should only trigger once, not again after buck moves to Within Reach")
 
-    def test_multiple_cards_with_same_symbol_each_trigger_once(self):
-        """Test that multiple cards with the same challenge symbol each trigger exactly once"""
+    def test_non_resolvable_effects_dont_execute(self):
+        """Test that multiple cards with the same challenge symbol will not execute if the wouldn't resolve"""
         from src.cards import SitkaDoe
 
         doe_a = SitkaDoe()
@@ -1616,8 +1618,8 @@ class ChallengeRetriggerPreventionTests(unittest.TestCase):
         # Each doe should trigger exactly once
         messages = [msg.message for msg in eng.get_messages()]
         sun_triggers = [msg for msg in messages if "Challenge (Sun) on" in msg and "Sitka Doe" in msg]
-        self.assertEqual(len(sun_triggers), 2,
-                        "Both does should trigger their Sun effects exactly once each")
+        self.assertEqual(len(sun_triggers), 0,
+                        "Neither doe should trigger their Sun effect")
 
     def test_challenge_effect_can_trigger_again_on_next_test(self):
         """Test that challenge effects can trigger again on a subsequent test (not permanently blocked)"""

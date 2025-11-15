@@ -76,6 +76,52 @@ class GameEngine:
         # Fallback to live computation
         return get_display_id(self.state.all_cards_in_play(), card)
 
+    def will_challenge_resolve(self, card: Card, icon: ChallengeIcon) -> bool:
+        """
+        Dry run a challenge effect to see if it would resolve (change gamestate).
+        Returns True if the challenge would resolve, False otherwise.
+
+        Creates a deep copy of the engine, swaps in deterministic decision makers,
+        and executes the challenge to see if it returns True.
+
+        IMPORTANT: Retrieves the handler from the COPIED card, not the original,
+        to prevent the dry run from modifying the original game state.
+        """
+        import copy
+
+        # Create a deep copy of the engine for the dry run
+        dry_run_engine = copy.deepcopy(self)
+
+        # Replace all user interaction callbacks with deterministic defaults
+        # This prevents prompting the player during the dry run
+        dry_run_engine.card_chooser = dry_run_engine._default_chooser
+        dry_run_engine.response_decider = dry_run_engine._default_decider
+        dry_run_engine.order_decider = dry_run_engine._default_order_decider
+        dry_run_engine.option_chooser = dry_run_engine._default_option_chooser
+
+        # Clear messages to avoid pollution
+        dry_run_engine.message_queue = []
+
+        # Get the COPIED version of the card to prevent modifying original state
+        copied_card = dry_run_engine.state.get_card_by_id(card.id)
+        if not copied_card:
+            # Card not found in copy, assume it would resolve (safe default)
+            return True
+
+        # Get handlers from the COPIED card
+        handlers = copied_card.get_challenge_handlers()
+        if not handlers or icon not in handlers:
+            return False
+
+        # Run the challenge effect from the copied card
+        try:
+            would_resolve = handlers[icon](dry_run_engine)
+            return would_resolve
+        except Exception:
+            # If it errors during dry run, assume it would resolve
+            # (Better to prompt unnecessarily than skip a valid effect)
+            return True
+
     def commit_icons(self, ranger: RangerState, approach: Approach, decision: CommitDecision) -> tuple[int, list[int]]:
         total = decision.energy
         valid_indices : list[int] = []
@@ -174,7 +220,7 @@ class GameEngine:
         all_cards = self.state.all_cards_in_play()
         fatiguing_cards = [card for card in cards_between if card.is_ready() and not card.has_keyword(Keyword.FRIENDLY)]
         target_display_id = get_display_id(all_cards, target)
-        self.add_message(f"Interacting with {target_display_id} in {target_area.value}...")
+        self.add_message(f"Target: {target_display_id} in {target_area.value}. Checking interaction fatigue...")
         if not fatiguing_cards:
             self.add_message(f"No cards between you and the target; no interaction fatigue.")
             return
@@ -311,13 +357,20 @@ class GameEngine:
                     if handlers and icon in handlers and (card.id, icon) not in already_resolved_ids:
                         cards_with_effects.append(card)
 
-            # If multiple cards have effects in the same area, let player choose order
-            if len(cards_with_effects) > 1:
-                cards_with_effects = cast(list[Card], self.order_decider(self, cards_with_effects,
+            # Filter to only effects that would actually resolve
+            # This prevents prompting the player to order effects that won't change the gamestate
+            resolvable_cards: list[Card] = []
+            for card in cards_with_effects:
+                if self.will_challenge_resolve(card, icon):
+                    resolvable_cards.append(card)
+
+            # If multiple cards have resolvable effects in the same area, let player choose order
+            if len(resolvable_cards) > 1:
+                resolvable_cards = cast(list[Card], self.order_decider(self, resolvable_cards,
                     f"Choose order to resolve {icon.upper()} challenge effects in {area.value}"))
 
             # Resolve effects in the chosen order
-            for card in cards_with_effects:
+            for card in resolvable_cards:
                 handlers = card.get_challenge_handlers()
                 if handlers and icon in handlers and (card.id, icon) not in already_resolved_ids:
                     resolved = handlers[icon](self)

@@ -45,13 +45,15 @@ class ChallengeEffectOrderingTests(unittest.TestCase):
         doe_a = SitkaDoe()
         doe_b = SitkaDoe()
         doe_c = SitkaDoe()
+        buck = SitkaBuck()
+        buck.exhausted = True
 
         ranger = make_test_ranger()
         state = GameState(
             ranger=ranger,
             areas={
                 Area.SURROUNDINGS: [],
-                Area.ALONG_THE_WAY: [],
+                Area.ALONG_THE_WAY: [buck],
                 Area.WITHIN_REACH: [doe_a, doe_b, doe_c],  # All in same area
                 Area.PLAYER_AREA: [],
             }
