@@ -57,9 +57,43 @@ class BoundarySensor(Card):
         self.art_description = "A gloved hand grips the lower half of a roughly cylindrical handheld device, " \
         "about 8 inches in length. The gripped portion is only barely visible through the hand's fingers, and " \
         "appears to be a simple grip point of smooth black material, perhaps rubber. The upper portion extends " \
-        "up through the hand's thumb and index finger wrapped around it, and consists of intricate metal parts " \
+        "out through the hand's thumb and index finger wrapped around the grip, and consists of intricate metal parts " \
         "and lights, with some exposed circuitry showing through. Topping the device is a transluscent red half-dome " \
-        "through which a gathering of what may be miniature antennae is darkly visible."
+        "through which a gathering miniature antennae is darkly visible."
+
+    def get_exhaust_abilities(self) -> list[Action] | None:
+        """Exhaust: Move ranger token to feature, that feature fatigues you"""
+        return [
+            Action(
+                id=f"exhaust-{self.id}",
+                name="Boundary Sensor",
+                verb="",
+                aspect="",
+                approach="",
+                is_test=False,
+                is_exhaust=True,
+                on_success=self._move_token_to_feature,
+                source_id=self.id,
+                source_title=self.title,
+            )
+        ]
+    
+    def _move_token_to_feature(self, engine: GameEngine, effort: int, target: Card | None) -> None:
+        """Handler for the exhaust ability"""
+        if target is None:
+            engine.add_message("No target selected for ranger token movement.")
+            return
+
+        # Exhaust this role card as the cost
+        engine.add_message(self.exhaust())
+
+        # Move ranger token to the target feature
+        engine.move_ranger_token_to_card(target)
+
+        # Target feature fatigues you
+        presence = target.get_current_presence(engine)
+        if presence is not None and presence > 0:
+            engine.fatigue_ranger(engine.state.ranger, presence)
 
 class WalkWithMe(Card):
     def __init__(self):

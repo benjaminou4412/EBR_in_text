@@ -305,19 +305,7 @@ class Card:
         return None
     
     def get_listeners(self) -> list[EventListener] | None:
-        if self.keywords:
-            result: list[EventListener] = []
-            for keyword in self.keywords:
-                if keyword == Keyword.FATIGUING:
-                    #TODO: take into account Fatiguing X, which doesn't exist yet
-                    result.append(EventListener(event_type=EventType.REST,
-                                                effect_fn=lambda e, x: e.fatigue_ranger(e.state.ranger, self.get_current_presence(e)),
-                                                source_card_id=self.id,
-                                                timing_type=TimingType.WHEN))
-
-            return result
-        else:
-            return None
+        return None
 
     def has_hand_based_listener(self) -> bool:
         """

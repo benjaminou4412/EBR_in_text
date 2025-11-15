@@ -16,7 +16,7 @@ from src.decks import build_woods_path_deck
 from src.cards import (
     OvergrownThicket, SunberryBramble, SitkaDoe, WalkWithMe, ADearFriend,
     ProwlingWolhund, SitkaBuck, CalypsaRangerMentor, PeerlessPathfinder,
-    CausticMulcher, BoulderField, TheFundamentalist
+    CausticMulcher, BoulderField, QuisiVosRascal
 )
 
 
@@ -179,6 +179,7 @@ def menu_and_run(engine: GameEngine) -> None:
 
             if act.id == "system-rest":
                 engine.resolve_fatiguing_keyword()
+                display_and_clear_messages(engine)
                 print("\nYou rest and end your turn.")
                 input("Press Enter to proceed to Phase 3...")
                 break
@@ -296,7 +297,7 @@ def main() -> None:
 
     engine.arrival_setup(start_of_day=True)
     #force a copy of a card on top of the deck for quick testing
-    state.path_deck.insert(0, TheFundamentalist())
+    state.path_deck.insert(0, QuisiVosRascal())
     menu_and_run(engine)
 
 

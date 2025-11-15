@@ -52,50 +52,7 @@ class QuisiVosTests(unittest.TestCase):
         quisi = QuisiVosRascal()
         self.assertTrue(quisi.has_keyword(Keyword.PERSISTENT))
 
-    def test_quisi_generates_fatiguing_listener(self):
-        """Test that Quisi auto-generates a REST listener from Fatiguing keyword"""
-        quisi = QuisiVosRascal()
-        ranger = make_test_ranger()
-        state = GameState(ranger=ranger, areas={
-            Area.SURROUNDINGS: [],
-            Area.ALONG_THE_WAY: [],
-            Area.WITHIN_REACH: [quisi],
-            Area.PLAYER_AREA: [],
-        })
-        eng = GameEngine(state)
 
-        listeners = quisi.get_listeners()
-        self.assertIsNotNone(listeners, "Quisi should generate listeners from Fatiguing keyword")
-        self.assertEqual(len(listeners), 1, "Should have exactly 1 listener")
-        self.assertEqual(listeners[0].event_type, EventType.REST, "Listener should be REST type")
-        self.assertEqual(listeners[0].timing_type, TimingType.WHEN, "Listener should be WHEN timing")
-
-    def test_fatiguing_listener_can_be_registered(self):
-        """Test that Quisi's Fatiguing listener can be retrieved and registered"""
-        quisi = QuisiVosRascal()
-        ranger = make_test_ranger()
-        state = GameState(ranger=ranger, areas={
-            Area.SURROUNDINGS: [],
-            Area.ALONG_THE_WAY: [],
-            Area.WITHIN_REACH: [quisi],
-            Area.PLAYER_AREA: [],
-        })
-        eng = GameEngine(state)
-
-        # Get listeners from Quisi
-        listeners = quisi.get_listeners()
-
-        self.assertIsNotNone(listeners, "Should return listeners")
-        assert listeners is not None  # Type narrowing for mypy
-        self.assertEqual(len(listeners), 1, "Should have 1 listener")
-        self.assertEqual(listeners[0].event_type, EventType.REST)
-
-        # Register the listener
-        eng.register_listeners(listeners)
-
-        # Verify listener is in engine's listener list
-        rest_listeners = [l for l in eng.listeners if l.event_type == EventType.REST]
-        self.assertEqual(len(rest_listeners), 1, "Engine should have 1 REST listener registered")
 
     def test_fatiguing_triggers_on_rest(self):
         """Test that Fatiguing keyword actually fatigues the ranger when REST is triggered"""
@@ -110,10 +67,6 @@ class QuisiVosTests(unittest.TestCase):
             Area.PLAYER_AREA: [],
         })
         eng = GameEngine(state)
-
-        # Register Quisi's listeners
-        listeners = quisi.get_listeners()
-        eng.register_listeners(listeners)
 
         # Trigger REST event
         eng.resolve_fatiguing_keyword()
@@ -140,10 +93,6 @@ class QuisiVosTests(unittest.TestCase):
             Area.PLAYER_AREA: [],
         })
         eng = GameEngine(state)
-
-        # Register both cards' listeners
-        eng.register_listeners(quisi1.get_listeners())
-        eng.register_listeners(quisi2.get_listeners())
 
         # Trigger REST event
         eng.resolve_fatiguing_keyword()

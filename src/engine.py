@@ -802,9 +802,16 @@ class GameEngine:
             #generally, cards in play should stay in area of the card they were just attached to
 
     def resolve_fatiguing_keyword(self):
-        if any(EventType.REST==listener.event_type for listener in self.listeners):
-            self.add_message(f"Fatiguing cards in play may fatigue you.")
-            self.trigger_listeners(EventType.REST, TimingType.WHEN, None, 0) #unused 0; no effort
+        fatiguing_cards: list[Card] = []
+        for area in self.state.areas:
+            for card in self.state.areas[area]:
+                if card.has_keyword(Keyword.FATIGUING):
+                    fatiguing_cards.append(card)
+        for card in fatiguing_cards:
+            if not card.is_exhausted():
+                self.add_message(f"{card.title} fatigues you, due to the Fatiguing keyword.")
+                curr_presence = card.get_current_presence(self)
+                self.fatigue_ranger(self.state.ranger, curr_presence)
 
     # Round/Phase helpers
     def phase1_draw_paths(self, count: int = 1):
