@@ -146,3 +146,11 @@ def provide_exhaust_abilities(state: GameState) -> list[Action]:
             if exhaust_abilities is not None:
                 actions.extend(exhaust_abilities)
     return actions
+
+def provide_play_options(state: GameState) -> list[Action]:
+    actions: list[Action] = []
+    for card in state.ranger.hand:
+        play_action = card.get_play_action()
+        if play_action is not None:
+            actions.append(play_action)
+    return actions

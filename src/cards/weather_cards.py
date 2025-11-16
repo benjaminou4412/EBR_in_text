@@ -42,15 +42,17 @@ class APerfectDay(Card):
 
     def get_listeners(self) -> list[EventListener] | None:
         return [EventListener(EventType.REFRESH,
+                              lambda _e: True,
                               self._tick_down_clouds,
                               self.id,
                               TimingType.WHEN
                               )]
     
-    def _tick_down_clouds(self, engine: GameEngine, effort: int) -> None:
+    def _tick_down_clouds(self, engine: GameEngine, effort: int) -> int:
         self.remove_unique_tokens("Cloud", 1)
         if self.get_unique_token_count("Cloud") == 0:
             self.flip(engine)
+        return 0 #doesn't involve effort
 
     def flip(self, engine: GameEngine) -> None:
         super().flip(engine)
@@ -107,15 +109,17 @@ class MiddaySun(Card):
 
     def get_listeners(self) -> list[EventListener] | None:
         return [EventListener(EventType.REFRESH,
+                              lambda _e: True,
                               self._tick_up_clouds,
                               self.id,
                               TimingType.WHEN
                               )]
     
-    def _tick_up_clouds(self, engine: GameEngine, effort: int):
+    def _tick_up_clouds(self, engine: GameEngine, effort: int) -> int:
         self.add_unique_tokens("Cloud", 1)
         if self.get_unique_token_count("Cloud") >= 3:
             self.flip(engine)
+        return 0 #doesn't involve effort
     
     def flip(self, engine: GameEngine) -> None:
         super().flip(engine)

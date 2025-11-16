@@ -61,39 +61,24 @@ class BoundarySensor(Card):
         "and lights, with some exposed circuitry showing through. Topping the device is a transluscent red half-dome " \
         "through which a gathering miniature antennae is darkly visible."
 
-    def get_exhaust_abilities(self) -> list[Action] | None:
-        """Exhaust: Move ranger token to feature, that feature fatigues you"""
-        return [
-            Action(
-                id=f"exhaust-{self.id}",
-                name="Boundary Sensor",
-                verb="",
-                aspect="",
-                approach="",
-                is_test=False,
-                is_exhaust=True,
-                on_success=self._move_token_to_feature,
-                source_id=self.id,
-                source_title=self.title,
-            )
-        ]
+    def get_listeners(self) -> list[EventListener] | None:
+        return [EventListener(EventType.PERFORM_TEST,
+                            lambda _s: self.exhaust_ability_active("sensor"),
+                            self.trigger_exhaust_prompt,
+                            self.id, TimingType.WHEN, "Traverse")]
+
+    def trigger_exhaust_prompt(self, eng: GameEngine, effort: int) -> int:
+        decision = self.exhaust_prompt(eng, "You may exhaust Boundary Sensor and spend 1 sensor " \
+                                            "token off of it to commit 1 effort to this Traverse.")
+        if decision:
+            _amount, msg = self.remove_unique_tokens("sensor", 1)
+            eng.add_message(msg)
+            self.exhaust()
+            return 1
+        else:
+            return 0
     
-    def _move_token_to_feature(self, engine: GameEngine, effort: int, target: Card | None) -> None:
-        """Handler for the exhaust ability"""
-        if target is None:
-            engine.add_message("No target selected for ranger token movement.")
-            return
 
-        # Exhaust this role card as the cost
-        engine.add_message(self.exhaust())
-
-        # Move ranger token to the target feature
-        engine.move_ranger_token_to_card(target)
-
-        # Target feature fatigues you
-        presence = target.get_current_presence(engine)
-        if presence is not None and presence > 0:
-            engine.fatigue_ranger(engine.state.ranger, presence)
 
 class WalkWithMe(Card):
     def __init__(self):
@@ -106,35 +91,27 @@ class WalkWithMe(Card):
     def enters_hand(self, engine: GameEngine) -> list[EventListener]:
         """Override to add listener. Call super() to show art description."""
         super().enters_hand(engine)
-        def trigger_play_prompt(eng: GameEngine, effort: int) -> None:
+        listeners = self.get_listeners()
+        if listeners is None:
+            raise RuntimeError(f"Walk With Me should have a listener!")
+        else:
+            return listeners
+    
+    def get_listeners(self) -> list[EventListener] | None:
+        def trigger_play_prompt(eng: GameEngine, effort: int) -> int:
             self.play_prompt(eng, effort, "You succeeded at a Traverse test.")
+            return 0
         return [EventListener(EventType.TEST_SUCCEED,
+                              lambda _e: True,
                             trigger_play_prompt,
                             self.id, TimingType.AFTER, "Traverse")]
 
     def get_play_targets(self, state: GameState) -> list[Card]:
         """Returns valid beings to add progress to"""
         return state.beings_in_play()
-
-    def get_play_action(self) -> Action | None:
-        """
-        Effect: Add progress to a Being equal to the resulting effort of the Traverse test.
-        Called by play_prompt() after user confirms and energy is paid.
-        Targets are guaranteed to exist by play_prompt().
-        """
-        return Action(id=f"{self.id}_play_action",
-                      name=f"Play {self.title}",
-                      aspect="",
-                      approach="",
-                      is_test=False,
-                      target_provider=self.get_play_targets,
-                      on_success=self._play_action_effect,
-                      source_id=self.id,
-                      source_title=self.title
-                      )
         
         
-    def _play_action_effect(self, engine: GameEngine, effort: int, target: Card | None) -> None:
+    def resolve_moment_effect(self, engine: GameEngine, effort: int, target: Card | None) -> None:
         targets_list = self.get_play_targets(engine.state)
         engine.add_message(f"Please choose a Being to add {effort} [Progress] to.")
         if targets_list:

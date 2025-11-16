@@ -6,7 +6,7 @@ from src.models import (
     Card, RangerState, GameState, Action, Aspect, Approach, Area, CardType
 )
 from src.engine import GameEngine
-from src.registry import provide_common_tests, provide_card_tests, provide_exhaust_abilities
+from src.registry import provide_common_tests, provide_card_tests, provide_exhaust_abilities, provide_play_options
 from src.view import (
     render_state, choose_action, choose_action_target, choose_commit,
     choose_target, display_and_clear_messages, choose_response, set_show_art_descriptions,
@@ -16,7 +16,7 @@ from src.decks import build_woods_path_deck
 from src.cards import (
     OvergrownThicket, SunberryBramble, SitkaDoe, WalkWithMe, ADearFriend,
     ProwlingWolhund, SitkaBuck, CalypsaRangerMentor, PeerlessPathfinder,
-    CausticMulcher, BoulderField, QuisiVosRascal
+    CausticMulcher, BoulderField, QuisiVosRascal, BoundarySensor
 )
 
 
@@ -25,22 +25,23 @@ def pick_demo_cards() -> list[Card]:
 
     walk_with_me_0 : Card = WalkWithMe()
     a_dear_friend_0 : Card= ADearFriend()
+    boundary_sensor_0: Card = BoundarySensor()
     exploration_dummies : list[Card] = []
     for _ in range(5):
-        exploration_dummies.append(Card(title="Demo Explore +1", approach_icons={Approach.EXPLORATION: 1}))
+        exploration_dummies.append(Card(title="Demo Explore +1", card_types={CardType.ATTRIBUTE}, approach_icons={Approach.EXPLORATION: 1}))
     conflict_dummies : list[Card]  = []
     for _ in range(5):
-        conflict_dummies.append(Card(title="Demo Conflict +1", approach_icons={Approach.CONFLICT: 1}))
+        conflict_dummies.append(Card(title="Demo Conflict +1", card_types={CardType.ATTRIBUTE}, approach_icons={Approach.CONFLICT: 1}))
     reason_dummies : list[Card]  = []
     for _ in range(5):
-        reason_dummies.append(Card(title="Demo Reason +1", approach_icons={Approach.REASON: 1}))
+        reason_dummies.append(Card(title="Demo Reason +1", card_types={CardType.ATTRIBUTE}, approach_icons={Approach.REASON: 1}))
     connection_dummies : list[Card]  = []
     for _ in range(5):
-        connection_dummies.append(Card(title="Demo Connection +1", approach_icons={Approach.CONNECTION: 1}))
+        connection_dummies.append(Card(title="Demo Connection +1", card_types={CardType.ATTRIBUTE}, approach_icons={Approach.CONNECTION: 1}))
 
     deck = exploration_dummies + conflict_dummies + reason_dummies + connection_dummies
     random.shuffle(deck)
-    top_deck: list[Card] = [walk_with_me_0, a_dear_friend_0]
+    top_deck: list[Card] = [walk_with_me_0, a_dear_friend_0, boundary_sensor_0]
 
     return top_deck + deck
 
@@ -140,7 +141,8 @@ def menu_and_run(engine: GameEngine) -> None:
             # derive actions
             actions = (provide_card_tests(engine)
             + provide_common_tests(engine.state)
-            + provide_exhaust_abilities(engine.state))
+            + provide_exhaust_abilities(engine.state)
+            + provide_play_options(engine.state))
             # add system Rest action
             actions.append(Action(
                 id="system-rest",
@@ -185,7 +187,7 @@ def menu_and_run(engine: GameEngine) -> None:
                 break
 
             
-            #TODO: Handle Exhaust actions and Play actions, which are not tests (so they should break before we hit test logic)
+            
             target_id = choose_action_target(engine.state, act, engine)
             decision = None
             if act.is_test:
@@ -197,9 +199,11 @@ def menu_and_run(engine: GameEngine) -> None:
                     print(str(e))
                     input("There was a runtime error! Press Enter to continue...")
                     continue
-            elif act.is_exhaust: #currently only non-test action at this point is Exhaust abilities
+            elif act.is_exhaust: 
                 target_card = engine.state.get_card_by_id(target_id)
                 act.on_success(engine, 0, target_card)
+            elif act.is_play:
+                act.on_success(engine, 0, None) #todo: incorporate non-response moments with Targeting
             else:
                 raise RuntimeError(f"Unknown action type: {act.id}")
 

@@ -8,7 +8,9 @@ A living checklist. Roughly prioritized.
   - Implement attachment targeting logic
   - Implement:
     - Boundary Sensor
+      - Take into account equip slots
     - Share in the Valley's Secrets
+      - fix up targeting logic
     - A Dear Friend
     - Passionate
   - Add Play action to main.py action menu

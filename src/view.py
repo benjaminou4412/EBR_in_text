@@ -234,21 +234,25 @@ def choose_action(actions: list[Action], state: GameState, engine: GameEngine) -
         if a.source_id and a.source_id != "common":
             # Card-based action - find the card and get display ID
             card = state.get_card_by_id(a.source_id)
+            if card:
+                display_name = get_display_id(all_cards, card)
+            else:
+                display_name = a.source_title
             if a.is_test:
                 approach = a.approach
                 aspect = a.aspect
                 if not isinstance(approach, Approach) or not isinstance(aspect, Aspect):
                     raise RuntimeError(f"A test should always have an approach and aspect!")
                 if card:
-                    display_name = get_display_id(all_cards, card)
-                    
                     display = f"[Test] {aspect.value} + [{approach.value}]: {a.verb} ({display_name})"
                 else:
                     display = f"[Test] {aspect.value} + [{approach.value}]: {a.verb} ({a.source_title})"
             elif a.is_exhaust:
-                display = f"[Exhaust] ({a.source_title})"
+                display = f"[Exhaust] ({display_name})"
+            elif a.is_play:
+                display = f"[Play] ({display_name})"
             else:
-                raise RuntimeError(f"All actions right now should be Test or Exhaust!")
+                raise RuntimeError(f"All actions right now should be Test, Exhaust, or Play!")
         elif a.verb and a.source_title:
             #Common tests
             approach = a.approach
@@ -283,7 +287,6 @@ def choose_action_target(state: GameState, action: Action, engine: GameEngine) -
     targets = engine.get_valid_targets(action)
 
     if not targets:
-        print("No valid targets.")
         return None
     elif len(targets)==1:
         print(f"Only 1 valid target ({targets[0].title}); automatically chosen.")

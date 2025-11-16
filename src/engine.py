@@ -273,20 +273,21 @@ class GameEngine:
             raise RuntimeError(f"Insufficient energy for {aspect}")
         r.energy[aspect] -= decision.energy
 
-        # Step 2: Commit effort in the form of energy tokens and approach icons. TODO: Commit effort from other sources.
+        # Step 2: Commit effort in the form of energy tokens and approach icons..
 
         base_effort, committed = self.commit_icons(r, approach, decision)
+
+        base_effort = base_effort + self.trigger_listeners(EventType.PERFORM_TEST, TimingType.WHEN, action, base_effort)
 
         # Discard committed cards immediately after committing
         self.discard_committed(r, committed)
 
         # Step 3: Apply modifiers. TODO: Take into account modifiers from non-challenge-card sources.
-
+        self.add_message(f"Step 3: Draw a challenge card and apply modifiers.") 
         challenge_card_drawn = self.state.challenge_deck.draw_challenge_card(self)
         mod, icon = challenge_card_drawn.mods[aspect], challenge_card_drawn.icon
         effort = max(0, base_effort + mod)
         difficulty = action.difficulty_fn(self, target_card)
-        self.add_message(f"Step 3: Draw a challenge card and apply modifiers.")
         self.add_message(f"You drew: [{aspect.value}]{mod:+d}, symbol [{icon.upper()}]")
 
 
@@ -472,7 +473,9 @@ class GameEngine:
 
     # Listener management methods
 
-    def trigger_listeners(self, event_type: EventType, timing_type: TimingType, action: Action | None, effort: int):
+    def trigger_listeners(self, event_type: EventType, timing_type: TimingType, action: Action | None, effort: int) -> int:
+        """Trigger all listeners that are active, pasing in effort for effects that need it.
+        Returns an integer for effects that involve a variable result amount, such as committed effort."""
         triggered : list[EventListener]= []
         for listener in self.listeners:
                 if listener.event_type == event_type and listener.timing_type == timing_type:
@@ -491,8 +494,12 @@ class GameEngine:
             triggered = cast(list[EventListener], self.order_decider(self, triggered,
                 f"Choose order to resolve {event_type.value} triggers."))
 
+        committed_effort = 0
         for listener in triggered:
-            listener.effect_fn(self, effort)
+            if listener.exhaust_ability_active(""):
+                committed_effort = committed_effort + listener.effect_fn(self, effort)
+
+        return committed_effort #ignored by listener consumers who don't care about effort
     
 
     def register_listeners(self, listeners: list[EventListener]) -> None:

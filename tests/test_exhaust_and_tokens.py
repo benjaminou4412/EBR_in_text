@@ -5,7 +5,7 @@ Tests for exhaust abilities, ranger tokens, and Peerless Pathfinder role card
 import unittest
 from src.models import *
 from src.engine import GameEngine
-from src.cards import PeerlessPathfinder, OvergrownThicket, SunberryBramble
+from src.cards import PeerlessPathfinder, OvergrownThicket, SunberryBramble, BoundarySensor
 
 
 class RangerTokenTests(unittest.TestCase):
@@ -596,6 +596,406 @@ class ExhaustAbilityTargetingTests(unittest.TestCase):
         target_ids = [t.id for t in targets]
         self.assertIn(obstacle.id, target_ids)
         self.assertIn(feature.id, target_ids)
+
+
+class BoundarySensorTests(unittest.TestCase):
+    """Tests for Boundary Sensor gear card with listener-based exhaust ability"""
+
+    def test_boundary_sensor_establishes_listener_when_played(self):
+        """Boundary Sensor should establish a listener when played into Player Area"""
+        sensor = BoundarySensor()
+        ranger = RangerState(
+            name="Test Ranger",
+            aspects={Aspect.AWA: 2, Aspect.FIT: 2, Aspect.SPI: 2, Aspect.FOC: 2},
+            hand=[sensor]
+        )
+        state = GameState(ranger=ranger)
+        engine = GameEngine(state)
+
+        # Initial state - no listeners registered
+        self.assertEqual(len(engine.listeners), 0)
+
+        # Play Boundary Sensor
+        sensor.play(engine, effort=0, target=None)
+
+        # Should be in Player Area
+        self.assertIn(sensor, state.areas[Area.PLAYER_AREA])
+        self.assertNotIn(sensor, state.ranger.hand)
+
+        # Should have registered a listener
+        self.assertEqual(len(engine.listeners), 1)
+        listener = engine.listeners[0]
+        self.assertEqual(listener.event_type, EventType.PERFORM_TEST)
+        self.assertEqual(listener.timing_type, TimingType.WHEN)
+        self.assertEqual(listener.test_type, "Traverse")
+        self.assertEqual(listener.source_card_id, sensor.id)
+
+    def test_boundary_sensor_listener_cleans_up_when_discarded(self):
+        """Boundary Sensor listener should be removed when card leaves play"""
+        sensor = BoundarySensor()
+        ranger = RangerState(
+            name="Test Ranger",
+            aspects={Aspect.AWA: 2, Aspect.FIT: 2, Aspect.SPI: 2, Aspect.FOC: 2},
+            hand=[sensor]
+        )
+        state = GameState(ranger=ranger)
+        engine = GameEngine(state)
+
+        # Play and verify listener is registered
+        sensor.play(engine, effort=0, target=None)
+        self.assertEqual(len(engine.listeners), 1)
+
+        # Discard the sensor
+        sensor.discard_from_play(engine)
+
+        # Listener should be removed
+        self.assertEqual(len(engine.listeners), 0)
+        self.assertNotIn(sensor, state.areas[Area.PLAYER_AREA])
+
+    def test_boundary_sensor_triggers_on_traverse_test_and_commits_effort(self):
+        """Boundary Sensor listener should trigger on Traverse test and commit 1 effort when accepted"""
+        sensor = BoundarySensor()
+        # Boundary Sensor starts with 4 sensor tokens by default from JSON
+
+        feature = OvergrownThicket()  # Provides a Traverse test
+
+        ranger = RangerState(
+            name="Test Ranger",
+            aspects={Aspect.AWA: 2, Aspect.FIT: 2, Aspect.SPI: 2, Aspect.FOC: 2},
+            hand=[sensor],
+            deck=[Card(title=f"Card {i}", card_types={CardType.ATTRIBUTE}) for i in range(10)]
+        )
+        state = GameState(
+            ranger=ranger,
+            areas={
+                Area.SURROUNDINGS: [],
+                Area.ALONG_THE_WAY: [],
+                Area.WITHIN_REACH: [feature],
+                Area.PLAYER_AREA: []
+            }
+        )
+        engine = GameEngine(state)
+
+        # Play Boundary Sensor
+        sensor.play(engine, effort=0, target=None)
+        self.assertFalse(sensor.is_exhausted())
+        self.assertEqual(sensor.get_unique_token_count("sensor"), 4)
+
+        # Set up response decider to accept the exhaust prompt
+        def accept_exhaust(eng: GameEngine, prompt: str) -> bool:
+            return True
+        engine.response_decider = accept_exhaust
+
+        # Get the common Traverse test action
+        from src.registry import provide_common_tests
+        common_tests = provide_common_tests(state)
+        traverse_test = next(t for t in common_tests if t.verb == "Traverse")
+
+        # Mock card chooser to commit no cards
+        def choose_no_cards(eng: GameEngine, cards: list[Card]) -> list[Card]:
+            return []
+        engine.card_chooser = choose_no_cards
+
+        # Perform the test with 0 energy (so base effort is just from listener)
+        decision = CommitDecision(energy=0, hand_indices=[])
+
+        # Perform test - should trigger listener and add 1 effort
+        engine.perform_test(traverse_test, decision=decision, target_id=feature.id)
+
+        # Boundary Sensor should be exhausted
+        self.assertTrue(sensor.is_exhausted())
+
+        # Should have spent 1 sensor token (from 4 to 3)
+        self.assertEqual(sensor.get_unique_token_count("sensor"), 3)
+
+    def test_boundary_sensor_does_not_commit_effort_when_declined(self):
+        """Boundary Sensor should not commit effort or exhaust when player declines prompt"""
+        sensor = BoundarySensor()
+        # Starts with 4 sensor tokens by default
+
+        feature = OvergrownThicket()
+
+        ranger = RangerState(
+            name="Test Ranger",
+            aspects={Aspect.AWA: 2, Aspect.FIT: 2, Aspect.SPI: 2, Aspect.FOC: 2},
+            hand=[sensor],
+            deck=[Card(title=f"Card {i}", card_types={CardType.ATTRIBUTE}) for i in range(10)]
+        )
+        state = GameState(
+            ranger=ranger,
+            areas={
+                Area.SURROUNDINGS: [],
+                Area.ALONG_THE_WAY: [],
+                Area.WITHIN_REACH: [feature],
+                Area.PLAYER_AREA: []
+            }
+        )
+        engine = GameEngine(state)
+
+        # Play Boundary Sensor
+        sensor.play(engine, effort=0, target=None)
+
+        # Set up response decider to DECLINE the exhaust prompt
+        def decline_exhaust(eng: GameEngine, prompt: str) -> bool:
+            return False
+        engine.response_decider = decline_exhaust
+
+        # Get the common Traverse test action
+        from src.registry import provide_common_tests
+        common_tests = provide_common_tests(state)
+        traverse_test = next(t for t in common_tests if t.verb == "Traverse")
+
+        def choose_no_cards(eng: GameEngine, cards: list[Card]) -> list[Card]:
+            return []
+        engine.card_chooser = choose_no_cards
+
+        # Perform test
+        decision = CommitDecision(energy=0, hand_indices=[])
+        engine.perform_test(traverse_test, decision=decision, target_id=feature.id)
+
+        # Boundary Sensor should NOT be exhausted
+        self.assertFalse(sensor.is_exhausted())
+
+        # Should NOT have spent any sensor tokens (still 4)
+        self.assertEqual(sensor.get_unique_token_count("sensor"), 4)
+
+    def test_boundary_sensor_listener_does_not_trigger_when_exhausted(self):
+        """Exhausted Boundary Sensor should not trigger its listener"""
+        sensor = BoundarySensor()
+        # Starts with 4 sensor tokens by default
+        sensor.exhaust()  # Pre-exhaust the sensor
+
+        feature = OvergrownThicket()
+
+        ranger = RangerState(
+            name="Test Ranger",
+            aspects={Aspect.AWA: 2, Aspect.FIT: 2, Aspect.SPI: 2, Aspect.FOC: 2},
+            deck=[Card(title=f"Card {i}", card_types={CardType.ATTRIBUTE}) for i in range(10)]
+        )
+        state = GameState(
+            ranger=ranger,
+            areas={
+                Area.SURROUNDINGS: [],
+                Area.ALONG_THE_WAY: [],
+                Area.WITHIN_REACH: [feature],
+                Area.PLAYER_AREA: [sensor]  # Already in play
+            }
+        )
+        engine = GameEngine(state)
+
+        # Register the listener manually (since it's already in play)
+        listeners = sensor.get_listeners()
+        if listeners:
+            engine.register_listeners(listeners)
+
+        # This should never be called since sensor is exhausted
+        def should_not_be_called(eng: GameEngine, prompt: str) -> bool:
+            raise AssertionError("Exhaust prompt should not be shown for exhausted card!")
+        engine.response_decider = should_not_be_called
+
+        # Get the common Traverse test action
+        from src.registry import provide_common_tests
+        common_tests = provide_common_tests(state)
+        traverse_test = next(t for t in common_tests if t.verb == "Traverse")
+
+        def choose_no_cards(eng: GameEngine, cards: list[Card]) -> list[Card]:
+            return []
+        engine.card_chooser = choose_no_cards
+
+        # Perform test - should NOT trigger listener (no assertion error)
+        decision = CommitDecision(energy=0, hand_indices=[])
+        engine.perform_test(traverse_test, decision=decision, target_id=feature.id)
+
+        # Should still be exhausted with 4 tokens (nothing changed)
+        self.assertTrue(sensor.is_exhausted())
+        self.assertEqual(sensor.get_unique_token_count("sensor"), 4)
+
+    def test_boundary_sensor_listener_does_not_trigger_when_out_of_tokens(self):
+        """Boundary Sensor with 0 sensors should not trigger its listener"""
+        sensor = BoundarySensor()
+        # Remove all sensor tokens
+        sensor.remove_unique_tokens("sensor", 4)  # Starts with 4, remove all
+
+        feature = OvergrownThicket()
+
+        ranger = RangerState(
+            name="Test Ranger",
+            aspects={Aspect.AWA: 2, Aspect.FIT: 2, Aspect.SPI: 2, Aspect.FOC: 2},
+            deck=[Card(title=f"Card {i}", card_types={CardType.ATTRIBUTE}) for i in range(10)]
+        )
+        state = GameState(
+            ranger=ranger,
+            areas={
+                Area.SURROUNDINGS: [],
+                Area.ALONG_THE_WAY: [],
+                Area.WITHIN_REACH: [feature],
+                Area.PLAYER_AREA: [sensor]
+            }
+        )
+        engine = GameEngine(state)
+
+        # Register the listener
+        listeners = sensor.get_listeners()
+        if listeners:
+            engine.register_listeners(listeners)
+
+        # This should never be called since sensor has no tokens
+        def should_not_be_called(eng: GameEngine, prompt: str) -> bool:
+            raise AssertionError("Exhaust prompt should not be shown when out of tokens!")
+        engine.response_decider = should_not_be_called
+
+        # Get the common Traverse test action
+        from src.registry import provide_common_tests
+        common_tests = provide_common_tests(state)
+        traverse_test = next(t for t in common_tests if t.verb == "Traverse")
+
+        def choose_no_cards(eng: GameEngine, cards: list[Card]) -> list[Card]:
+            return []
+        engine.card_chooser = choose_no_cards
+
+        # Perform test - should NOT trigger listener
+        decision = CommitDecision(energy=0, hand_indices=[])
+        engine.perform_test(traverse_test, decision=decision, target_id=feature.id)
+
+        # Should still be ready with 0 tokens (nothing changed)
+        self.assertFalse(sensor.is_exhausted())
+        self.assertEqual(sensor.get_unique_token_count("sensor"), 0)
+
+
+class MultipleBoundarySensorsTests(unittest.TestCase):
+    """Tests for multiple Boundary Sensors in play simultaneously"""
+
+    def test_two_boundary_sensors_both_trigger_on_traverse(self):
+        """Two Boundary Sensors should both trigger independently on same Traverse test"""
+        sensor1 = BoundarySensor()
+        # sensor1 starts with 4 tokens by default
+
+        sensor2 = BoundarySensor()
+        # sensor2 starts with 4 tokens by default
+
+        feature = OvergrownThicket()
+
+        ranger = RangerState(
+            name="Test Ranger",
+            aspects={Aspect.AWA: 2, Aspect.FIT: 2, Aspect.SPI: 2, Aspect.FOC: 2},
+            deck=[Card(title=f"Card {i}", card_types={CardType.ATTRIBUTE}) for i in range(10)]
+        )
+        state = GameState(
+            ranger=ranger,
+            areas={
+                Area.SURROUNDINGS: [],
+                Area.ALONG_THE_WAY: [],
+                Area.WITHIN_REACH: [feature],
+                Area.PLAYER_AREA: [sensor1, sensor2]
+            }
+        )
+        engine = GameEngine(state)
+
+        # Register both listeners
+        listeners1 = sensor1.get_listeners()
+        listeners2 = sensor2.get_listeners()
+        if listeners1:
+            engine.register_listeners(listeners1)
+        if listeners2:
+            engine.register_listeners(listeners2)
+
+        # Track number of prompts shown
+        prompt_count = 0
+        def accept_all_exhausts(eng: GameEngine, prompt: str) -> bool:
+            nonlocal prompt_count
+            prompt_count += 1
+            return True
+        engine.response_decider = accept_all_exhausts
+
+        # Get the common Traverse test action
+        from src.registry import provide_common_tests
+        common_tests = provide_common_tests(state)
+        traverse_test = next(t for t in common_tests if t.verb == "Traverse")
+
+        def choose_no_cards(eng: GameEngine, cards: list[Card]) -> list[Card]:
+            return []
+        engine.card_chooser = choose_no_cards
+
+        # Perform test - both sensors should trigger
+        decision = CommitDecision(energy=0, hand_indices=[])
+        engine.perform_test(traverse_test, decision=decision, target_id=feature.id)
+
+        # Both sensors should have been prompted
+        self.assertEqual(prompt_count, 2)
+
+        # Both sensors should be exhausted
+        self.assertTrue(sensor1.is_exhausted())
+        self.assertTrue(sensor2.is_exhausted())
+
+        # Each should have spent 1 token (from 4 to 3)
+        self.assertEqual(sensor1.get_unique_token_count("sensor"), 3)
+        self.assertEqual(sensor2.get_unique_token_count("sensor"), 3)
+
+    def test_two_sensors_can_be_operated_independently(self):
+        """Player can choose to exhaust one sensor but not the other"""
+        sensor1 = BoundarySensor()
+        # sensor1 starts with 4 tokens by default
+
+        sensor2 = BoundarySensor()
+        # sensor2 starts with 4 tokens by default
+
+        feature = OvergrownThicket()
+
+        ranger = RangerState(
+            name="Test Ranger",
+            aspects={Aspect.AWA: 2, Aspect.FIT: 2, Aspect.SPI: 2, Aspect.FOC: 2},
+            deck=[Card(title=f"Card {i}", card_types={CardType.ATTRIBUTE}) for i in range(10)]
+        )
+        state = GameState(
+            ranger=ranger,
+            areas={
+                Area.SURROUNDINGS: [],
+                Area.ALONG_THE_WAY: [],
+                Area.WITHIN_REACH: [feature],
+                Area.PLAYER_AREA: [sensor1, sensor2]
+            }
+        )
+        engine = GameEngine(state)
+
+        # Register both listeners
+        listeners1 = sensor1.get_listeners()
+        listeners2 = sensor2.get_listeners()
+        if listeners1:
+            engine.register_listeners(listeners1)
+        if listeners2:
+            engine.register_listeners(listeners2)
+
+        # Accept first prompt, decline second
+        prompt_count = 0
+        def accept_first_decline_second(eng: GameEngine, prompt: str) -> bool:
+            nonlocal prompt_count
+            prompt_count += 1
+            return prompt_count == 1  # Accept first, decline second
+        engine.response_decider = accept_first_decline_second
+
+        # Get the common Traverse test action
+        from src.registry import provide_common_tests
+        common_tests = provide_common_tests(state)
+        traverse_test = next(t for t in common_tests if t.verb == "Traverse")
+
+        def choose_no_cards(eng: GameEngine, cards: list[Card]) -> list[Card]:
+            return []
+        engine.card_chooser = choose_no_cards
+
+        # Perform test
+        decision = CommitDecision(energy=0, hand_indices=[])
+        engine.perform_test(traverse_test, decision=decision, target_id=feature.id)
+
+        # Should have been prompted twice
+        self.assertEqual(prompt_count, 2)
+
+        # Only first sensor should be exhausted
+        self.assertTrue(sensor1.is_exhausted())
+        self.assertFalse(sensor2.is_exhausted())
+
+        # Only first sensor should have spent a token (from 4 to 3)
+        self.assertEqual(sensor1.get_unique_token_count("sensor"), 3)
+        self.assertEqual(sensor2.get_unique_token_count("sensor"), 4)  # Unchanged
 
 
 if __name__ == "__main__":
