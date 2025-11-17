@@ -30,12 +30,14 @@ class GameEngine:
                   card_chooser: Callable[[GameEngine, list[Card]], Card] | None = None,
                   response_decider: Callable[[GameEngine, str],bool] | None = None,
                   order_decider: Callable[[GameEngine, Any, str], Any] | None = None,
-                  option_chooser: Callable[[GameEngine, list[str], str | None], str] | None = None):
+                  option_chooser: Callable[[GameEngine, list[str], str | None], str] | None = None,
+                  amount_chooser: Callable[[GameEngine, int, int, str | None], int] | None = None):
         self.state = state
         self.card_chooser = card_chooser if card_chooser is not None else self._default_chooser
         self.response_decider = response_decider if response_decider is not None else self._default_decider
         self.order_decider = order_decider if order_decider is not None else self._default_order_decider
         self.option_chooser = option_chooser if option_chooser is not None else self._default_option_chooser
+        self.amount_chooser = amount_chooser if amount_chooser is not None else self._default_amount_chooser
         # Event listeners and message queue (game engine concerns, not board state)
         self.listeners: list[EventListener] = []
         self.constant_abilities: list[ConstantAbility] = []
@@ -64,6 +66,10 @@ class GameEngine:
     def _default_option_chooser(self, _engine: 'GameEngine', options: list[str], _prompt: str | None) -> str:  # noqa: ARG002
         """Default: choose first option (for tests)"""
         return options[0]
+
+    def _default_amount_chooser(self, _engine: 'GameEngine', minimum: int, maximum: int, _prompt: str | None) -> int:  # noqa: ARG002
+        """Default: choose maximum amount (for tests)"""
+        return maximum
 
     def get_display_id_cached(self, card: Card) -> str:
         """Get display ID for a card, using cache if available (during challenge resolution).
@@ -224,7 +230,7 @@ class GameEngine:
         # Show player Test Step 1 information
         self.add_message(f"[{action.verb}] test initiated of aspect [{aspect_str}] and approach [{approach_str}].")
         self.add_message(f"This test is of difficulty {action.difficulty_fn(self,target_card)}.")
-        self.add_message(f"Step 1: You suffer fatigue from each ready card between you and your interaction target.")
+        self.add_message(f"Step 1: Ready cards between you and your interaction target may fatigue you.")
         if target_id is not None:
             target = self.state.get_card_by_id(target_id)
             if target is not None: #should always be not-None
@@ -941,5 +947,5 @@ class GameEngine:
         #Step 5: Ready all cards in play
         for area in self.state.areas:
             for card in self.state.areas[area]:
-                card.ready(self)
+                card.ready(self) #ignore messages to prevent clutter
         self.add_message("All cards in play Ready.")

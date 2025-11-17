@@ -102,6 +102,36 @@ class BoundarySensor(Card):
             return 1
         else:
             return 0
+        
+class AffordedByNature(Card):
+    def __init__(self):
+        # Load all common RangerCard fields from JSON
+        super().__init__(**load_card_fields("Afforded by Nature", "Explorer")) #type:ignore
+        self.art_description = "A sketch of a ranger and an animal in conflict. The ranger is " \
+        "backed up against the tip of a steep rocky outcropping, and seems to have just kicked " \
+        "out and triggered a minor rockslide. The animal, perhaps a wolhund or atrox, is caught " \
+        "up in the falling rocks and flung out and away from the slope, limbs flailing and fangs " \
+        "bared as it falls helplessly."
+    
+    def get_play_targets(self, state: GameState) -> list[Card] | None:
+        return state.get_cards_by_trait("trail")
+
+    def resolve_moment_effect(self, engine: GameEngine, effort: int, target: Card | None) -> None:
+        """Discard any number of progress from a trail to add an equal number of harm to a being."""
+        if target is None:
+            engine.add_message(f"No target Trail provided.")
+        else:
+            beings = engine.state.beings_in_play()
+            if beings:
+                engine.add_message(f"Choose a being to add harm to:")
+                target_being = engine.card_chooser(engine, beings)
+                amount = engine.amount_chooser(engine, 0, target.progress, f"Choose an amount of progress to discard from {target.title}")
+                _amt, msg = target.remove_progress(amount)
+                engine.add_message(msg)
+                engine.add_message(target_being.add_harm(amount))
+            else:
+                engine.add_message(f"No target beings to harm.")
+
     
 
 

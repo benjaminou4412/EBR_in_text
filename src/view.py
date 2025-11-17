@@ -514,6 +514,50 @@ def choose_option(engine: GameEngine, options: list[str], prompt: str | None = N
             print("Invalid input. Please enter a number.")
 
 
+def choose_amount(engine: GameEngine, minimum: int, maximum: int, prompt: str | None = None) -> int:
+    """Prompt player to choose an integer amount within a range.
+
+    This is used for card effects that ask players to choose variable amounts
+    (e.g., "Move up to 3 progress", "Discard any number of cards").
+
+    Args:
+        engine: GameEngine for context and message display
+        minimum: Minimum amount (inclusive)
+        maximum: Maximum amount (inclusive)
+        prompt: Optional context message to display before prompting
+
+    Returns:
+        The chosen amount (between minimum and maximum, inclusive)
+    """
+    display_and_clear_messages(engine)
+
+    if minimum > maximum:
+        raise ValueError(f"Invalid range: minimum ({minimum}) > maximum ({maximum})")
+
+    if minimum == maximum:
+        # Only one valid choice, auto-select
+        return minimum
+
+    if prompt:
+        print(f"\n{prompt}")
+
+    print(f"Choose an amount (between {minimum} and {maximum}):")
+
+    while True:
+        try:
+            choice = input("> ").strip()
+            if not choice:
+                continue
+
+            amount = int(choice)
+            if minimum <= amount <= maximum:
+                return amount
+            else:
+                print(f"Please enter a number between {minimum} and {maximum}.")
+        except ValueError:
+            print("Invalid input. Please enter a number.")
+
+
 def choose_commit(action: Action, hand_size: int, state: GameState, engine: GameEngine) -> CommitDecision:
     """Prompt player to commit energy and cards for a test"""
     display_and_clear_messages(engine)

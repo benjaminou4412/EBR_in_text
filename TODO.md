@@ -27,11 +27,6 @@ API-ish notes:
 A living checklist. Roughly prioritized.
 
 - Implement at least one Gear + one non-response Moment + 1 attachment, and the Play action
-  - Implement:
-    - Afforded by Nature
-      - Try out multi-target paradigm: one "primary" target that the usual methods use, then secondary
-        targets handled by resolve_moment_effects
-          -Need to make sure can_be_played overrides and properly takes into account secondary targets
     - A Dear Friend
     - Passionate
   - Handle "no gamestate change" filtering (future TODO - complex edge cases)
