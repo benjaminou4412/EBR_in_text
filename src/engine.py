@@ -122,18 +122,7 @@ class GameEngine:
             # (Better to prompt unnecessarily than skip a valid effect)
             return True
 
-    def commit_icons(self, ranger: RangerState, approach: Approach, decision: CommitDecision) -> tuple[int, list[int]]:
-        total = decision.energy
-        valid_indices : list[int] = []
-        for idx in decision.hand_indices:
-            if not (0 <= idx < len(ranger.hand)):
-                continue
-            c: Card = ranger.hand[idx]
-            num_icons = c.approach_icons.get(approach, 0)
-            if num_icons:
-                total += num_icons
-                valid_indices.append(idx)
-        return total, valid_indices
+    
 
     def discard_from_hand(self, card: Card) -> None:
         """Move a card from hand to discard pile and clean up its listeners"""
@@ -281,7 +270,7 @@ class GameEngine:
 
         # Step 2: Commit effort in the form of energy tokens and approach icons..
 
-        base_effort, committed = self.commit_icons(r, approach, decision)
+        base_effort, committed = self.state.ranger.commit_icons(approach, decision)
 
         base_effort = base_effort + self.trigger_listeners(EventType.PERFORM_TEST, TimingType.WHEN, action, base_effort)
 

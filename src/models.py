@@ -963,6 +963,19 @@ class RangerState:
         """Reset energy pool to initial amounts dictated by fixed aspects. Excess energy not retained."""
         self.energy = dict(self.aspects)
 
+    def commit_icons(self, approach: Approach, decision: CommitDecision) -> tuple[int, list[int]]:
+        total = decision.energy
+        valid_indices : list[int] = []
+        for idx in decision.hand_indices:
+            if not (0 <= idx < len(self.hand)):
+                continue
+            c: Card = self.hand[idx]
+            num_icons = c.approach_icons.get(approach, 0)
+            if num_icons:
+                total += num_icons
+                valid_indices.append(idx)
+        return total, valid_indices
+
 @dataclass
 class GameState:
     ranger: RangerState
