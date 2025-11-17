@@ -648,7 +648,7 @@ class Card:
             engine.add_message(f"   Art description: {self.art_description}")
         if self.has_keyword(Keyword.AMBUSH) and self.starting_area == Area.WITHIN_REACH:
             engine.add_message(f"   {self.title} Ambushes you!")
-            engine.fatigue_ranger(engine.state.ranger, self.get_current_presence(engine))
+            engine.state.ranger.fatigue(engine, self.get_current_presence(engine))
 
         #Set up abilities and listeners
         constant_abilities = self.get_constant_abilities()
@@ -992,6 +992,60 @@ class RangerState:
             self.discard.append(card)
             # Remove any listeners associated with this card
             engine.remove_listeners_by_id(card.id)
+
+    def fatigue(self, engine: GameEngine, amount: int | None) -> None:
+        """Move top amount cards from ranger deck to top of fatigue pile (one at a time)"""
+        if amount is None:
+            raise RuntimeError(f"Can't fatigue a ranger by None amount")
+        if amount > len(self.deck):
+            # Can't fatigue more than remaining deck - end the day
+            engine.add_message(f"Ranger needs to suffer {amount} fatigue, but only {len(self.deck)} cards remain in deck.")
+            engine.add_message("Cannot fatigue from empty deck - the day must end!")
+            engine.end_day()
+            return
+
+        for _ in range(amount):
+            card = self.deck.pop(0)  # Take from top of deck
+            self.fatigue_stack.insert(0, card)  # Insert at top of fatigue pile
+
+        if amount > 0:
+            engine.add_message(f"Ranger suffers {amount} fatigue.")
+
+    def soothe(self, engine: GameEngine, amount: int) -> None:
+        """Move top amount cards from fatigue pile to hand"""
+        cards_to_soothe = min(amount, len(self.fatigue_stack))
+        if cards_to_soothe > 0:
+            engine.add_message(f"Ranger soothes {cards_to_soothe} fatigue.")
+        for _ in range(cards_to_soothe):
+            card = self.fatigue_stack.pop(0)  # Take from top of fatigue pile
+            self.hand.append(card)  # Add to hand
+            engine.register_listeners(card.enters_hand(engine))
+            engine.add_message(f"   {card.title} is added to your hand.")
+    
+    def injure(self, engine: GameEngine) -> None:
+        """
+        Apply 1 injury to the ranger.
+        - Discard entire fatigue pile
+        - Increment injury counter
+        - If injury reaches 3, end the day
+        TODO: Add Lingering Injury card to deck when taking 3rd injury
+        """
+        # Discard all fatigue
+        fatigue_count = len(self.fatigue_stack)
+        if fatigue_count > 0:
+            self.discard.extend(self.fatigue_stack)
+            self.fatigue_stack.clear()
+            engine.add_message(f"Ranger discards {fatigue_count} fatigue from injury.")
+
+        # Increment injury counter
+        self.injury += 1
+        engine.add_message(f"Ranger suffers 1 injury (now at {self.injury} injury).")
+
+        # Check for third injury
+        if self.injury >= 3:
+            engine.add_message("Ranger has taken 3 injuries - the day must end!")
+            # TODO: Add "Lingering Injury" card to ranger's deck permanently
+            engine.end_day()
 
 @dataclass
 class GameState:

@@ -80,7 +80,7 @@ class MiddaySun(Card):
     def _sun_effect(self, engine: GameEngine) -> bool:
         """Sun effect: Suffer 1 fatigue."""
         engine.add_message(f"Challenge (Sun) on {self.title}: Suffer 1 fatigue.")
-        engine.fatigue_ranger(engine.state.ranger, 1)
+        engine.state.ranger.fatigue(engine, 1)
         return True #TODO: return false if fatigue is cancelled
     
     def get_tests(self) -> list[Action]:
@@ -103,7 +103,7 @@ class MiddaySun(Card):
 
     def _on_locate_success(self, engine: GameEngine, _effort: int, _target: Card | None) -> None:
         self.add_unique_tokens("Cloud", 1)
-        engine.soothe_ranger(engine.state.ranger, 1)
+        engine.state.ranger.soothe(engine, 1)
         return None
     
 

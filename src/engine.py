@@ -210,7 +210,7 @@ class GameEngine:
                 self.add_message(f"    {card_display_id} fatigues you.")
                 curr_presence = card.get_current_presence(self)
                 if curr_presence is not None:
-                    self.fatigue_ranger(ranger, curr_presence)
+                    self.state.ranger.fatigue(self, curr_presence)
                 else:
                     raise RuntimeError(f"Something has gone horribly wrong; this card should have a presence.")
                     
@@ -583,7 +583,7 @@ class GameEngine:
                 curr_presence = target_card.get_current_presence(self)
                 if target_area == Area.WITHIN_REACH and target_card.has_keyword(Keyword.AMBUSH) and curr_presence is not None:
                     self.add_message(f"...and Ambushes you!")
-                    self.fatigue_ranger(self.state.ranger, curr_presence)
+                    self.state.ranger.fatigue(self, curr_presence)
                 return True
         return False
 
@@ -605,34 +605,7 @@ class GameEngine:
                 # Recursively move this attachment's attachments
                 self._move_attachments_recursively(attached_card, target_area)
 
-    def fatigue_ranger(self, ranger: RangerState, amount: int | None) -> None:
-        """Move top amount cards from ranger deck to top of fatigue pile (one at a time)"""
-        if amount is None:
-            raise RuntimeError(f"Can't fatigue a ranger by None amount")
-        if amount > len(ranger.deck):
-            # Can't fatigue more than remaining deck - end the day
-            self.add_message(f"Ranger needs to suffer {amount} fatigue, but only {len(self.state.ranger.deck)} cards remain in deck.")
-            self.add_message("Cannot fatigue from empty deck - the day must end!")
-            self.end_day()
-            return
-
-        for _ in range(amount):
-            card = ranger.deck.pop(0)  # Take from top of deck
-            ranger.fatigue_stack.insert(0, card)  # Insert at top of fatigue pile
-
-        if amount > 0:
-            self.add_message(f"Ranger suffers {amount} fatigue.")
-
-    def soothe_ranger(self, ranger: RangerState, amount: int) -> None:
-        """Move top amount cards from fatigue pile to hand"""
-        cards_to_soothe = min(amount, len(ranger.fatigue_stack))
-        if cards_to_soothe > 0:
-            self.add_message(f"Ranger soothes {cards_to_soothe} fatigue.")
-        for _ in range(cards_to_soothe):
-            card = ranger.fatigue_stack.pop(0)  # Take from top of fatigue pile
-            ranger.hand.append(card)  # Add to hand
-            self.register_listeners(card.enters_hand(self))
-            self.add_message(f"   {card.title} is added to your hand.")
+    
 
     def enforce_equip_limit(self) -> None:
         """
@@ -674,31 +647,6 @@ class GameEngine:
 
         if total_equip <= MAX_EQUIP:
             self.add_message(f"Total equip value is now {total_equip}/{MAX_EQUIP}.")
-
-    def injure_ranger(self, ranger: RangerState) -> None:
-        """
-        Apply 1 injury to the ranger.
-        - Discard entire fatigue pile
-        - Increment injury counter
-        - If injury reaches 3, end the day
-        TODO: Add Lingering Injury card to deck when taking 3rd injury
-        """
-        # Discard all fatigue
-        fatigue_count = len(ranger.fatigue_stack)
-        if fatigue_count > 0:
-            ranger.discard.extend(ranger.fatigue_stack)
-            ranger.fatigue_stack.clear()
-            self.add_message(f"Ranger discards {fatigue_count} fatigue from injury.")
-
-        # Increment injury counter
-        ranger.injury += 1
-        self.add_message(f"Ranger suffers 1 injury (now at {ranger.injury} injury).")
-
-        # Check for third injury
-        if ranger.injury >= 3:
-            self.add_message("Ranger has taken 3 injuries - the day must end!")
-            # TODO: Add "Lingering Injury" card to ranger's deck permanently
-            self.end_day()
 
     def end_day(self) -> None:
         """End the current day (game over for this session)"""
@@ -838,7 +786,7 @@ class GameEngine:
             if not card.is_exhausted():
                 self.add_message(f"{card.title} fatigues you, due to the Fatiguing keyword.")
                 curr_presence = card.get_current_presence(self)
-                self.fatigue_ranger(self.state.ranger, curr_presence)
+                self.state.ranger.fatigue(self, curr_presence)
 
     # Round/Phase helpers
     def phase1_draw_paths(self, count: int = 1):
@@ -974,7 +922,7 @@ class GameEngine:
         #Step 1: Suffer 1 Fatigue per injury
         if (self.state.ranger.injury > 0):
             self.add_message(f"Your ranger is injured, so you suffer fatigue.")
-            self.fatigue_ranger(self.state.ranger, self.state.ranger.injury)
+            self.state.ranger.fatigue(self, self.state.ranger.injury)
         #Step 2: Draw 1 Ranger Card
         card, draw_message, should_end_day = self.state.ranger.draw_card(self)
         if should_end_day:

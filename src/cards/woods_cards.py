@@ -62,7 +62,7 @@ class ProwlingWolhund(Card):
         if enough_fatigue:
             engine.add_message(f"Challenge (Crest) on {self_display_id}: You have {len(engine.state.ranger.fatigue_stack)} fatigue - Prowling Wolhund exhausts itself and you suffer 1 injury!")
             self.exhaust()
-            engine.injure_ranger(engine.state.ranger)
+            engine.state.ranger.injure(engine)
             return True
         else:
             engine.add_message(f"Challenge (Crest) on {self_display_id}: (low enough fatigue to avoid injury)")
@@ -143,7 +143,7 @@ class SitkaBuck(Card):
         does = engine.state.get_cards_by_title("Sitka Doe")
         if does and any(doe.is_ready() for doe in does):
             engine.add_message(f"Challenge (Crest) on {self_display_id}: There is an active Sitka Doe, so the buck charges.")
-            engine.injure_ranger(engine.state.ranger)
+            engine.state.ranger.injure(engine)
             return True
         else:
             engine.add_message(f"Challenge (Crest) on {self_display_id}: (no active Sitka Doe)")
@@ -335,7 +335,7 @@ class CausticMulcher(Card):
         if engine.state.ranger.ranger_token_location==self.id:
             engine.add_message(f"Challenge: (Crest) on {self_display_id}: The Mulcher injures each Ranger it has captured.")
             resolved = True
-            engine.injure_ranger(engine.state.ranger)
+            engine.state.ranger.injure(engine)
         return resolved
 
 class SunberryBramble(Card):
@@ -366,17 +366,17 @@ class SunberryBramble(Card):
             )
         ]
 
-    def _on_pluck_success(self, engine: GameEngine, effort: int, card: Card | None) -> None:
+    def _on_pluck_success(self, engine: GameEngine, _effort: int, _card: Card | None) -> None:
         """Pluck test success: add 1 harm"""
         msg = self.add_harm(1)
         engine.add_message(msg)
-        engine.soothe_ranger(engine.state.ranger, 2)
+        engine.state.ranger.soothe(engine, 2)
 
-    def _fail_effect(self, engine: GameEngine, effort: int, card: Card | None) -> None:
+    def _fail_effect(self, engine: GameEngine, _effort: int, _card: Card | None) -> None:
         engine.add_message(f"Target {self.title} fatigues you.")
         curr_presence = self.get_current_presence(engine)
         if curr_presence is not None:
-            engine.fatigue_ranger(engine.state.ranger, curr_presence)
+            engine.state.ranger.fatigue(engine, curr_presence)
 
 
     def get_challenge_handlers(self) -> dict[ChallengeIcon, Callable[[GameEngine], bool]] | None:
@@ -442,7 +442,7 @@ class OvergrownThicket(Card):
             engine.add_message(self.remove_progress(1)[1])
             curr_presence = self.get_current_presence(engine)
             if curr_presence is not None:
-                engine.fatigue_ranger(engine.state.ranger, curr_presence)
+                engine.state.ranger.fatigue(engine, curr_presence)
             return True
         else:
             engine.add_message(f"Challenge: (Mountain) on {self_display_id}: (no progress to discard; no fatigue).")

@@ -49,7 +49,7 @@ class PeerlessPathfinder(Card):
         # Target feature fatigues you
         presence = target.get_current_presence(engine)
         if presence is not None and presence > 0:
-            engine.fatigue_ranger(engine.state.ranger, presence)
+            engine.state.ranger.fatigue(engine, presence)
 
 class ShareintheValleysSecrets(Card):
     def __init__(self):
@@ -70,7 +70,7 @@ class ShareintheValleysSecrets(Card):
                     num_exhausted = num_exhausted + 1
         if num_exhausted > 0:
             engine.add_message(f"Exhausted {num_exhausted} obstacles. Applying that amount of fatigue...")
-        engine.fatigue_ranger(engine.state.ranger, num_exhausted)
+        engine.state.ranger.fatigue(engine, num_exhausted)
         
 
 class BoundarySensor(Card):
@@ -158,5 +158,5 @@ class CradledbytheEarth(Card):
             engine.add_message(f"No target Trail.")
         else:
             progress_on_trail: int = target.progress
-            engine.soothe_ranger(engine.state.ranger, progress_on_trail)
+            engine.state.ranger.soothe(engine, progress_on_trail)
             #TODO: When implementing multiplayer, implement division of fatigue
