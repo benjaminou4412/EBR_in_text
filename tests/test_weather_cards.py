@@ -55,7 +55,7 @@ class APerfectDayTests(unittest.TestCase):
         stack_deck(state, Aspect.FIT, +1, ChallengeIcon.MOUNTAIN)
 
         eng = GameEngine(state)
-        weather.enters_play(eng, Area.SURROUNDINGS)
+        weather.enters_play(eng, Area.SURROUNDINGS, None)
 
         # Create a test that adds progress
         from src.registry import provide_common_tests
@@ -126,7 +126,7 @@ class APerfectDayTests(unittest.TestCase):
         state.weather = weather
 
         eng = GameEngine(state)
-        weather.enters_play(eng, Area.SURROUNDINGS)
+        weather.enters_play(eng, Area.SURROUNDINGS, None)
 
         # Trigger refresh
         eng.phase4_refresh()
@@ -150,7 +150,7 @@ class APerfectDayTests(unittest.TestCase):
         state.weather = weather
 
         eng = GameEngine(state)
-        weather.enters_play(eng, Area.SURROUNDINGS)
+        weather.enters_play(eng, Area.SURROUNDINGS, None)
         # Trigger refresh (should remove last cloud and flip)
         eng.phase4_refresh()
 
@@ -209,7 +209,7 @@ class MiddaySunTests(unittest.TestCase):
         state.weather = weather
 
         eng = GameEngine(state)
-        weather.enters_play(eng, Area.SURROUNDINGS)
+        weather.enters_play(eng, Area.SURROUNDINGS, None)
 
         # Trigger refresh
         eng.phase4_refresh()
@@ -233,7 +233,7 @@ class MiddaySunTests(unittest.TestCase):
         state.weather = weather
 
         eng = GameEngine(state)
-        weather.enters_play(eng, Area.SURROUNDINGS)
+        weather.enters_play(eng, Area.SURROUNDINGS, None)
 
         # Trigger refresh (should add 1 cloud, reaching 3, and flip)
         eng.phase4_refresh()

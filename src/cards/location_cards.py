@@ -45,7 +45,7 @@ class AncestorsGrove(Card):
         if target is not None:
             engine.add_message(f"Found prey {target.title}. Putting into play...")
             engine.state.path_deck.remove(target)
-            engine.draw_path_card(target)
+            engine.draw_path_card(target, None)
         else:
             engine.add_message(f"No prey found in path deck.")
 
@@ -87,13 +87,13 @@ class BoulderField(Card):
         icon = drawn.icon
         if icon == ChallengeIcon.SUN:
             engine.scout_cards(engine.state.path_deck, 2)
-            engine.draw_path_card(None)
+            engine.draw_path_card(None, None)
         elif icon == ChallengeIcon.MOUNTAIN:
-            engine.draw_path_card(None)
+            engine.draw_path_card(None, None)
         elif icon == ChallengeIcon.CREST:
             engine.scout_cards(engine.state.path_deck, 3)
-            engine.draw_path_card(None)
-            engine.draw_path_card(None)
+            engine.draw_path_card(None, None)
+            engine.draw_path_card(None, None)
         else:
             raise RuntimeError(f"Challenge card drawn due to Boulder Field has no icon!")
 

@@ -376,7 +376,7 @@ class Card:
         if self.has_type(CardType.GEAR):
             engine.state.ranger.hand.remove(self)
             engine.state.areas[Area.PLAYER_AREA].append(self)
-            self.enters_play(engine, Area.PLAYER_AREA)
+            self.enters_play(engine, Area.PLAYER_AREA, None)
             engine.add_message(f"Played {self.title} into Player Area.")
 
             # Enforce equip value limit (5 total)
@@ -384,20 +384,34 @@ class Card:
 
         elif self.has_type(CardType.ATTACHMENT):
             if target is None:
-                raise RuntimeError(f"Attachments require a target!")
-            target_card_area = engine.state.get_card_area_by_id(target.id)
+                engine.add_message(f"No attachment target provided; discarding.")
+                engine.state.ranger.discard_from_hand(engine, self)
+                return
+            target_card_area: Area | None = engine.state.get_card_area_by_id(target.id)
+            if target_card_area is None:
+                #check if it's in an out of play area, which would indicate the attachment is searching
+                #it out and putting it into play
+                if (target in engine.state.path_deck or
+                    target in engine.state.path_discard or
+                    target in engine.state.ranger.deck or
+                    target in engine.state.ranger.discard or
+                    target in engine.state.ranger.fatigue_stack or
+                    target in engine.state.ranger.hand):
+                    target_card_area = target.starting_area
+                else:
+                    raise RuntimeError(f"Attachment target is in no area!")
             if target_card_area is None:
                 raise RuntimeError(f"Attachment target is in no area!")
             else:
                 engine.state.ranger.hand.remove(self)
+                self.enters_play(engine, target_card_area, target)
                 engine.attach(self, target)
-                self.enters_play(engine, target_card_area)
                 engine.add_message(f"Played {self.title}, attaching to target.")
             
         elif (self.has_type(CardType.BEING) or self.has_type(CardType.FEATURE)) and CardType.RANGER in self.card_types:
             engine.state.ranger.hand.remove(self)
             engine.state.areas[Area.WITHIN_REACH].append(self)
-            self.enters_play(engine, Area.WITHIN_REACH)
+            self.enters_play(engine, Area.WITHIN_REACH, None)
             engine.add_message(f"Played {self.title} Within Reach.")
 
         elif self.has_type(CardType.MOMENT):
@@ -542,7 +556,10 @@ class Card:
     
     def has_trait(self, trait: str) -> bool:
         #TODO: take into account added traits from stuff like Trail Makers
-        return trait in self.traits
+        for candidate_trait in self.traits:
+            if candidate_trait.casefold() == trait.casefold():
+                return True
+        return False
     
     def get_progress_threshold(self) -> int | None:
         #TODO: take into account progress threshold modifiers
@@ -638,9 +655,10 @@ class Card:
         else:
             return []
 
-    def enters_play(self, engine: GameEngine, area: Area) -> None:
+    def enters_play(self, engine: GameEngine, area: Area, action_target: Card | None = None) -> None:
         """Called when card enters play. Adds narrative messages, 
         and can be overridden for enter-play effects, listeners, and in-play ConstantAbilities."""
+        """Parameter "action target" is given for cards played with the Play Action, and is otherwise None"""
 
         #Messaging
         engine.add_message(f"{get_display_id(engine.state.all_cards_in_play(), self)} enters play in {area.value}.")
@@ -1208,7 +1226,7 @@ class MessageEvent:
 class EventListener:
     """For Response abilities and other game effects that trigger before/when/after another effect"""
     event_type: EventType
-    active: Callable[[GameEngine], bool]  # Check if this listener should trigger (energy, tokens, targets, etc.)
+    active: Callable[[GameEngine, Card | None], bool]  # Check if this listener should trigger (energy, tokens, targets, etc.)
     effect_fn: Callable[[GameEngine, int], int]
     source_card_id: str
     timing_type: TimingType

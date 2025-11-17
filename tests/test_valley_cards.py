@@ -336,7 +336,7 @@ class AmbushKeywordTests(unittest.TestCase):
 
         # Manually trigger enters_play
         state.areas[Area.WITHIN_REACH].append(ambush_card)
-        ambush_card.enters_play(eng, Area.WITHIN_REACH)
+        ambush_card.enters_play(eng, Area.WITHIN_REACH, None)
 
         # Verify ranger was fatigued by presence (2)
         self.assertEqual(len(ranger.fatigue_stack), 2,

@@ -55,7 +55,7 @@ class ProwlingWolhundTests(unittest.TestCase):
         eng = GameEngine(state)
 
         # Manually call enters_play
-        wolhund.enters_play(eng, Area.WITHIN_REACH)
+        wolhund.enters_play(eng, Area.WITHIN_REACH, None)
 
         # Should NOT be exhausted
         self.assertFalse(wolhund.exhausted)
@@ -79,7 +79,7 @@ class ProwlingWolhundTests(unittest.TestCase):
         eng = GameEngine(state)
 
         # Second wolhund enters play
-        wolhund2.enters_play(eng, Area.WITHIN_REACH)
+        wolhund2.enters_play(eng, Area.WITHIN_REACH, None)
 
         # Second wolhund should be exhausted
         self.assertTrue(wolhund2.exhausted)
@@ -763,17 +763,17 @@ class WoodsCardInteractionTests(unittest.TestCase):
 
         # First wolhund enters play
         state.areas[Area.WITHIN_REACH].append(wolhund1)
-        wolhund1.enters_play(eng, Area.WITHIN_REACH)
+        wolhund1.enters_play(eng, Area.WITHIN_REACH, None)
         self.assertFalse(wolhund1.exhausted)
 
         # Second wolhund enters play
         state.areas[Area.WITHIN_REACH].append(wolhund2)
-        wolhund2.enters_play(eng, Area.WITHIN_REACH)
+        wolhund2.enters_play(eng, Area.WITHIN_REACH, None)
         self.assertTrue(wolhund2.exhausted)
 
         # Third wolhund enters play
         state.areas[Area.WITHIN_REACH].append(wolhund3)
-        wolhund3.enters_play(eng, Area.WITHIN_REACH)
+        wolhund3.enters_play(eng, Area.WITHIN_REACH, None)
         self.assertTrue(wolhund3.exhausted)
 
     def test_buck_and_doe_interaction(self):

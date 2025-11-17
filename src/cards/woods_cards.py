@@ -17,9 +17,9 @@ class ProwlingWolhund(Card):
         "forehead all the way down to join its tail. It steps lightly on the balls of its " \
         "paws, oriented slightly away from you but with its head turned to give you a glare."
     
-    def enters_play(self, engine: GameEngine, area: Area) -> None:
+    def enters_play(self, engine: GameEngine, area: Area, action_target: Card | None = None) -> None:
         """If there is another predator in play, this predator comes into play exhausted"""
-        super().enters_play(engine, area)
+        super().enters_play(engine, area, action_target)
         predators = engine.state.get_cards_by_trait("Predator")
         # Check if there's another predator besides this one
         if predators and any(p.id != self.id for p in predators):
@@ -216,8 +216,8 @@ class CausticMulcher(Card):
         "grabber-claws at the end of it. You count at least 8 legs extending haphazardly from just below " \
         "the maw, each with two joints along its length. They're coated in exoskeleton, like a spider's."
     
-    def enters_play(self, engine: GameEngine, area: Area) -> None:
-        super().enters_play(engine, area)
+    def enters_play(self, engine: GameEngine, area: Area, action_target: Card | None = None) -> None:
+        super().enters_play(engine, area, action_target)
 
     def get_constant_abilities(self) -> list[ConstantAbility] | None:
         keyword_abilities = super().get_constant_abilities() or []

@@ -86,7 +86,7 @@ class BoundarySensor(Card):
 
     def get_listeners(self) -> list[EventListener] | None:
         return [EventListener(event_type=EventType.PERFORM_TEST,
-                              active=lambda eng: self.exhaust_ability_active("sensor"),
+                              active=lambda _e, _c: self.exhaust_ability_active("sensor"),
                               effect_fn=self.trigger_exhaust_prompt,
                               source_card_id=self.id, 
                               timing_type=TimingType.WHEN, 
@@ -148,7 +148,7 @@ class WalkWithMe(Card):
             self.play_prompt(eng, effort, "You succeeded at a Traverse test.")
             return 0
         return [EventListener(EventType.TEST_SUCCEED,
-                              lambda eng: self.can_be_played(eng),  # Check energy + targets
+                              lambda eng, _c: self.can_be_played(eng),  # Check energy + targets
                               trigger_play_prompt,
                               self.id, TimingType.AFTER, "Traverse")]
 

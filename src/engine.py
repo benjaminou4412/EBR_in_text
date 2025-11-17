@@ -390,6 +390,8 @@ class GameEngine:
 
         By default, cleared cards leave play (discard).
         TODO: Some cards have special clear entries that keep them in play.
+        TODO: Take into account "BEFORE" and "WHEN" listener triggers that
+          may result in the underlying card not clearing
 
         Returns:
             List of cleared cards (for display messages)
@@ -413,8 +415,9 @@ class GameEngine:
 
         # Discard all cleared cards (this removes them from areas)
         for card in to_clear:
+            self.trigger_listeners(EventType.CLEAR, TimingType.WHEN, None, card.progress, card) 
             card.discard_from_play(self)
-
+            
         return to_clear
     
     #Ranger Token manipulation
@@ -458,8 +461,8 @@ class GameEngine:
 
     # Listener management methods
 
-    def trigger_listeners(self, event_type: EventType, timing_type: TimingType, action: Action | None, effort: int) -> int:
-        """Trigger all listeners that are active, pasing in effort for effects that need it.
+    def trigger_listeners(self, event_type: EventType, timing_type: TimingType, action: Action | None, effort: int, cleared: Card | None = None) -> int:
+        """Trigger all listeners that are active, pasing in effort and a cleared card for effects that need it.
         Returns an integer for effects that involve a variable result amount, such as committed effort."""
         triggered : list[EventListener]= []
         for listener in self.listeners:
@@ -481,7 +484,7 @@ class GameEngine:
 
         committed_effort = 0
         for listener in triggered:
-            if listener.active(self):  # Pass engine to check playability/activation
+            if listener.active(self, cleared):  # Pass engine to check playability/activation
                 committed_effort = committed_effort + listener.effect_fn(self, effort)
 
         return committed_effort #ignored by listener consumers who don't care about effort
@@ -660,10 +663,11 @@ class GameEngine:
         self.add_message(f"Day {self.state.day_number} has ended after {self.state.round_number} rounds.")
         self.add_message("Thank you for playing!")
 
-    def draw_path_card(self, target_card: Card | None) -> None:
+    def draw_path_card(self, card_to_draw: Card | None, target: Card | None) -> None:
         """Draw one path card and put it into play, reshuffling path discard if necessary"""
-        """If target_card parameter is given, put it into play without drawing from path deck."""
-        if target_card is None:
+        """If card_to_draw parameter is given, put it into play without drawing from path deck."""
+        """If target is given, pass it to enters_play so ETB effects with targeting can use it"""
+        if card_to_draw is None:
             if not self.state.path_deck:
                 self.add_message(f"Path deck empty; shuffling in path discard.")
                 random.shuffle(self.state.path_discard)
@@ -672,14 +676,14 @@ class GameEngine:
             card = self.state.path_deck.pop(0)
             if card.starting_area is not None:
                     self.state.areas[card.starting_area].append(card)
-                    card.enters_play(self, card.starting_area)
+                    card.enters_play(self, card.starting_area, target)
             else:
                 raise AttributeError("Path card drawn is missing a starting area.")
         else:
-            card = target_card
+            card = card_to_draw
             if card.starting_area is not None:
                     self.state.areas[card.starting_area].append(card)
-                    card.enters_play(self, card.starting_area)
+                    card.enters_play(self, card.starting_area, target)
             else:
                 raise AttributeError("Path card drawn is missing a starting area.")
 
@@ -763,6 +767,9 @@ class GameEngine:
                 #only move cards that are actually in play, not attachments in player's hands 
                 #(which should have to_attach_area == None)
                 self.move_card(to_attach.id, attachment_target_area)
+            elif to_attach_area is None:
+                #attachment in hand in the process of being played, needs to be added to its attachee's area
+                self.state.areas[attachment_target_area].append(to_attach)
         to_attach_display = get_display_id(self.state.all_cards_in_play(), to_attach)
         attachment_target_display = get_display_id(self.state.all_cards_in_play(), attachment_target)
         self.add_message(f"{to_attach_display} becomes attached to {attachment_target_display}.")
@@ -798,7 +805,7 @@ class GameEngine:
     def phase1_draw_paths(self, count: int = 1):
         self.add_message(f"Begin Phase 1: Draw Path Cards")
         for _ in range(count):
-            self.draw_path_card(None)
+            self.draw_path_card(None, None)
 
     def phase3_travel(self) -> bool: #returns whether day ended by camping
         self.add_message(f"Begin Phase 3: Travel")
@@ -870,7 +877,7 @@ class GameEngine:
         self.state.areas[Area.SURROUNDINGS].remove(curr_location)
         self.state.location = new_location
         self.add_message(f"Traveled away from {curr_location.title} to {new_location.title}.")
-        self.state.location.enters_play(self, Area.SURROUNDINGS)
+        self.state.location.enters_play(self, Area.SURROUNDINGS, None)
         #(note: unlike path cards, locations' campaign log entries and arrival setup should not be called with enters_play)
         #(instead, Step 5 of the Travel sequence resolves campaign log entries and arrival setup)
 
@@ -891,11 +898,11 @@ class GameEngine:
             self.add_message(f"Step 5: Set up starting location")
             self.state.location = get_new_location(Card()) #TODO: reference campaign log for start of day location
             self.state.areas[Area.SURROUNDINGS].append(self.state.location)
-            self.state.location.enters_play(self, Area.SURROUNDINGS)
+            self.state.location.enters_play(self, Area.SURROUNDINGS, None)
             self.add_message(f"Step 6: Set up the weather card")
             self.state.weather = get_current_weather()
             self.state.areas[Area.SURROUNDINGS].insert(0, self.state.weather)
-            self.state.weather.enters_play(self, Area.SURROUNDINGS)
+            self.state.weather.enters_play(self, Area.SURROUNDINGS, None)
             self.add_message(f"Step 7: Set up mission cards (skipped)")
             #TODO: setup missions
             self.add_message(f"Steps 8, 9, and 10: Build path deck, resolve arrival setup, and finishing touches.")
