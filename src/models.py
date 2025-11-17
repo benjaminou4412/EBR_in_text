@@ -377,6 +377,9 @@ class Card:
             self.enters_play(engine, Area.PLAYER_AREA)
             engine.add_message(f"Played {self.title} into Player Area.")
 
+            # Enforce equip value limit (5 total)
+            engine.enforce_equip_limit()
+
         elif self.has_type(CardType.ATTACHMENT):
             if target is None:
                 raise RuntimeError(f"Attachments require a target!")

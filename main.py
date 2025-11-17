@@ -26,6 +26,8 @@ def pick_demo_cards() -> list[Card]:
     walk_with_me_0 : Card = WalkWithMe()
     a_dear_friend_0 : Card= ADearFriend()
     boundary_sensor_0: Card = BoundarySensor()
+    boundary_sensor_1: Card = BoundarySensor()
+    boundary_sensor_2: Card = BoundarySensor()
     exploration_dummies : list[Card] = []
     for _ in range(5):
         exploration_dummies.append(Card(title="Demo Explore +1", card_types={CardType.ATTRIBUTE}, approach_icons={Approach.EXPLORATION: 1}))
@@ -41,7 +43,7 @@ def pick_demo_cards() -> list[Card]:
 
     deck = exploration_dummies + conflict_dummies + reason_dummies + connection_dummies
     random.shuffle(deck)
-    top_deck: list[Card] = [walk_with_me_0, a_dear_friend_0, boundary_sensor_0]
+    top_deck: list[Card] = [walk_with_me_0, a_dear_friend_0, boundary_sensor_0, boundary_sensor_1, boundary_sensor_2]
 
     return top_deck + deck
 
@@ -143,6 +145,17 @@ def menu_and_run(engine: GameEngine) -> None:
             + provide_common_tests(engine.state)
             + provide_exhaust_abilities(engine.state)
             + provide_play_options(engine))  # Filters by can_be_played()
+            
+            # add system Discard Gear action
+            actions.append(Action(
+                id="system-discard-gear",
+                name="[Discard Gear]",
+                verb="Discard Gear",
+                aspect="",
+                approach="",
+                is_test=False,
+                on_success=lambda s, _e, _t: None,
+            ))
             # add system Rest action
             actions.append(Action(
                 id="system-rest",
@@ -178,6 +191,24 @@ def menu_and_run(engine: GameEngine) -> None:
                         return
                     else:
                         act = None
+
+            if act.id == "system-discard-gear":
+                # Get all gear in Player Area
+                gear_in_play = [c for c in engine.state.areas[Area.PLAYER_AREA] if c.has_type(CardType.GEAR)]
+                if not gear_in_play:
+                    engine.add_message("No gear in play to discard.")
+                    display_and_clear_messages(engine)
+                    act = None
+                    continue
+
+                # Prompt to choose gear
+                to_discard = engine.card_chooser(engine, gear_in_play)
+                to_discard.discard_from_play(engine)
+                engine.add_message(f"Discarded {to_discard.title}.")
+                display_and_clear_messages(engine)
+                input("Press Enter to continue...")
+                act = None
+                continue
 
             if act.id == "system-rest":
                 engine.resolve_fatiguing_keyword()

@@ -659,7 +659,47 @@ class GameEngine:
             card = ranger.fatigue_stack.pop(0)  # Take from top of fatigue pile
             ranger.hand.append(card)  # Add to hand
             self.add_message(f"   {card.title} is added to your hand.")
-        
+
+    def enforce_equip_limit(self) -> None:
+        """
+        Enforce the 5 equip value limit for gear in Player Area.
+        Prompts player to discard gear until total equip value <= 5.
+        """
+        MAX_EQUIP = 5
+
+        # Get all gear in Player Area
+        gear_in_play = [c for c in self.state.areas[Area.PLAYER_AREA] if c.has_type(CardType.GEAR)]
+
+        # Calculate total equip value
+        total_equip = sum(g.get_current_equip_value() or 0 for g in gear_in_play)
+
+        # Prompt to discard until within limit
+        while total_equip > MAX_EQUIP:
+            self.add_message(f"Total equip value is {total_equip}/{MAX_EQUIP}. You must discard gear to reduce it.")
+
+            # Get gear that can be discarded
+            discardable_gear = [g for g in gear_in_play
+                               if g.get_current_equip_value() is not None and (g.get_current_equip_value() or 0) > 0]
+
+            if not discardable_gear:
+                # Edge case: no gear with equip value (shouldn't happen)
+                self.add_message("No gear with equip value to discard!")
+                break
+
+            # Prompt player to choose gear to discard
+            to_discard = self.card_chooser(self, discardable_gear)
+
+            # Discard the chosen gear
+            equip_val = to_discard.get_current_equip_value()
+            to_discard.discard_from_play(self)
+            self.add_message(f"Discarded {to_discard.title} (equip value {equip_val}).")
+
+            # Recalculate
+            gear_in_play = [c for c in self.state.areas[Area.PLAYER_AREA] if c.has_type(CardType.GEAR)]
+            total_equip = sum(g.get_current_equip_value() or 0 for g in gear_in_play)
+
+        if total_equip <= MAX_EQUIP:
+            self.add_message(f"Total equip value is now {total_equip}/{MAX_EQUIP}.")
 
     def injure_ranger(self, ranger: RangerState) -> None:
         """
