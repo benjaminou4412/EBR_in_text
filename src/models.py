@@ -402,7 +402,7 @@ class Card:
 
         elif self.has_type(CardType.MOMENT):
             # Both response and non-response moments use this path
-            engine.discard_from_hand(self)
+            engine.state.ranger.discard_from_hand(engine, self)
             self.resolve_moment_effect(engine, effort, target)
             engine.add_message(f"Played {self.title}.")
 
@@ -975,6 +975,23 @@ class RangerState:
                 total += num_icons
                 valid_indices.append(idx)
         return total, valid_indices
+
+    def discard_committed(self, engine: GameEngine, committed_indices: list[int]) -> None:
+        """Discard cards committed to a test"""
+        cards_to_discard : list[Card] = []
+        for i in sorted(committed_indices, reverse=True):
+            cards_to_discard.append(self.hand[i])
+
+        for card in cards_to_discard:
+            self.discard_from_hand(engine, card)
+
+    def discard_from_hand(self, engine: GameEngine, card: Card) -> None:
+        """Move a card from hand to discard pile and clean up its listeners"""
+        if card in self.hand:
+            self.hand.remove(card)
+            self.discard.append(card)
+            # Remove any listeners associated with this card
+            engine.remove_listeners_by_id(card.id)
 
 @dataclass
 class GameState:

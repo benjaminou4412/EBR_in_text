@@ -124,25 +124,9 @@ class GameEngine:
 
     
 
-    def discard_from_hand(self, card: Card) -> None:
-        """Move a card from hand to discard pile and clean up its listeners"""
-        if card in self.state.ranger.hand:
-            self.state.ranger.hand.remove(card)
-            self.state.ranger.discard.append(card)
-            # Remove any listeners associated with this card
-            self.remove_listeners_by_id(card.id)
+    
 
-    def discard_committed(self, ranger: RangerState, committed_indices: list[int]) -> None:
-        """Discard cards committed to a test"""
-        cards_to_discard : list[Card] = []
-        for i in sorted(committed_indices, reverse=True):
-            cards_to_discard.append(ranger.hand[i])
-            del ranger.hand[i]
-
-        for card in cards_to_discard:
-            ranger.discard.append(card)
-            # Remove any listeners associated with committed cards
-            self.remove_listeners_by_id(card.id)
+    
     
     def get_valid_targets(self, action: Action) -> list[Card]:
         """Get valid targets for an action, respecting Obstacle and Friendly keyword.
@@ -275,7 +259,7 @@ class GameEngine:
         base_effort = base_effort + self.trigger_listeners(EventType.PERFORM_TEST, TimingType.WHEN, action, base_effort)
 
         # Discard committed cards immediately after committing
-        self.discard_committed(r, committed)
+        self.state.ranger.discard_committed(self, committed)
 
         # Step 3: Apply modifiers. TODO: Take into account modifiers from non-challenge-card sources.
         self.add_message(f"Step 3: Draw a challenge card and apply modifiers.") 
