@@ -4,11 +4,12 @@ A living checklist. Roughly prioritized.
 
 
 - Implement at least one Gear + one non-response Moment + 1 attachment, and the Play action
-  - Have the gear commit effort so we're forced to implement that system too (committing effort from in-play cards in CommitDecision, spending tokens/exhausting as needed)
   - Implement attachment targeting logic
   - Implement:
     - Boundary Sensor
+      - pay energy cost
       - Take into account equip slots
+      - Implement "discard" action
     - Share in the Valley's Secrets
       - fix up targeting logic
     - A Dear Friend

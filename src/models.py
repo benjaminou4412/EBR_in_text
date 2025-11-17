@@ -327,20 +327,50 @@ class Card:
         """
         return None # Default: no targeting required
 
+    def can_be_played(self, engine: GameEngine) -> bool:
+        """
+        Universal check for whether this card can be played right now.
+        Checks energy cost and valid targets.
+        Used by:
+        - provide_play_options() to filter non-response moments
+        - EventListener.active field to filter response moments
+        """
+        # Check energy cost
+        cost = self.get_current_energy_cost()
+        if cost is not None and self.aspect:
+            if engine.state.ranger.energy[self.aspect] < cost:
+                return False  # Can't afford
+
+        # Check for valid targets
+        targets = self.get_play_targets(engine.state)
+        if targets is not None and len(targets) == 0:
+            return False  # Needs targets but has none
+
+        return True
+
     def play(self, engine: GameEngine, effort: int = 0, target: Card | None = None) -> None:
         """
         Play this card from hand. Behavior depends on CardType:
         - GEAR: Goes into play in Player Area, enters_play triggers
-        - MOMENT: Resolves effect via get_play_action().on_success, then discards
-        - ATTACHMENT: Attaches to target_id, enters_play triggers
+        - MOMENT: Resolves effect, then discards
+        - ATTACHMENT: Attaches to target, enters_play triggers
         - ATTRIBUTE: Raises error (cannot be played, only committed)
         - BEING (ranger): Goes into play Within Reach, enters_play triggers
 
-        target_id is only used by attachments because only attachments are guaranteed to have a target
+        Energy costs are paid first for all card types that have them.
         """
         if self.has_type(CardType.ATTRIBUTE):
             raise RuntimeError(f"Attributes cannot be played, only committed during tests!")
 
+        # Pay energy cost FIRST (for all card types that have energy costs)
+        cost = self.get_current_energy_cost()
+        if cost is not None and cost > 0 and self.aspect:
+            success, error = engine.state.ranger.spend_energy(cost, self.aspect)
+            if not success:
+                engine.add_message(error or "Cannot afford to play this card!")
+                return
+
+        # Now execute type-specific play logic
         if self.has_type(CardType.GEAR):
             engine.state.ranger.hand.remove(self)
             engine.state.areas[Area.PLAYER_AREA].append(self)
@@ -396,7 +426,7 @@ class Card:
                       is_exhaust=False,
                       is_play=True,
                       verb = None,
-                      target_provider=None,
+                      target_provider=self.get_play_targets,
                       on_success=self.play,
                       source_id=self.id,
                       source_title=self.title)
@@ -407,40 +437,34 @@ class Card:
         Prompt user to play this card as a response moment.
         Returns True if played, False if declined.
         Used by response moment listeners.
+
+        Mirrors the main loop flow: check playability, select target, prompt, execute.
         """
-        current_cost = self.get_current_energy_cost()
-        if current_cost is None:
-            raise RuntimeError(f"Card {self.title} has no energy cost!")
-
-        # Check if ranger has enough energy (energy is dict[Aspect, int])
-        if self.aspect and engine.state.ranger.energy[self.aspect] < current_cost:
-            return False  # Can't afford
-
-        # Check for valid targets BEFORE prompting
-        targets = self.get_play_targets(engine.state)
-        if targets is not None and len(targets) == 0:
-            engine.add_message(f"No valid targets; {self.title} cannot be played.")
+        # 1. Check if playable (should already be guaranteed by listener's active field)
+        if not self.can_be_played(engine):
             return False
-        """we don't prompt for target selection here because this is used for response moments,
-        so moving target selection out of card subclasses would result in inconsistency between
-        where response moments and non-response moments locate their targeting logic. instead,
-        targeting logic always lives in card subclasses"""
 
-        # Now prompt for play
+        # 2. Prompt to play
+        current_cost = self.get_current_energy_cost()
         aspect_str = f"{self.aspect.value}" if self.aspect else ""
-        prompt = f"Play {self.title} for {current_cost} {aspect_str}?"
+        cost_str = f" for {current_cost} {aspect_str}" if current_cost and current_cost > 0 else ""
+        prompt = f"Play {self.title}{cost_str}?"
         if context:
             prompt = f"{context}\n{prompt}"
 
         decision = engine.response_decider(engine, prompt)
-        if decision and self.aspect:
-            success, error = engine.state.ranger.spend_energy(current_cost, self.aspect)
-            if success:
-                self.play(engine, target=None, effort=effort)  # Calls the card's play effect
-                return True
-            elif error:
-                engine.add_message(error)
-                return False
+
+        if decision:
+            # 3. Decide targets
+            target = None
+            targets = self.get_play_targets(engine.state)
+            if targets is not None and len(targets) > 0:
+                # Card needs targeting and has valid targets
+                target = engine.card_chooser(engine, targets)
+            # 4. Execute play (energy is spent inside play() now)
+            self.play(engine, target=target, effort=effort)
+            return True
+
         return False
     
     def exhaust_ability_active(self, token_type: str) -> bool:
@@ -1053,7 +1077,7 @@ class Action:
     is_play: bool = False #for playing cards
     verb: Optional[str] = None  # action verb (e.g. "Traverse", "Connect", "Hunt") for game effects that care
     # If the action requires a target, provide candidate Card targets based on state
-    target_provider: Optional[Callable[[GameState], list['Card']]] = None
+    target_provider: Optional[Callable[[GameState], list['Card'] | None]] = None
     # Computes difficulty for the chosen target (or state)
     difficulty_fn: Callable[[GameEngine, Optional[Card]], int] = lambda _s, _t: 1
     # Effects
@@ -1080,7 +1104,7 @@ class MessageEvent:
 class EventListener:
     """For Response abilities and other game effects that trigger before/when/after another effect"""
     event_type: EventType
-    exhaust_ability_active: Callable[[str], bool]
+    active: Callable[[GameEngine], bool]  # Check if this listener should trigger (energy, tokens, targets, etc.)
     effect_fn: Callable[[GameEngine, int], int]
     source_card_id: str
     timing_type: TimingType

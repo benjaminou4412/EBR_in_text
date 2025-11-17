@@ -142,7 +142,7 @@ def menu_and_run(engine: GameEngine) -> None:
             actions = (provide_card_tests(engine)
             + provide_common_tests(engine.state)
             + provide_exhaust_abilities(engine.state)
-            + provide_play_options(engine.state))
+            + provide_play_options(engine))  # Filters by can_be_played()
             # add system Rest action
             actions.append(Action(
                 id="system-rest",
@@ -199,11 +199,9 @@ def menu_and_run(engine: GameEngine) -> None:
                     print(str(e))
                     input("There was a runtime error! Press Enter to continue...")
                     continue
-            elif act.is_exhaust: 
+            elif act.is_exhaust or act.is_play: 
                 target_card = engine.state.get_card_by_id(target_id)
                 act.on_success(engine, 0, target_card)
-            elif act.is_play:
-                act.on_success(engine, 0, None) #todo: incorporate non-response moments with Targeting
             else:
                 raise RuntimeError(f"Unknown action type: {act.id}")
 

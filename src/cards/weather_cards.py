@@ -42,7 +42,7 @@ class APerfectDay(Card):
 
     def get_listeners(self) -> list[EventListener] | None:
         return [EventListener(EventType.REFRESH,
-                              lambda _e: True,
+                              lambda eng: True,
                               self._tick_down_clouds,
                               self.id,
                               TimingType.WHEN
@@ -109,7 +109,7 @@ class MiddaySun(Card):
 
     def get_listeners(self) -> list[EventListener] | None:
         return [EventListener(EventType.REFRESH,
-                              lambda _e: True,
+                              lambda eng: True,
                               self._tick_up_clouds,
                               self.id,
                               TimingType.WHEN

@@ -131,7 +131,10 @@ def provide_common_tests(state: GameState) -> list[Action]:
 def provide_card_tests(engine: GameEngine) -> list[Action]:
     """Scan all cards in play and collect tests they provide, taking into account Obstacles"""
     actions: list[Action] = []
-    for card in engine.filter_by_obstacles(engine.state.all_cards_in_play()):
+    all_cards_except_past_obstacle = engine.filter_by_obstacles(engine.state.all_cards_in_play())
+    if all_cards_except_past_obstacle is None:
+        return []
+    for card in all_cards_except_past_obstacle:
         tests = card.get_tests()
         if tests is not None:
             actions.extend(tests)
@@ -147,10 +150,18 @@ def provide_exhaust_abilities(state: GameState) -> list[Action]:
                 actions.extend(exhaust_abilities)
     return actions
 
-def provide_play_options(state: GameState) -> list[Action]:
+def provide_play_options(engine: GameEngine) -> list[Action]:
+    """Provide play actions for non-response moments and other playable cards in hand.
+    Filters by can_be_played() to only show cards the player can afford and have valid targets for."""
     actions: list[Action] = []
-    for card in state.ranger.hand:
+    for card in engine.state.ranger.hand:
+        # Check if card can be played (energy + targets)
+        if not card.can_be_played(engine):
+            continue
+
+        # Get the play action
         play_action = card.get_play_action()
         if play_action is not None:
             actions.append(play_action)
     return actions
+

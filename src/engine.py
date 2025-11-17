@@ -165,8 +165,14 @@ class GameEngine:
 
         raw_candidates = action.target_provider(self.state)
 
+        if raw_candidates is None:
+            return []
+
         if action.is_test:
             raw_candidates = self.filter_by_obstacles(raw_candidates)
+
+        if raw_candidates is None:
+            return []
 
         source_card = self.state.get_card_by_id(action.source_id)
 
@@ -175,7 +181,7 @@ class GameEngine:
 
         return raw_candidates
 
-    def filter_by_obstacles(self, candidates: list[Card]) -> list[Card]:
+    def filter_by_obstacles(self, candidates: list[Card]) -> list[Card] | None:
         """Filter candidates to exclude cards past the nearest Obstacle"""
         # Gather active ConstantAbilities that block interaction
         ability_ids = [ability.source_card_id for ability in self.constant_abilities 
@@ -496,7 +502,7 @@ class GameEngine:
 
         committed_effort = 0
         for listener in triggered:
-            if listener.exhaust_ability_active(""):
+            if listener.active(self):  # Pass engine to check playability/activation
                 committed_effort = committed_effort + listener.effect_fn(self, effort)
 
         return committed_effort #ignored by listener consumers who don't care about effort

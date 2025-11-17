@@ -63,9 +63,9 @@ class BoundarySensor(Card):
 
     def get_listeners(self) -> list[EventListener] | None:
         return [EventListener(EventType.PERFORM_TEST,
-                            lambda _s: self.exhaust_ability_active("sensor"),
-                            self.trigger_exhaust_prompt,
-                            self.id, TimingType.WHEN, "Traverse")]
+                              lambda eng: self.exhaust_ability_active("sensor"),
+                              self.trigger_exhaust_prompt,
+                              self.id, TimingType.WHEN, "Traverse")]
 
     def trigger_exhaust_prompt(self, eng: GameEngine, effort: int) -> int:
         decision = self.exhaust_prompt(eng, "You may exhaust Boundary Sensor and spend 1 sensor " \
@@ -102,9 +102,9 @@ class WalkWithMe(Card):
             self.play_prompt(eng, effort, "You succeeded at a Traverse test.")
             return 0
         return [EventListener(EventType.TEST_SUCCEED,
-                              lambda _e: True,
-                            trigger_play_prompt,
-                            self.id, TimingType.AFTER, "Traverse")]
+                              lambda eng: self.can_be_played(eng),  # Check energy + targets
+                              trigger_play_prompt,
+                              self.id, TimingType.AFTER, "Traverse")]
 
     def get_play_targets(self, state: GameState) -> list[Card]:
         """Returns valid beings to add progress to"""
@@ -112,10 +112,7 @@ class WalkWithMe(Card):
         
         
     def resolve_moment_effect(self, engine: GameEngine, effort: int, target: Card | None) -> None:
-        targets_list = self.get_play_targets(engine.state)
-        engine.add_message(f"Please choose a Being to add {effort} [Progress] to.")
-        if targets_list:
-            target = engine.card_chooser(engine, targets_list)
+        if target:
             engine.add_message(target.add_progress(effort))
         else:
             raise RuntimeError(f"Targets should exist past play_prompt!")
