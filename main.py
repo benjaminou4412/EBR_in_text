@@ -6,7 +6,7 @@ from src.models import (
     Card, RangerState, GameState, Action, Aspect, Approach, Area, CardType
 )
 from src.engine import GameEngine
-from src.registry import provide_common_tests, provide_card_tests, provide_exhaust_abilities, provide_play_options
+from src.registry import provide_common_tests, provide_card_tests, provide_exhaust_abilities, provide_play_options, filter_tests_by_targets
 from src.view import (
     render_state, choose_action, choose_action_target, choose_commit,
     choose_target, display_and_clear_messages, choose_response, set_show_art_descriptions,
@@ -140,8 +140,9 @@ def menu_and_run(engine: GameEngine) -> None:
             print("--- Event log and choices ---")
 
             # derive actions
-            actions = (provide_card_tests(engine)
-            + provide_common_tests(engine.state)
+            all_tests = provide_card_tests(engine) + provide_common_tests(engine.state)
+            filtered_tests = filter_tests_by_targets(all_tests, engine.state)
+            actions = (filtered_tests
             + provide_exhaust_abilities(engine.state)
             + provide_play_options(engine))  # Filters by can_be_played()
             

@@ -1003,13 +1003,13 @@ class WalkWithMeTests(unittest.TestCase):
         self.assertTrue(outcome.success)
         self.assertEqual(feature.progress, 2)
 
-        # Verify Walk With Me was NOT played (no valid targets)
-        self.assertIn(wwm, state.ranger.hand, "Walk With Me should still be in hand (no targets)")
-        self.assertNotIn(wwm, state.ranger.discard, "Walk With Me should not be discarded")
-        self.assertEqual(state.ranger.energy[Aspect.SPI], 2, "SPI should be unchanged (no targets)")
+        # Verify Walk With Me was played (can be played even with no valid targets)
+        self.assertNotIn(wwm, state.ranger.hand, "Walk With Me should not be in hand")
+        self.assertIn(wwm, state.ranger.discard, "Walk With Me should be in discard")
+        self.assertEqual(state.ranger.energy[Aspect.SPI], 1, "SPI should be spent")
 
         # Verify listener remains active
-        self.assertEqual(len(eng.listeners), 1, "Listener should remain active")
+        self.assertEqual(len(eng.listeners), 0, "Listener should be cleaned up")
 
     def test_walk_with_me_only_triggers_on_traverse(self):
         """Test that Walk With Me only triggers on Traverse tests, not Connect tests"""

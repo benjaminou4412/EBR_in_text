@@ -330,7 +330,11 @@ class Card:
     def can_be_played(self, engine: GameEngine) -> bool:
         """
         Universal check for whether this card can be played right now.
-        Checks energy cost and valid targets.
+        Checks energy cost (and potentially additional costs in the future).
+
+        Note: Does NOT check for valid targets - EBR allows playing cards
+        even if they have no effect on the gamestate.
+
         Used by:
         - provide_play_options() to filter non-response moments
         - EventListener.active field to filter response moments
@@ -341,10 +345,8 @@ class Card:
             if engine.state.ranger.energy[self.aspect] < cost:
                 return False  # Can't afford
 
-        # Check for valid targets
-        targets = self.get_play_targets(engine.state)
-        if targets is not None and len(targets) == 0:
-            return False  # Needs targets but has none
+        # NOTE: We do NOT check for valid targets - EBR allows playing cards
+        # even if they have no effect on the gamestate
 
         return True
 
@@ -626,7 +628,13 @@ class Card:
         """Called when card enters hand. Shows art description. Override to add listeners."""
         if self.art_description:
             engine.add_message(f"   Art description: {self.art_description}")
-        return []
+        listeners = self.get_listeners()
+        if listeners is None:
+            return []
+        elif self.has_type(CardType.MOMENT):
+            return listeners
+        else:
+            return []
 
     def enters_play(self, engine: GameEngine, area: Area) -> None:
         """Called when card enters play. Adds narrative messages, 

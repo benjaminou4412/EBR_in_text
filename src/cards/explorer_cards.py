@@ -84,10 +84,12 @@ class BoundarySensor(Card):
         "through which a gathering miniature antennae is darkly visible."
 
     def get_listeners(self) -> list[EventListener] | None:
-        return [EventListener(EventType.PERFORM_TEST,
-                              lambda eng: self.exhaust_ability_active("sensor"),
-                              self.trigger_exhaust_prompt,
-                              self.id, TimingType.WHEN, "Traverse")]
+        return [EventListener(event_type=EventType.PERFORM_TEST,
+                              active=lambda eng: self.exhaust_ability_active("sensor"),
+                              effect_fn=self.trigger_exhaust_prompt,
+                              source_card_id=self.id, 
+                              timing_type=TimingType.WHEN, 
+                              test_type="Traverse")]
 
     def trigger_exhaust_prompt(self, eng: GameEngine, effort: int) -> int:
         decision = self.exhaust_prompt(eng, "You may exhaust Boundary Sensor and spend 1 sensor " \
@@ -109,15 +111,6 @@ class WalkWithMe(Card):
         self.art_description = "A detailed sketch of a canine in a snowy, hilly clearing. The canine looks " \
         "back, and in the distance you see the small figures of the rest of its pack just exiting a copse " \
         "of snow-topped firs."
-
-    def enters_hand(self, engine: GameEngine) -> list[EventListener]:
-        """Override to add listener. Call super() to show art description."""
-        super().enters_hand(engine)
-        listeners = self.get_listeners()
-        if listeners is None:
-            raise RuntimeError(f"Walk With Me should have a listener!")
-        else:
-            return listeners
     
     def get_listeners(self) -> list[EventListener] | None:
         def trigger_play_prompt(eng: GameEngine, effort: int) -> int:
@@ -139,6 +132,6 @@ class WalkWithMe(Card):
         if target:
             engine.add_message(target.add_progress(effort))
         else:
-            raise RuntimeError(f"Targets should exist past play_prompt!")
+            engine.add_message(f"No valid targets.")
         
     

@@ -150,6 +150,34 @@ def provide_exhaust_abilities(state: GameState) -> list[Action]:
                 actions.extend(exhaust_abilities)
     return actions
 
+def filter_tests_by_targets(tests: list[Action], state: GameState) -> list[Action]:
+    """
+    Filter tests to only include those that can be initiated.
+
+    - If target_provider is None: test requires no target, always included
+    - If target_provider returns empty list: test needs target but has none, excluded
+    - If target_provider returns non-empty list: test has valid targets, included
+    """
+    filtered: list[Action] = []
+    for test in tests:
+        if not test.is_test:
+            # Not a test, include it
+            filtered.append(test)
+            continue
+
+        if test.target_provider is None:
+            # Test requires no target (like Remember)
+            filtered.append(test)
+        else:
+            # Test requires target - check if any exist
+            targets = test.target_provider(state)
+            if targets and len(targets) > 0:
+                filtered.append(test)
+            # If targets is empty, exclude this test
+
+    return filtered
+
+
 def provide_play_options(engine: GameEngine) -> list[Action]:
     """Provide play actions for non-response moments and other playable cards in hand.
     Filters by can_be_played() to only show cards the player can afford and have valid targets for."""
