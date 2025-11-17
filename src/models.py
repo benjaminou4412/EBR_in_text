@@ -1002,7 +1002,14 @@ class GameState:
 
     def get_card_by_id(self, card_id: str | None) -> Card | None:
         """Get a specific card by its instance ID"""
-        return next((c for c in self.all_cards_in_play() if c.id == card_id), None)
+        all_cards = (self.all_cards_in_play() + 
+                     self.path_deck + 
+                     self.path_discard +
+                     self.ranger.hand + 
+                     self.ranger.discard + 
+                     self.ranger.deck + 
+                     self.ranger.fatigue_stack)
+        return next((c for c in all_cards if c.id == card_id), None)
     
     def get_card_area_by_id(self, card_id: str | None) -> Area | None:
         """Get a card's current area by its instance ID"""

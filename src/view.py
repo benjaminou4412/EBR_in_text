@@ -250,7 +250,16 @@ def choose_action(actions: list[Action], state: GameState, engine: GameEngine) -
             elif a.is_exhaust:
                 display = f"[Exhaust] ({display_name})"
             elif a.is_play:
-                display = f"[Play] ({display_name})"
+                # Show energy cost for play actions
+                if card:
+                    cost = card.get_current_energy_cost()
+                    aspect = card.aspect
+                    if cost is not None and cost > 0 and aspect:
+                        display = f"[Play] ({display_name}) - {cost} {aspect.value}"
+                    else:
+                        display = f"[Play] ({display_name})"
+                else:
+                    display = f"[Play] ({display_name})"
             else:
                 raise RuntimeError(f"All actions right now should be Test, Exhaust, or Play!")
         elif a.verb and a.source_title:

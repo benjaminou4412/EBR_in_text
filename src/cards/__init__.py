@@ -3,7 +3,7 @@ Specific card implementations.
 Each card class loads its own JSON data and implements unique behavior.
 """
 
-from .explorer_cards import WalkWithMe, PeerlessPathfinder, BoundarySensor
+from .explorer_cards import WalkWithMe, PeerlessPathfinder, BoundarySensor, ShareintheValleysSecrets
 from .conciliator_cards import ADearFriend
 from .woods_cards import SitkaBuck, OvergrownThicket, SunberryBramble, SitkaDoe, ProwlingWolhund, CausticMulcher
 from .valley_cards import CalypsaRangerMentor, QuisiVosRascal, TheFundamentalist
@@ -27,4 +27,5 @@ __all__ = ["WalkWithMe",
             "TheFundamentalist",
             "APerfectDay",
             "MiddaySun",
-            "BoundarySensor"]
+            "BoundarySensor",
+            "ShareintheValleysSecrets"]

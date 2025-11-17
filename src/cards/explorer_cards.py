@@ -1,7 +1,7 @@
 """
 Explorer card implementations
 """
-from ..models import Card, EventListener, EventType, TimingType, Action, GameState
+from ..models import Card, EventListener, EventType, TimingType, Action, GameState, Keyword
 from ..engine import GameEngine
 from ..json_loader import load_card_fields #type:ignore
 
@@ -49,6 +49,28 @@ class PeerlessPathfinder(Card):
         presence = target.get_current_presence(engine)
         if presence is not None and presence > 0:
             engine.fatigue_ranger(engine.state.ranger, presence)
+
+class ShareintheValleysSecrets(Card):
+    def __init__(self):
+        # Load all common RangerCard fields from JSON
+        super().__init__(**load_card_fields("Share in the Valley's Secrets", "Explorer")) #type:ignore
+        self.art_description = "A mostly-monochrome sketch depicting the silouetted figures of three rangers " \
+        "traversing a series of raised pillars in an overgrown landscape. The leftmost figure is mid-leap from " \
+        "on pillar to another, the middle figure seems poised to do the same, and the rightmost figure is carefully " \
+        "lowering themselves across a drop between two closer pillars."
+
+    def resolve_moment_effect(self, engine: GameEngine, effort: int, target: Card | None) -> None:
+        """Exhaust each obstacle. Suffer fatigue equal to the number of obstacles exhausted this way."""
+        num_exhausted = 0
+        for card in engine.state.all_cards_in_play():
+            if card.has_keyword(Keyword.OBSTACLE):
+                if not card.is_exhausted():
+                    engine.add_message(card.exhaust())
+                    num_exhausted = num_exhausted + 1
+        if num_exhausted > 0:
+            engine.add_message(f"Exhausted {num_exhausted} obstacles. Applying that amount of fatigue...")
+        engine.fatigue_ranger(engine.state.ranger, num_exhausted)
+        
 
 class BoundarySensor(Card):
     def __init__(self):
@@ -112,6 +134,8 @@ class WalkWithMe(Card):
         
         
     def resolve_moment_effect(self, engine: GameEngine, effort: int, target: Card | None) -> None:
+        """Response: After you succeed at a Traverse test, add progress to a being equal to your effort. 
+        This is in addition to the test's standard effect."""
         if target:
             engine.add_message(target.add_progress(effort))
         else:

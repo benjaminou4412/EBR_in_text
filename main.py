@@ -16,7 +16,7 @@ from src.decks import build_woods_path_deck
 from src.cards import (
     OvergrownThicket, SunberryBramble, SitkaDoe, WalkWithMe, ADearFriend,
     ProwlingWolhund, SitkaBuck, CalypsaRangerMentor, PeerlessPathfinder,
-    CausticMulcher, BoulderField, QuisiVosRascal, BoundarySensor
+    CausticMulcher, BoulderField, QuisiVosRascal, BoundarySensor, ShareintheValleysSecrets
 )
 
 
@@ -26,8 +26,7 @@ def pick_demo_cards() -> list[Card]:
     walk_with_me_0 : Card = WalkWithMe()
     a_dear_friend_0 : Card= ADearFriend()
     boundary_sensor_0: Card = BoundarySensor()
-    boundary_sensor_1: Card = BoundarySensor()
-    boundary_sensor_2: Card = BoundarySensor()
+    share_valley_secrets_0: Card = ShareintheValleysSecrets()
     exploration_dummies : list[Card] = []
     for _ in range(5):
         exploration_dummies.append(Card(title="Demo Explore +1", card_types={CardType.ATTRIBUTE}, approach_icons={Approach.EXPLORATION: 1}))
@@ -43,7 +42,7 @@ def pick_demo_cards() -> list[Card]:
 
     deck = exploration_dummies + conflict_dummies + reason_dummies + connection_dummies
     random.shuffle(deck)
-    top_deck: list[Card] = [walk_with_me_0, a_dear_friend_0, boundary_sensor_0, boundary_sensor_1, boundary_sensor_2]
+    top_deck: list[Card] = [walk_with_me_0, a_dear_friend_0, boundary_sensor_0, share_valley_secrets_0]
 
     return top_deck + deck
 
@@ -197,7 +196,6 @@ def menu_and_run(engine: GameEngine) -> None:
                 gear_in_play = [c for c in engine.state.areas[Area.PLAYER_AREA] if c.has_type(CardType.GEAR)]
                 if not gear_in_play:
                     engine.add_message("No gear in play to discard.")
-                    display_and_clear_messages(engine)
                     act = None
                     continue
 
