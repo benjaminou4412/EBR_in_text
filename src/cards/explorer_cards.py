@@ -37,6 +37,7 @@ class PeerlessPathfinder(Card):
         """Handler for the exhaust ability"""
         if target is None:
             engine.add_message("No target selected for ranger token movement.")
+            engine.add_message(self.exhaust()) 
             return
 
         # Exhaust this role card as the cost
