@@ -97,7 +97,7 @@ def provide_common_tests(state: GameState) -> list[Action]:
     def remember_success(e: GameEngine, eff: int, _card: Card | None) -> None:  # noqa: ARG001
         deck = e.state.ranger.deck
         e.scout_cards(deck, eff)
-        card, msg, day_ended = e.state.ranger.draw_card()
+        card, msg, day_ended = e.state.ranger.draw_card(e)
         if card is None:
             if day_ended:
                 e.day_has_ended = True
@@ -106,7 +106,6 @@ def provide_common_tests(state: GameState) -> list[Action]:
                 raise RuntimeError(f"Day should end when deck is empty!")
         else:
             e.add_message(msg)
-            card.enters_hand(e)
 
     # Remember: FOC + [Reason], no target, diff 1
     actions.append(

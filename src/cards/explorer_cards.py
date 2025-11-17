@@ -55,7 +55,7 @@ class ShareintheValleysSecrets(Card):
     def __init__(self):
         # Load all common RangerCard fields from JSON
         super().__init__(**load_card_fields("Share in the Valley's Secrets", "Explorer")) #type:ignore
-        self.art_description = "A mostly-monochrome sketch depicting the silouetted figures of three rangers " \
+        self.art_description = "A sketch depicting the silouetted figures of three rangers " \
         "traversing a series of raised pillars in an overgrown landscape. The leftmost figure is mid-leap from " \
         "on pillar to another, the middle figure seems poised to do the same, and the rightmost figure is carefully " \
         "lowering themselves across a drop between two closer pillars."
@@ -109,7 +109,7 @@ class WalkWithMe(Card):
     def __init__(self):
         # Load all common RangerCard fields from JSON
         super().__init__(**load_card_fields("Walk With Me", "Explorer")) #type:ignore
-        self.art_description = "A detailed sketch of a canine in a snowy, hilly clearing. The canine looks " \
+        self.art_description = "A sketch of a canine in a snowy, hilly clearing. The canine looks " \
         "back, and in the distance you see the small figures of the rest of its pack just exiting a copse " \
         "of snow-topped firs."
     
@@ -136,3 +136,27 @@ class WalkWithMe(Card):
             engine.add_message(f"No valid targets.")
         
     
+class CradledbytheEarth(Card):
+    def __init__(self):
+        # Load all common RangerCard fields from JSON
+        super().__init__(**load_card_fields("Cradled by the Earth", "Explorer")) #type:ignore
+        self.art_description = "A sketch depicting three figures framed by two moderately-sized trees. " \
+        "The foremost figure lies peacefully at rest across the frame, his head towards the left and his " \
+        "legs extending off-frame towards the right. We see he's smiling, his wide-brimmed hat providing him shade, " \
+        "and a butterfly pearching at that brim's tip. The next foremost figure is also lying in rest, his back " \
+        "propped up against the right-hand tree, his hands folded in front of him in his lap. Finally, we see a figure " \
+        "in the background oriented towards the distance, but their head turned back to observe their two resting " \
+        "companions."
+    
+    def get_play_targets(self, state: GameState) -> list[Card] | None:
+        return state.get_cards_by_trait("trail")
+
+    def resolve_moment_effect(self, engine: GameEngine, effort: int, target: Card | None) -> None:
+        """Choose a trail. Soothe fatigue equal to the number of progress on that trail. This fatigue may be divided 
+        as you choose between all Rangers."""
+        if target is None:
+            engine.add_message(f"No target Trail.")
+        else:
+            progress_on_trail: int = target.progress
+            engine.soothe_ranger(engine.state.ranger, progress_on_trail)
+            #TODO: When implementing multiplayer, implement division of fatigue

@@ -628,6 +628,8 @@ class Card:
         """Called when card enters hand. Shows art description. Override to add listeners."""
         if self.art_description:
             engine.add_message(f"   Art description: {self.art_description}")
+        if self.flavor_text:
+            engine.add_message(f"   Flavor text: {self.flavor_text}")
         listeners = self.get_listeners()
         if listeners is None:
             return []
@@ -935,16 +937,16 @@ class RangerState:
     def __post_init__(self):
         self.energy = dict(self.aspects)
 
-    def draw_card(self) -> tuple[Card | None, str, bool]:
+    def draw_card(self, eng: GameEngine) -> tuple[Card | None, str, bool]:
         """Draw a card from deck to hand.
         Returns (card, message, should_end_day).
-        If deck is empty, returns (None, error_message, True).
-        Caller should call card.enters_hand(engine) to handle listeners and art description."""
+        If deck is empty, returns (None, error_message, True)."""
         if len(self.deck) == 0:
             return None, "Cannot draw from empty deck - the day must end!", True
         else:
             drawn: Card = self.deck.pop(0)
             self.hand.append(drawn)
+            eng.register_listeners(drawn.enters_hand(eng))
             return drawn, f"You draw a copy of {drawn.title}.", False
 
     def spend_energy(self, amount: int, aspect: Aspect) -> tuple[bool, str | None]:

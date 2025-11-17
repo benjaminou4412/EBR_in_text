@@ -658,6 +658,7 @@ class GameEngine:
         for _ in range(cards_to_soothe):
             card = ranger.fatigue_stack.pop(0)  # Take from top of fatigue pile
             ranger.hand.append(card)  # Add to hand
+            self.register_listeners(card.enters_hand(self))
             self.add_message(f"   {card.title} is added to your hand.")
 
     def enforce_equip_limit(self) -> None:
@@ -1002,7 +1003,7 @@ class GameEngine:
             self.add_message(f"Your ranger is injured, so you suffer fatigue.")
             self.fatigue_ranger(self.state.ranger, self.state.ranger.injury)
         #Step 2: Draw 1 Ranger Card
-        card, draw_message, should_end_day = self.state.ranger.draw_card()
+        card, draw_message, should_end_day = self.state.ranger.draw_card(self)
         if should_end_day:
             if draw_message:
                 self.add_message(draw_message)
@@ -1010,8 +1011,6 @@ class GameEngine:
             return
         if draw_message:
             self.add_message(draw_message)
-        if card is not None:
-            self.register_listeners(card.enters_hand(self))
         #Step 3: Refill energy
         self.state.ranger.refresh_all_energy()
         self.add_message("Your energy is restored.")

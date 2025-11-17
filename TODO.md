@@ -22,12 +22,12 @@ API-ish notes:
           -"active" will usually default to lambda eng: self.can_be_played(eng)
           -"effect_fn" will usually default to a simple trigger_play_prompt local helper function passing in an appropriate prompt and calling self.play_prompt
 
-A living checklist. Roughly prioritized.
 
+
+A living checklist. Roughly prioritized.
 
 - Implement at least one Gear + one non-response Moment + 1 attachment, and the Play action
   - Implement:
-    - Cradled by the Earth
     - Afforded by Nature
       - Try out multi-target paradigm: one "primary" target that the usual methods use, then secondary
         targets handled by resolve_moment_effects

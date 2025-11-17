@@ -16,7 +16,8 @@ from src.decks import build_woods_path_deck
 from src.cards import (
     OvergrownThicket, SunberryBramble, SitkaDoe, WalkWithMe, ADearFriend,
     ProwlingWolhund, SitkaBuck, CalypsaRangerMentor, PeerlessPathfinder,
-    CausticMulcher, BoulderField, QuisiVosRascal, BoundarySensor, ShareintheValleysSecrets
+    CausticMulcher, BoulderField, QuisiVosRascal, BoundarySensor, ShareintheValleysSecrets,
+    CradledbytheEarth
 )
 
 
@@ -27,6 +28,7 @@ def pick_demo_cards() -> list[Card]:
     a_dear_friend_0 : Card= ADearFriend()
     boundary_sensor_0: Card = BoundarySensor()
     share_valley_secrets_0: Card = ShareintheValleysSecrets()
+    cradled_by_earth_0: Card = CradledbytheEarth()
     exploration_dummies : list[Card] = []
     for _ in range(5):
         exploration_dummies.append(Card(title="Demo Explore +1", card_types={CardType.ATTRIBUTE}, approach_icons={Approach.EXPLORATION: 1}))
@@ -42,7 +44,7 @@ def pick_demo_cards() -> list[Card]:
 
     deck = exploration_dummies + conflict_dummies + reason_dummies + connection_dummies
     random.shuffle(deck)
-    top_deck: list[Card] = [walk_with_me_0, a_dear_friend_0, boundary_sensor_0, share_valley_secrets_0]
+    top_deck: list[Card] = [walk_with_me_0, a_dear_friend_0, boundary_sensor_0, share_valley_secrets_0, cradled_by_earth_0]
 
     return top_deck + deck
 
@@ -104,10 +106,6 @@ def build_demo_state() -> GameState:
     player_area : list[Card] = [role_card]
     current_areas : dict[Area,list[Card]]= {Area.SURROUNDINGS : surroundings, Area.ALONG_THE_WAY : along_the_way, Area.WITHIN_REACH : within_reach, Area.PLAYER_AREA : player_area}
     state = GameState(ranger=ranger, role_card=role_card, location=location, areas=current_areas, round_number=1, path_deck=deck)
-    # Note: Cards drawn to hand - listeners will be registered when engine is created
-    for _ in range(5):
-        _, _, _ = state.ranger.draw_card()  # Draw cards during setup
-        # Note: enters_hand() will be called during reconstruct_listeners()
     return state
 
 
@@ -315,10 +313,9 @@ def main() -> None:
     #TODO: simulate ranger setup
     engine.add_message(f"Step 2: Draw starting hand")
     for _ in range(5):
-        card, msg, _ = state.ranger.draw_card()  # Draw cards during setup
+        card, msg, _ = state.ranger.draw_card(engine)  # Draw cards during setup
         if card is not None:
             engine.add_message(msg)
-            engine.register_listeners(card.enters_hand(engine))
         else:
             raise RuntimeError(f"Deck should not run out during setup!")
     
