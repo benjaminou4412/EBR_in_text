@@ -561,15 +561,37 @@ def choose_amount(engine: GameEngine, minimum: int, maximum: int, prompt: str | 
 def choose_commit(action: Action, hand_size: int, state: GameState, engine: GameEngine) -> CommitDecision:
     """Prompt player to commit energy and cards for a test"""
     display_and_clear_messages(engine)
-    
+
 
     # Get display strings for aspect/approach
     aspect_str = action.aspect.value if isinstance(action.aspect, Aspect) else action.aspect
     approach_str = action.approach.value if isinstance(action.approach, Approach) else action.approach
 
+    # Show which cards can be committed
+    if not isinstance(action.approach, Approach):
+        raise RuntimeError(f"Test action should have Approach enum value, got {action.approach}")
+
+    print(f"\n--- Cards Available for [{approach_str}] Commitment ---")
+    ranger = state.ranger
+    committable_indices: set[int] = set()
+
+    if ranger.hand:
+        for i, card in enumerate(ranger.hand, start=1):
+            icon_count = card.approach_icons.get(action.approach, 0)
+            if icon_count > 0:
+                committable_indices.add(i - 1)  # Store 0-indexed
+                print(f" {i}. {card.title} [{icon_count} {approach_str}]")
+            else:
+                print(f" {i}. {card.title} [Cannot commit - no {approach_str} icons]")
+    else:
+        print("[Empty hand]")
+
+    if not committable_indices:
+        print(f"\nNo cards in hand have {approach_str} icons. You can only commit energy.")
+
     # Energy commitment
     energy = 1  # default
-    raw_energy = input(f"Commit [{aspect_str}] energy (default and minimum 1): ").strip()
+    raw_energy = input(f"\nCommit [{aspect_str}] energy (default and minimum 1): ").strip()
     if raw_energy:
         try:
             energy = int(raw_energy)
@@ -581,18 +603,24 @@ def choose_commit(action: Action, hand_size: int, state: GameState, engine: Game
             energy = 1
 
     # Card commitment
-    raw = input(f"Commit cards for [{approach_str}] (comma-separated indices, blank=none): ").strip()
+    raw = input(f"Commit cards (comma-separated indices, blank=none): ").strip()
     hand_indices : list[int] = []
     if raw:
         try:
             picks = [int(x) - 1 for x in raw.split(",") if x.strip()]
-            picks = [p for p in picks if 0 <= p < hand_size]
+            # Filter to valid indices and committable cards only
+            picks = [p for p in picks if 0 <= p < hand_size and p in committable_indices]
             # dedupe preserve order
             seen : set[int]= set()
             for p in picks:
                 if p not in seen:
                     hand_indices.append(p)
                     seen.add(p)
+
+            # Warn if some indices were filtered out
+            original_count = len([int(x) for x in raw.split(",") if x.strip()])
+            if len(hand_indices) < original_count:
+                print(f"Note: Some cards cannot be committed (no {approach_str} icons) and were filtered out.")
         except ValueError:
             print("Invalid card indices, committing no cards")
 
