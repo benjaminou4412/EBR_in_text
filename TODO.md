@@ -27,9 +27,7 @@ API-ish notes:
 A living checklist. Roughly prioritized.
 
 - Implement at least one Gear + one non-response Moment + 1 attachment, and the Play action
-    - A Dear Friend
     - Passionate
-  - Handle "no gamestate change" filtering (future TODO - complex edge cases)
 - Implement missions, campaign log entries, clear entries, etc.
 - Implement Day system and save/load/autosave
 - Implement full Travel map

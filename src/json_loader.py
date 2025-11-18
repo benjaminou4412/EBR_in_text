@@ -15,7 +15,8 @@ CARD_JSON_FILES = {
     "valley": "reference JSON/Path Sets/valley.json",
     "woods": "reference JSON/Path Sets/Terrain sets/woods.json",
     "locations": "reference JSON/locations.json",
-    "weather": "reference JSON/weather.json"
+    "weather": "reference JSON/weather.json",
+    "personality": "reference JSON/Ranger Cards/personality_cards.json"
     # Add more as needed
 }
 

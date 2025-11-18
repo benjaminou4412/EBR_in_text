@@ -426,6 +426,19 @@ class Card:
     def resolve_moment_effect(self, engine: GameEngine, effort: int, target: Card | None) -> None:
         """Implemented by both response and non-response moments to execute their on-play effects"""
         raise NotImplementedError(f"{self.title} is a Moment but doesn't implement resolve_moment_effect()!")
+
+    def on_committed(self, engine: GameEngine, action: Action) -> str | None:
+        """
+        Optional hook called when this card is committed to a test.
+        Used primarily by attributes with commit-triggered effects.
+
+        Returns a unique listener ID if an ephemeral listener was registered,
+        or None if no listener was registered.
+
+        Override this method to register ephemeral listeners that trigger
+        after the test succeeds/fails and then self-remove.
+        """
+        return None
         
     def get_play_action(self) -> Action | None:
         """
@@ -994,14 +1007,16 @@ class RangerState:
                 valid_indices.append(idx)
         return total, valid_indices
 
-    def discard_committed(self, engine: GameEngine, committed_indices: list[int]) -> None:
-        """Discard cards committed to a test"""
+    def discard_committed(self, engine: GameEngine, committed_indices: list[int]) -> list[Card]:
+        """Discard cards committed to a test and return the list of committed cards"""
         cards_to_discard : list[Card] = []
         for i in sorted(committed_indices, reverse=True):
             cards_to_discard.append(self.hand[i])
 
         for card in cards_to_discard:
             self.discard_from_hand(engine, card)
+
+        return cards_to_discard
 
     def discard_from_hand(self, engine: GameEngine, card: Card) -> None:
         """Move a card from hand to discard pile and clean up its listeners"""

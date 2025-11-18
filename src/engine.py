@@ -265,7 +265,14 @@ class GameEngine:
         base_effort = base_effort + self.trigger_listeners(EventType.PERFORM_TEST, TimingType.WHEN, action, base_effort)
 
         # Discard committed cards immediately after committing
-        self.state.ranger.discard_committed(self, committed)
+        committed_cards = self.state.ranger.discard_committed(self, committed)
+
+        # Call on_committed hooks and track ephemeral listeners
+        ephemeral_listener_ids: list[str] = []
+        for card in committed_cards:
+            listener_id = card.on_committed(self, action)
+            if listener_id is not None:
+                ephemeral_listener_ids.append(listener_id)
 
         # Step 3: Apply modifiers. TODO: Take into account modifiers from non-challenge-card sources.
         self.add_message(f"Step 3: Draw a challenge card and apply modifiers.") 
@@ -374,6 +381,10 @@ class GameEngine:
         # Clear the display ID cache after challenge resolution is complete
         self._display_id_cache.clear()
 
+        # Clean up ephemeral listeners registered by committed cards
+        for listener_id in ephemeral_listener_ids:
+            self.remove_listeners_by_id(listener_id)
+
         return ChallengeOutcome(
             difficulty=difficulty,
             base_effort=base_effort,
@@ -468,7 +479,11 @@ class GameEngine:
         for listener in self.listeners:
                 if listener.event_type == event_type and listener.timing_type == timing_type:
                     if action is not None:
-                        if action.verb is not None and listener.test_type is not None:
+                        # If listener.test_type is None, it matches all test types (wildcard)
+                        if listener.test_type is None:
+                            triggered.append(listener)
+                        elif action.verb is not None:
+                            # listener.test_type is guaranteed to be non-None here
                             if action.verb.casefold() == listener.test_type.casefold():
                                 triggered.append(listener)
                         else:
