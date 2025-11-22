@@ -26,6 +26,7 @@ API-ish notes:
 
 A living checklist. Roughly prioritized.
 
+- Implement FAQ entry that states moments are in limbo while resolving their effects
 - Implement missions, campaign log entries, clear entries, etc.
 - Implement Day system and save/load/autosave
 - Implement full Travel map
