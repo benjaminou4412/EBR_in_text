@@ -254,7 +254,7 @@
     ],
     "aspect_requirement": {
       "aspect": "FIT",
-      "min": 2
+      "min": 3
     },
     "energy_cost": {
       "amount": 2,
