@@ -26,3 +26,4 @@ Thumbs.db
 src/__pycache__/engine.cpython-313.pyc
 tests/__pycache__/test_engine.cpython-313.pyc
 __pycache__/main.cpython-313.pyc
+.claude/settings.local.json
