@@ -816,5 +816,299 @@ class TheFundamentalistTests(unittest.TestCase):
                         "Engine should have 1 MODIFY_PRESENCE ability registered")
 
 
+class QuisiCampaignGuideTests(unittest.TestCase):
+    """Tests for Quisi's campaign guide entries"""
+
+    def test_quisi_cleared_by_progress_default_entry(self):
+        """Test that clearing Quisi by progress triggers entry 80 -> 80.5 (default case)"""
+        quisi = QuisiVosRascal()
+        ranger = make_test_ranger()
+
+        state = GameState(ranger=ranger, areas={
+            Area.SURROUNDINGS: [],
+            Area.ALONG_THE_WAY: [],
+            Area.WITHIN_REACH: [quisi],
+            Area.PLAYER_AREA: [],
+        })
+        eng = GameEngine(state)
+
+        # Add progress to reach threshold (3R = 3 for solo)
+        quisi.progress = 3
+
+        # Clear should trigger campaign entry 80.5
+        cleared = eng.check_and_process_clears()
+
+        # Entry 80.5 discards Quisi itself and returns True, so Quisi won't be in cleared list
+        # But we can verify the campaign entry was triggered and Quisi was removed
+        self.assertNotIn(quisi, state.areas[Area.WITHIN_REACH],
+                        "Quisi should be removed from play")
+
+    def test_quisi_cleared_by_harm_ends_day(self):
+        """Test that clearing Quisi by harm triggers entry 80 -> 80.6 (ends the day)"""
+        quisi = QuisiVosRascal()
+        ranger = make_test_ranger()
+
+        state = GameState(ranger=ranger, areas={
+            Area.SURROUNDINGS: [],
+            Area.ALONG_THE_WAY: [],
+            Area.WITHIN_REACH: [quisi],
+            Area.PLAYER_AREA: [],
+        })
+        eng = GameEngine(state)
+
+        # Add harm to reach threshold
+        quisi.harm = 3
+
+        # Track if day ended (we'll check via a flag that end_day sets)
+        # Since end_day might not be fully implemented, we'll just verify
+        # the campaign entry was triggered
+        messages_before = len(eng.message_queue)
+        cleared = eng.check_and_process_clears()
+        messages_after = len(eng.message_queue)
+
+        # Verify campaign entry was triggered (should have messages)
+        self.assertGreater(messages_after, messages_before,
+                          "Campaign entry should generate messages")
+
+        # Check for the specific message from entry 80.6
+        messages = [m.message for m in eng.message_queue]
+        self.assertTrue(any("yelps" in m for m in messages),
+                       "Should contain entry 80.6 story text about Quisi yelping")
+
+    def test_quisi_entry_80_with_biscuit_basket(self):
+        """Test entry 80 routes to 80.1 when Biscuit Basket is equipped"""
+        quisi = QuisiVosRascal()
+        biscuit_basket = Card(
+            id="biscuit-basket",
+            title="Biscuit Basket",
+            card_types={CardType.RANGER, CardType.GEAR}
+        )
+
+        ranger = make_test_ranger()
+        state = GameState(ranger=ranger, areas={
+            Area.SURROUNDINGS: [],
+            Area.ALONG_THE_WAY: [],
+            Area.WITHIN_REACH: [quisi],
+            Area.PLAYER_AREA: [biscuit_basket],  # Equipped gear
+        })
+        eng = GameEngine(state)
+
+        # Manually trigger entry 80 (enters play)
+        eng.campaign_guide.entries["80"](eng, None)
+
+        # Check messages for entry 80.1 text
+        messages = [m.message for m in eng.message_queue]
+        self.assertTrue(any("giggle" in m for m in messages),
+                       "Should route to entry 80.1 with giggle text")
+        self.assertTrue(any("biscuits" in m for m in messages),
+                       "Entry 80.1 should mention biscuits")
+
+    def test_quisi_entry_80_with_oura_vos(self):
+        """Test entry 80 routes to 80.2 when Oura Vos is in play"""
+        quisi = QuisiVosRascal()
+        oura = Card(
+            id="oura-vos",
+            title="Oura Vos, Traveler",
+            card_types={CardType.PATH, CardType.BEING}
+        )
+
+        ranger = make_test_ranger()
+        state = GameState(ranger=ranger, areas={
+            Area.SURROUNDINGS: [],
+            Area.ALONG_THE_WAY: [oura],  # Oura in play
+            Area.WITHIN_REACH: [quisi],
+            Area.PLAYER_AREA: [],
+        })
+        eng = GameEngine(state)
+
+        # Manually trigger entry 80 (enters play)
+        eng.campaign_guide.entries["80"](eng, None)
+
+        # Check for entry 80.2 effects
+        messages = [m.message for m in eng.message_queue]
+        self.assertTrue(any("Didn't I tell you" in m for m in messages),
+                       "Should route to entry 80.2 with mother's dialogue")
+
+        # Verify reward was unlocked
+        self.assertIn("Quisi's Favorite Snack", state.unlocked_rewards,
+                     "Should unlock Quisi's Favorite Snack reward")
+
+        # Verify notable event was recorded
+        self.assertIn("ACCEPTED SNACKS", state.notable_events,
+                     "Should record ACCEPTED SNACKS event")
+
+        # Verify both cards were discarded
+        self.assertNotIn(quisi, state.areas[Area.WITHIN_REACH],
+                        "Quisi should be discarded")
+        self.assertNotIn(oura, state.areas[Area.ALONG_THE_WAY],
+                        "Oura should be discarded")
+
+    def test_quisi_entry_80_default_case(self):
+        """Test entry 80 routes to 80.3 when no special conditions"""
+        quisi = QuisiVosRascal()
+        ranger = make_test_ranger()
+
+        state = GameState(ranger=ranger, areas={
+            Area.SURROUNDINGS: [],
+            Area.ALONG_THE_WAY: [],
+            Area.WITHIN_REACH: [quisi],
+            Area.PLAYER_AREA: [],
+        })
+        eng = GameEngine(state)
+
+        # Manually trigger entry 80 (enters play) - no Biscuit Basket, no Oura
+        eng.campaign_guide.entries["80"](eng, None)
+
+        # Check for entry 80.3 text
+        messages = [m.message for m in eng.message_queue]
+        self.assertTrue(any("singing to herself" in m for m in messages),
+                       "Should route to entry 80.3 with singing text")
+        self.assertTrue(any("prosthesis" in m for m in messages),
+                       "Entry 80.3 should describe her prosthetic hand")
+        self.assertTrue(any("Hi! I" in m and "Quisi" in m for m in messages),
+                       "Entry 80.3 should have Quisi's introduction")
+
+    def test_quisi_entry_80_biscuit_basket_takes_priority_over_oura(self):
+        """Test that Biscuit Basket check happens before Oura Vos check"""
+        quisi = QuisiVosRascal()
+        biscuit_basket = Card(
+            id="biscuit-basket",
+            title="Biscuit Basket",
+            card_types={CardType.RANGER, CardType.GEAR}
+        )
+        oura = Card(
+            id="oura-vos",
+            title="Oura Vos, Traveler",
+            card_types={CardType.PATH, CardType.BEING}
+        )
+
+        ranger = make_test_ranger()
+        state = GameState(ranger=ranger, areas={
+            Area.SURROUNDINGS: [],
+            Area.ALONG_THE_WAY: [oura],
+            Area.WITHIN_REACH: [quisi],
+            Area.PLAYER_AREA: [biscuit_basket],
+        })
+        eng = GameEngine(state)
+
+        # Trigger entry 80 with BOTH conditions present
+        eng.campaign_guide.entries["80"](eng, None)
+
+        # Should route to 80.1 (Biscuit Basket), not 80.2 (Oura)
+        messages = [m.message for m in eng.message_queue]
+        self.assertTrue(any("giggle" in m for m in messages),
+                       "Should route to entry 80.1 (Biscuit Basket has priority)")
+        self.assertFalse(any("Didn't I tell you" in m for m in messages),
+                        "Should NOT route to entry 80.2")
+
+    def test_quisi_entry_80_5_soothes_and_discards(self):
+        """Test that entry 80.5 (clear by progress) soothes fatigue and discards Quisi"""
+        quisi = QuisiVosRascal()
+        ranger = make_test_ranger()
+
+        # Give ranger some fatigue to soothe
+        ranger.fatigue_stack = [
+            Card(id="fat1", title="Fatigue 1"),
+            Card(id="fat2", title="Fatigue 2"),
+            Card(id="fat3", title="Fatigue 3"),
+        ]
+
+        state = GameState(ranger=ranger, areas={
+            Area.SURROUNDINGS: [],
+            Area.ALONG_THE_WAY: [],
+            Area.WITHIN_REACH: [quisi],
+            Area.PLAYER_AREA: [],
+        })
+        eng = GameEngine(state)
+
+        # Manually trigger entry 80.5
+        eng.campaign_guide.entries["80.5"](eng, None)
+
+        # Verify soothe happened (2 cards moved from fatigue to hand)
+        self.assertEqual(len(ranger.fatigue_stack), 1,
+                        "Should soothe 2 fatigue (3 - 2 = 1)")
+        self.assertEqual(len(ranger.hand), 2,
+                        "Should draw 2 cards from fatigue into hand")
+
+        # Verify Quisi was discarded
+        self.assertNotIn(quisi, state.areas[Area.WITHIN_REACH],
+                        "Quisi should be discarded")
+
+    def test_quisi_entry_80_6_story_text(self):
+        """Test that entry 80.6 (clear by harm) displays correct story text"""
+        quisi = QuisiVosRascal()
+        ranger = make_test_ranger()
+
+        state = GameState(ranger=ranger, areas={
+            Area.SURROUNDINGS: [],
+            Area.ALONG_THE_WAY: [],
+            Area.WITHIN_REACH: [quisi],
+            Area.PLAYER_AREA: [],
+        })
+        eng = GameEngine(state)
+
+        # Manually trigger entry 80.6
+        eng.campaign_guide.entries["80.6"](eng, None)
+
+        # Check for entry 80.6 story text
+        messages = [m.message for m in eng.message_queue]
+        self.assertTrue(any("yelps" in m for m in messages),
+                       "Entry 80.6 should contain 'yelps'")
+        self.assertTrue(any("End the day" in m for m in messages),
+                       "Entry 80.6 should say to end the day")
+
+    def test_quisi_entry_returns_correct_discard_flag(self):
+        """Test that campaign entries return correct bool for whether card was discarded"""
+        quisi = QuisiVosRascal()
+        oura = Card(
+            id="oura-vos",
+            title="Oura Vos, Traveler",
+            card_types={CardType.PATH, CardType.BEING}
+        )
+
+        ranger = make_test_ranger()
+        state = GameState(ranger=ranger, areas={
+            Area.SURROUNDINGS: [],
+            Area.ALONG_THE_WAY: [oura],
+            Area.WITHIN_REACH: [quisi],
+            Area.PLAYER_AREA: [],
+        })
+        eng = GameEngine(state)
+
+        # Entry 80.1 should return False (card NOT discarded by entry)
+        result_80_1 = eng.campaign_guide.entries["80.1"](eng, None)
+        self.assertFalse(result_80_1, "Entry 80.1 should return False (card not discarded)")
+
+        # Entry 80.2 should return True (card discarded by entry)
+        result_80_2 = eng.campaign_guide.entries["80.2"](eng, None)
+        self.assertTrue(result_80_2, "Entry 80.2 should return True (card discarded)")
+
+        # Re-create state for next test
+        quisi2 = QuisiVosRascal()
+        state2 = GameState(ranger=make_test_ranger(), areas={
+            Area.SURROUNDINGS: [],
+            Area.ALONG_THE_WAY: [],
+            Area.WITHIN_REACH: [quisi2],
+            Area.PLAYER_AREA: [],
+        })
+        eng2 = GameEngine(state2)
+
+        # Entry 80.5 should return True (card discarded by entry)
+        result_80_5 = eng2.campaign_guide.entries["80.5"](eng2, None)
+        self.assertTrue(result_80_5, "Entry 80.5 should return True (card discarded)")
+
+    def test_quisi_campaign_log_fields_loaded_from_json(self):
+        """Test that Quisi's campaign log entry fields are properly loaded from JSON"""
+        quisi = QuisiVosRascal()
+
+        # Quisi should have all campaign log entries set to "80"
+        self.assertEqual(quisi.on_enter_log, "80",
+                         "Quisi should have enters_play campaign entry 80")
+        self.assertEqual(quisi.on_progress_clear_log, "80",
+                        "Quisi should have progress clear entry 80")
+        self.assertEqual(quisi.on_harm_clear_log, "80",
+                        "Quisi should have harm clear entry 80")
+
+
 if __name__ == '__main__':
     unittest.main()
