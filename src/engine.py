@@ -402,7 +402,6 @@ class GameEngine:
         Check all in-play cards' clear thresholds and process clearing.
 
         By default, cleared cards leave play (discard).
-        TODO: Some cards have special clear entries that keep them in play.
         TODO: Take into account "BEFORE" and "WHEN" listener triggers that
           may result in the underlying card not clearing
 

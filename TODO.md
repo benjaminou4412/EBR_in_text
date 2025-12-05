@@ -21,13 +21,18 @@ API-ish notes:
         -an EventListener with appropriate fields, particularly "active" and "effect_fn" callables:
           -"active" will usually default to lambda eng: self.can_be_played(eng)
           -"effect_fn" will usually default to a simple trigger_play_prompt local helper function passing in an appropriate prompt and calling self.play_prompt
+  -To implement a top-level CampaignGuide entry:
+    -clear_type == None indicates a default entry (typically enters_play for path cards and arrival setup for Locations)
+    -returns True if the associated card gets discarded on a particular resolution route. For a top-level entry this typically means returning the result of a sub-level call
+  -To implement a sub-level CampaignGuide entry:
+    -generally no additional routing
+    -return True if the associated card gets discarded; False if it stays in play
 
 
 
 A living checklist. Roughly prioritized.
 
-- Implement FAQ entry that states moments are in limbo while resolving their effects
-- Implement missions, campaign log entries, clear entries, etc.
+- Implement missions
 - Implement Day system and save/load/autosave
 - Implement full Travel map
 - Implement fully rules-compliant faceup/facedown cards

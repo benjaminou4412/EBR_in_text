@@ -415,8 +415,10 @@ class Card:
 
         elif self.has_type(CardType.MOMENT):
             # Both response and non-response moments use this path
-            engine.state.ranger.discard_from_hand(engine, self)
+            engine.state.ranger.hand_to_limbo(engine, self)
+            #moments exist in no area ("limbo") while their effects are resolving
             self.resolve_moment_effect(engine, effort, target)
+            engine.state.ranger.limbo_to_discard(engine, self)
             engine.add_message(f"Played {self.title}.")
 
         else:
@@ -1028,6 +1030,19 @@ class RangerState:
             self.discard.append(card)
             # Remove any listeners associated with this card
             engine.remove_listeners_by_id(card.id)
+
+    def hand_to_limbo(self, engine: GameEngine, card: Card) -> None:
+        """Used exclusively by Moments when played. Moments exist in 'limbo'
+        (no play area) while their effects are solving, then go to discard."""
+        if card in self.hand:
+            self.hand.remove(card)
+            # Remove any listeners associated with this card
+            engine.remove_listeners_by_id(card.id)
+    
+    def limbo_to_discard(self, engine: GameEngine, card: Card) -> None:
+        """Used exclusively by Moments when played. Moments exist in 'limbo'
+        (no play area) while their effects are solving, then go to discard."""
+        self.discard.append(card)
 
     def fatigue(self, engine: GameEngine, amount: int | None) -> None:
         """Move top amount cards from ranger deck to top of fatigue pile (one at a time)"""
