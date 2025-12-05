@@ -7,9 +7,9 @@ from .models import (
     Aspect, Approach, Area, CardType, EventType, TimingType, EventListener,
     MessageEvent, Keyword, ConstantAbility, ConstantAbilityType
 )
-
 from .utils import get_display_id
 from .decks import build_woods_path_deck, select_three_random_valley_cards, get_new_location, get_current_weather
+from .campaign_guide import CampaignGuide
 
 
 @dataclass
@@ -50,6 +50,8 @@ class GameEngine:
         self.last_test_added_progress: bool = False
         self.last_test_target: Card | None = None
         self.reconstruct()
+
+        self.campaign_guide = CampaignGuide()
 
     def _default_chooser(self, _engine: 'GameEngine', choices: list[Card]) -> Card:  # noqa: ARG002
         """Placeholder default; tests should pass in more sophisticated choosers, runtime should prompt player"""

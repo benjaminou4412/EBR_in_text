@@ -5,7 +5,6 @@ from enum import Enum
 from .utils import get_display_id
 import uuid
 import random
-
 if TYPE_CHECKING:
     from .engine import GameEngine
 
