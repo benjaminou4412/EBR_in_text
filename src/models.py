@@ -687,6 +687,10 @@ class Card:
             engine.register_constant_abilities(constant_abilities)
         if event_listeners:
             engine.register_listeners(event_listeners)
+
+        #Campaign Guide Entry
+        if self.on_enter_log is not None:
+            engine.campaign_guide.entries[self.on_enter_log](engine, None)
     
     #path card only methods
     def get_current_presence(self, engine: GameEngine) -> int | None:
@@ -1051,8 +1055,9 @@ class RangerState:
         for _ in range(cards_to_soothe):
             card = self.fatigue_stack.pop(0)  # Take from top of fatigue pile
             self.hand.append(card)  # Add to hand
-            engine.register_listeners(card.enters_hand(engine))
             engine.add_message(f"   {card.title} is added to your hand.")
+            engine.register_listeners(card.enters_hand(engine))
+            
     
     def injure(self, engine: GameEngine) -> None:
         """
@@ -1080,6 +1085,13 @@ class RangerState:
             engine.end_day()
 
 @dataclass
+class Mission:
+    name: str
+    left_bubble: bool = False
+    middle_bubble: bool = False
+    right_bubble: bool = False
+
+@dataclass
 class GameState:
     ranger: RangerState
     role_card: Card = field(default_factory=lambda: Card()) #pointer to a card that always exists in the Player Area
@@ -1092,17 +1104,48 @@ class GameState:
             {area: [] for area in Area}
         )
     )
-    day_number: int = 1
-    round_number: int = 1
-    # Path deck for Phase 1 draws
     path_deck: list[Card] = field(default_factory=lambda: cast(list[Card], []))
     path_discard: list[Card] = field(default_factory=lambda: cast(list[Card], []))
+    
+    #Campaign Log and related info
+    day_number: int = 1
+    round_number: int = 1
+    notable_events: list[str] = field(default_factory=lambda:  cast(list[str], []))
+    unlocked_rewards: list[str] = field(default_factory=lambda:  cast(list[str], []))
+    active_missions: list[Mission] = field(default_factory=lambda:  cast(list[Mission], []))
+    cleared_missions: list[Mission] = field(default_factory=lambda:  cast(list[Mission], []))
     
 
     def __post_init__(self) -> None:
         self.ranger.ranger_token_location=self.role_card.id #ranger token begins on the Role Card
         if self.role_card not in self.areas[Area.PLAYER_AREA]:
             self.areas[Area.PLAYER_AREA].append(self.role_card)
+
+    #Campaign Log management methods
+    def record_notable_event(self, event: str):
+        self.notable_events.append(event)
+    
+    def check_notable_event(self, event: str) -> None:
+        return event in self.notable_events
+    
+    def unlock_reward(self, reward: str):
+        self.unlocked_rewards.append(reward)
+
+    def gain_mission(self, name: str):
+        new_mission = Mission(name)
+        self.active_missions.append(new_mission)
+
+    def complete_mission(self, name: str):
+        target_mission = None
+        for mission in self.active_missions:
+            if mission.name == name:
+                target_mission = mission
+                break
+        if target_mission is None:
+            raise RuntimeError("Attempting to complete nonexistant mission!")
+        else:
+            self.cleared_missions.append(target_mission)
+            self.active_missions.remove(target_mission)
 
     #Card getter methods
 

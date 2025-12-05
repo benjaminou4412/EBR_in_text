@@ -415,16 +415,23 @@ class GameEngine:
             for card in self.state.areas[area]:
                 if card.has_type(CardType.PATH):
                     clear_type = card.clear_if_threshold(self.state)
+                    discarded = False
                     if clear_type == "progress":
                         # TODO: Check for clear-by-progress entry (on_progress_clear_log)
                         # Some cards might have special effects or stay in play
                         self.add_message(f"{card.title} cleared by progress!")
-                        to_clear.append(card)
+                        if card.on_progress_clear_log is not None:
+                            discarded = self.campaign_guide.entries[card.on_progress_clear_log](self, clear_type)
+                        if not discarded:
+                            to_clear.append(card)
                     elif clear_type == "harm":
                         # TODO: Check for clear-by-harm entry (on_harm_clear_log)
                         # Some cards might have special effects or stay in play
                         self.add_message(f"{card.title} cleared by harm!")
-                        to_clear.append(card)
+                        if card.on_harm_clear_log is not None:
+                            discarded = self.campaign_guide.entries[card.on_harm_clear_log](self, clear_type)
+                        if not discarded:
+                            to_clear.append(card)
 
         # Discard all cleared cards (this removes them from areas)
         for card in to_clear:
@@ -677,6 +684,7 @@ class GameEngine:
     def end_day(self) -> None:
         """End the current day (game over for this session)"""
         self.day_has_ended = True
+        self.state.day_number += 1
         self.add_message(f"Day {self.state.day_number} has ended after {self.state.round_number} rounds.")
         self.add_message("Thank you for playing!")
 
