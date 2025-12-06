@@ -845,6 +845,8 @@ class QuisiCampaignGuideTests(unittest.TestCase):
 
     def test_quisi_cleared_by_harm_ends_day(self):
         """Test that clearing Quisi by harm triggers entry 80 -> 80.6 (ends the day)"""
+        from src.models import DayEndException
+
         quisi = QuisiVosRascal()
         ranger = make_test_ranger()
 
@@ -859,21 +861,16 @@ class QuisiCampaignGuideTests(unittest.TestCase):
         # Add harm to reach threshold
         quisi.harm = 3
 
-        # Track if day ended (we'll check via a flag that end_day sets)
-        # Since end_day might not be fully implemented, we'll just verify
-        # the campaign entry was triggered
-        messages_before = len(eng.message_queue)
-        cleared = eng.check_and_process_clears()
-        messages_after = len(eng.message_queue)
-
-        # Verify campaign entry was triggered (should have messages)
-        self.assertGreater(messages_after, messages_before,
-                          "Campaign entry should generate messages")
+        # Entry 80.6 calls end_day() which raises DayEndException
+        with self.assertRaises(DayEndException):
+            eng.check_and_process_clears()
 
         # Check for the specific message from entry 80.6
         messages = [m.message for m in eng.message_queue]
         self.assertTrue(any("yelps" in m for m in messages),
                        "Should contain entry 80.6 story text about Quisi yelping")
+        self.assertTrue(any("Day" in m and "ended" in m for m in messages),
+                       "Should contain day ended message")
 
     def test_quisi_entry_80_with_biscuit_basket(self):
         """Test entry 80 routes to 80.1 when Biscuit Basket is equipped"""
@@ -930,11 +927,11 @@ class QuisiCampaignGuideTests(unittest.TestCase):
                        "Should route to entry 80.2 with mother's dialogue")
 
         # Verify reward was unlocked
-        self.assertIn("Quisi's Favorite Snack", state.unlocked_rewards,
+        self.assertIn("Quisi's Favorite Snack", state.campaign_tracker.unlocked_rewards,
                      "Should unlock Quisi's Favorite Snack reward")
 
         # Verify notable event was recorded
-        self.assertIn("ACCEPTED SNACKS", state.notable_events,
+        self.assertIn("ACCEPTED SNACKS", state.campaign_tracker.notable_events,
                      "Should record ACCEPTED SNACKS event")
 
         # Verify both cards were discarded
@@ -1036,6 +1033,8 @@ class QuisiCampaignGuideTests(unittest.TestCase):
 
     def test_quisi_entry_80_6_story_text(self):
         """Test that entry 80.6 (clear by harm) displays correct story text"""
+        from src.models import DayEndException
+
         quisi = QuisiVosRascal()
         ranger = make_test_ranger()
 
@@ -1047,8 +1046,9 @@ class QuisiCampaignGuideTests(unittest.TestCase):
         })
         eng = GameEngine(state)
 
-        # Manually trigger entry 80.6
-        eng.campaign_guide.entries["80.6"](eng, None)
+        # Manually trigger entry 80.6 (should raise DayEndException)
+        with self.assertRaises(DayEndException):
+            eng.campaign_guide.entries["80.6"](eng, None)
 
         # Check for entry 80.6 story text
         messages = [m.message for m in eng.message_queue]

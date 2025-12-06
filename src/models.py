@@ -136,6 +136,33 @@ class ConstantAbilityType(Enum):
     GRANT_KEYWORD = "grant_keyword" #puffercrawler, bloodbeckoned velox, trained stilt-horse
 
 
+# Exception for day ending
+class DayEndException(Exception):
+    """Raised when the day ends to immediately halt execution"""
+    pass
+
+
+# Campaign persistence
+
+@dataclass
+class CampaignTracker:
+    """State that persists between days"""
+    day_number: int = 1
+    notable_events: list[str] = field(default_factory=list)
+    unlocked_rewards: list[str] = field(default_factory=list)
+    active_missions: list['Mission'] = field(default_factory=list)
+    cleared_missions: list['Mission'] = field(default_factory=list)
+
+    # Ranger persistent state
+    ranger_deck_card_ids: list[str] = field(default_factory=list)
+    ranger_name: str = ""
+    ranger_aspects: dict[Aspect, int] = field(default_factory=dict)
+
+    # Location and terrain persist between days
+    current_location_id: str = "White Sky"  # Default starting location
+    current_terrain_type: str = "Woods"  # Hardcoded for now, will be swappable later
+
+
 # Challenge deck classes
 
 @dataclass
@@ -1109,26 +1136,22 @@ class Mission:
 @dataclass
 class GameState:
     ranger: RangerState
+    campaign_tracker: CampaignTracker = field(default_factory=lambda: CampaignTracker())
     role_card: Card = field(default_factory=lambda: Card()) #pointer to a card that always exists in the Player Area
     location: Card = field(default_factory=lambda: Card()) #pointer to a card that always exists in the Surroundings
     weather: Card = field(default_factory=lambda: Card()) #pointer to a card that always exists in the Surroundings
     challenge_deck: ChallengeDeck = field(default_factory=lambda: ChallengeDeck())
     areas: dict[Area, list[Card]] = field(
         default_factory=lambda: cast(
-            dict[Area, list[Card]], 
+            dict[Area, list[Card]],
             {area: [] for area in Area}
         )
     )
     path_deck: list[Card] = field(default_factory=lambda: cast(list[Card], []))
     path_discard: list[Card] = field(default_factory=lambda: cast(list[Card], []))
-    
-    #Campaign Log and related info
-    day_number: int = 1
+
+    # Per-day state (resets each day)
     round_number: int = 1
-    notable_events: list[str] = field(default_factory=lambda:  cast(list[str], []))
-    unlocked_rewards: list[str] = field(default_factory=lambda:  cast(list[str], []))
-    active_missions: list[Mission] = field(default_factory=lambda:  cast(list[Mission], []))
-    cleared_missions: list[Mission] = field(default_factory=lambda:  cast(list[Mission], []))
     
 
     def __post_init__(self) -> None:
@@ -1136,31 +1159,31 @@ class GameState:
         if self.role_card not in self.areas[Area.PLAYER_AREA]:
             self.areas[Area.PLAYER_AREA].append(self.role_card)
 
-    #Campaign Log management methods
+    #Campaign Log management methods (delegate to campaign_tracker)
     def record_notable_event(self, event: str):
-        self.notable_events.append(event)
-    
+        self.campaign_tracker.notable_events.append(event)
+
     def check_notable_event(self, event: str) -> None:
-        return event in self.notable_events
-    
+        return event in self.campaign_tracker.notable_events
+
     def unlock_reward(self, reward: str):
-        self.unlocked_rewards.append(reward)
+        self.campaign_tracker.unlocked_rewards.append(reward)
 
     def gain_mission(self, name: str):
         new_mission = Mission(name)
-        self.active_missions.append(new_mission)
+        self.campaign_tracker.active_missions.append(new_mission)
 
     def complete_mission(self, name: str):
         target_mission = None
-        for mission in self.active_missions:
+        for mission in self.campaign_tracker.active_missions:
             if mission.name == name:
                 target_mission = mission
                 break
         if target_mission is None:
             raise RuntimeError("Attempting to complete nonexistant mission!")
         else:
-            self.cleared_missions.append(target_mission)
-            self.active_missions.remove(target_mission)
+            self.campaign_tracker.cleared_missions.append(target_mission)
+            self.campaign_tracker.active_missions.remove(target_mission)
 
     #Card getter methods
 

@@ -11,7 +11,9 @@ class CampaignGuide:
             "80.2": self.resolve_entry_80_2,
             "80.3": self.resolve_entry_80_3,
             "80.5": self.resolve_entry_80_5,
-            "80.6": self.resolve_entry_80_6
+            "80.6": self.resolve_entry_80_6,
+            "85": self.resolve_entry_85, #placeholder to prevent crashing when Calypsa enters play
+            "86": self.resolve_entry_86, #placeholder to prevent crashing when The Fundamentalist enters play
             }
 
     def resolve_entry_80(self, engine: 'GameEngine', clear_type: str | None) -> bool: #clear_type of None indicates non-clear resolution
@@ -111,3 +113,9 @@ class CampaignGuide:
         engine.add_message('End the day.')
         engine.end_day()
         return True
+    
+    def resolve_entry_85(self, engine: 'GameEngine', clear_type: str | None) -> bool:
+        return False
+    
+    def resolve_entry_86(self, engine: 'GameEngine', clear_type: str | None) -> bool:
+        return False

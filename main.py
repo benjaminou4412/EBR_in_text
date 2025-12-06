@@ -3,7 +3,8 @@ import os
 import random
 import argparse
 from src.models import (
-    Card, RangerState, GameState, Action, Aspect, Approach, Area, CardType
+    Card, RangerState, GameState, Action, Aspect, Approach, Area, CardType,
+    DayEndException
 )
 from src.engine import GameEngine
 from src.registry import provide_common_tests, provide_card_tests, provide_exhaust_abilities, provide_play_options, filter_tests_by_targets
@@ -109,33 +110,42 @@ def build_demo_state() -> GameState:
     return state
 
 
-def menu_and_run(engine: GameEngine) -> None:
-    # Print welcome header once
-    print("=== Earthborne Rangers - Demo ===")
-    print("Welcome to the demo! Press Enter to begin...")
-    input()
-    display_and_clear_messages(engine)
-    print("Press enter to continue to Phase 1...")
-    input()
+def run_game_loop(engine: GameEngine, with_ui: bool = True) -> None:
+    """
+    Core game loop that can run with or without UI.
+
+    Args:
+        engine: The game engine to run
+        with_ui: If True, displays UI and waits for input. If False, runs autonomously using engine's decision functions.
+    """
+    if with_ui:
+        # Print welcome header once
+        print("=== Earthborne Rangers - Demo ===")
+        print("Welcome to the demo! Press Enter to begin...")
+        input()
+        display_and_clear_messages(engine)
+        print("Press enter to continue to Phase 1...")
+        input()
 
     while True:
         # Phase 1: Draw path cards
-        clear_screen()
+        if with_ui:
+            clear_screen()
         engine.phase1_draw_paths(count=1)
-        render_state(engine, phase_header=f"Round {engine.state.round_number} — Phase 1: Draw Path Cards")
-        print("")
-        print("--- Event log ---")
-        display_and_clear_messages(engine)
-        input("Press Enter to proceed to Phase 2...")
+        if with_ui:
+            render_state(engine, phase_header=f"Round {engine.state.round_number} — Phase 1: Draw Path Cards")
+            print("")
+            print("--- Event log ---")
+            display_and_clear_messages(engine)
+            input("Press Enter to proceed to Phase 2...")
 
         # Phase 2: Actions until Rest
         while True:
-            clear_screen()
-            render_state(engine, phase_header=f"Round {engine.state.round_number} — Phase 2: Ranger Turns")
-
-            print("")
-
-            print("--- Event log and choices ---")
+            if with_ui:
+                clear_screen()
+                render_state(engine, phase_header=f"Round {engine.state.round_number} — Phase 2: Ranger Turns")
+                print("")
+                print("--- Event log and choices ---")
 
             # derive actions
             all_tests = provide_card_tests(engine) + provide_common_tests(engine.state)
@@ -143,7 +153,7 @@ def menu_and_run(engine: GameEngine) -> None:
             actions = (filtered_tests
             + provide_exhaust_abilities(engine.state)
             + provide_play_options(engine))  # Filters by can_be_played()
-            
+
             # add system Discard Gear action
             actions.append(Action(
                 id="system-discard-gear",
@@ -178,14 +188,20 @@ def menu_and_run(engine: GameEngine) -> None:
             # Keep prompting until we get a valid action
             act = None
             while not act:
-                act = choose_action(actions, engine.state, engine)
+                if with_ui:
+                    act = choose_action(actions, engine.state, engine)
+                else:
+                    # In non-UI mode, use engine's decision functions
+                    act = engine.card_chooser(engine, actions) if actions else None
+
                 if act is not None and act.id == "system-end-day":
                     yes = engine.response_decider(engine, "Are you sure?")
                     if yes:
                         engine.end_day()
-                        display_and_clear_messages(engine)
-                        print("\nThe day has ended. Demo complete!")
-                        input("Press Enter to exit...")
+                        if with_ui:
+                            display_and_clear_messages(engine)
+                            print("\nThe day has ended. Demo complete!")
+                            input("Press Enter to exit...")
                         return
                     else:
                         act = None
@@ -202,20 +218,22 @@ def menu_and_run(engine: GameEngine) -> None:
                 to_discard = engine.card_chooser(engine, gear_in_play)
                 to_discard.discard_from_play(engine)
                 engine.add_message(f"Discarded {to_discard.title}.")
-                display_and_clear_messages(engine)
-                input("Press Enter to continue...")
+                if with_ui:
+                    display_and_clear_messages(engine)
+                    input("Press Enter to continue...")
                 act = None
                 continue
 
             if act.id == "system-rest":
                 engine.resolve_fatiguing_keyword()
-                display_and_clear_messages(engine)
-                print("\nYou rest and end your turn.")
-                input("Press Enter to proceed to Phase 3...")
+                if with_ui:
+                    display_and_clear_messages(engine)
+                    print("\nYou rest and end your turn.")
+                    input("Press Enter to proceed to Phase 3...")
                 break
 
-            
-            
+
+
             target_id = choose_action_target(engine.state, act, engine)
             decision = None
             if act.is_test:
@@ -224,70 +242,87 @@ def menu_and_run(engine: GameEngine) -> None:
                 try:
                     engine.perform_test(act, decision or __import__('src.models', fromlist=['CommitDecision']).CommitDecision([]), target_id)
                 except RuntimeError as e:
-                    print(str(e))
-                    input("There was a runtime error! Press Enter to continue...")
+                    if with_ui:
+                        print(str(e))
+                        input("There was a runtime error! Press Enter to continue...")
                     continue
-            elif act.is_exhaust or act.is_play: 
+            elif act.is_exhaust or act.is_play:
                 target_card = engine.state.get_card_by_id(target_id)
                 act.on_success(engine, 0, target_card)
             else:
                 raise RuntimeError(f"Unknown action type: {act.id}")
 
             engine.check_and_process_clears()
-            display_and_clear_messages(engine)
+            if with_ui:
+                display_and_clear_messages(engine)
 
             # Check if day ended during action (e.g., fatigue from empty deck)
             if engine.day_has_ended:
-                print("\nThe day has ended. Demo complete!")
-                input("Press Enter to exit...")
+                if with_ui:
+                    print("\nThe day has ended. Demo complete!")
+                    input("Press Enter to exit...")
                 return
 
-            input("Action performed. Press Enter to continue...")
+            if with_ui:
+                input("Action performed. Press Enter to continue...")
 
         # Check if day ended during Phase 2
         if engine.day_has_ended:
-            print("\nThe day has ended. Demo complete!")
-            input("Press Enter to exit...")
+            if with_ui:
+                print("\nThe day has ended. Demo complete!")
+                input("Press Enter to exit...")
             return
 
         # Phase 3: Travel
-        clear_screen()
-        render_state(engine, phase_header=f"Round {engine.state.round_number} — Phase 3: Travel")
-        print("")
-        print("--- Event log ---")
+        if with_ui:
+            clear_screen()
+            render_state(engine, phase_header=f"Round {engine.state.round_number} — Phase 3: Travel")
+            print("")
+            print("--- Event log ---")
         camped = engine.phase3_travel()
-        display_and_clear_messages(engine)
+        if with_ui:
+            display_and_clear_messages(engine)
 
         # Check if day ended during Phase 3
         if engine.day_has_ended:
-            if camped:
-                print("\nThe day has ended by camping. Demo complete!")
-                input("Press Enter to exit...")
-                return
-            else:
-                print("\nThe day has ended without camping. Demo complete!")
-                input("Press Enter to exit...")
-                return
+            if with_ui:
+                if camped:
+                    print("\nThe day has ended by camping. Demo complete!")
+                    input("Press Enter to exit...")
+                else:
+                    print("\nThe day has ended without camping. Demo complete!")
+                    input("Press Enter to exit...")
+            return
 
-        input("Press Enter to proceed to Phase 4...")
+        if with_ui:
+            input("Press Enter to proceed to Phase 4...")
 
         # Phase 4: Refresh
-        clear_screen()
+        if with_ui:
+            clear_screen()
         engine.phase4_refresh()
-        render_state(engine, phase_header=f"Round {engine.state.round_number} — Phase 4: Refresh")
-        print("")
-        print("--- Event log ---")
-        display_and_clear_messages(engine)
+        if with_ui:
+            render_state(engine, phase_header=f"Round {engine.state.round_number} — Phase 4: Refresh")
+            print("")
+            print("--- Event log ---")
+            display_and_clear_messages(engine)
 
         # Check if day ended during Phase 4 (e.g., drawing from empty deck)
         if engine.day_has_ended:
-            print("\nThe day has ended. Demo complete!")
-            input("Press Enter to exit...")
+            if with_ui:
+                print("\nThe day has ended. Demo complete!")
+                input("Press Enter to exit...")
             return
 
-        input("Press Enter to start next round...")
+        if with_ui:
+            input("Press Enter to start next round...")
 
         engine.state.round_number += 1
+
+
+def menu_and_run(engine: GameEngine) -> None:
+    """Interactive UI wrapper around the game loop."""
+    run_game_loop(engine, with_ui=True)
 
 
 def main() -> None:
@@ -328,7 +363,18 @@ def main() -> None:
     engine.arrival_setup(start_of_day=True)
     #force a copy of a card on top of the deck for quick testing
     state.path_deck.insert(0, QuisiVosRascal())
-    menu_and_run(engine)
+
+    # Run the game, catching DayEndException
+    try:
+        menu_and_run(engine)
+    except DayEndException:
+        # Day ended - for now just display messages and exit
+        # TODO: Implement proper day transition with save/load
+        print("\n" + "="*50)
+        display_and_clear_messages(engine)
+        print("="*50)
+        print("\nDemo complete. Day transition system coming soon!")
+        print("Thanks for playing!")
 
 
 if __name__ == "__main__":

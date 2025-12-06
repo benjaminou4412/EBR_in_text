@@ -681,11 +681,26 @@ class GameEngine:
             self.add_message(f"Total equip value is now {total_equip}/{MAX_EQUIP}.")
 
     def end_day(self) -> None:
-        """End the current day (game over for this session)"""
-        self.day_has_ended = True
-        self.state.day_number += 1
-        self.add_message(f"Day {self.state.day_number} has ended after {self.state.round_number} rounds.")
-        self.add_message("Thank you for playing!")
+        """
+        End the current day immediately.
+
+        Saves current location and terrain to campaign tracker, then raises
+        DayEndException to halt execution and trigger day-end procedure.
+        """
+        from .models import DayEndException
+
+        # Save current location and terrain for next day
+        self.state.campaign_tracker.current_location_id = self.state.location.id
+        self.state.campaign_tracker.current_terrain_type = self.state.campaign_tracker.current_terrain_type  # Already set
+
+        # Increment day number
+        old_day = self.state.campaign_tracker.day_number
+        self.state.campaign_tracker.day_number += 1
+
+        self.add_message(f"Day {old_day} has ended after {self.state.round_number} rounds.")
+        self.add_message(f"You camp at {self.state.location.title} for the night.")
+
+        raise DayEndException()
 
     def draw_path_card(self, card_to_draw: Card | None, target: Card | None) -> None:
         """Draw one path card and put it into play, reshuffling path discard if necessary"""
