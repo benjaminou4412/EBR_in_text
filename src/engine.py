@@ -690,7 +690,8 @@ class GameEngine:
         from .models import DayEndException
 
         # Save current location and terrain for next day
-        self.state.campaign_tracker.current_location_id = self.state.location.id
+        # Use title instead of id since location registry keys are titles
+        self.state.campaign_tracker.current_location_id = self.state.location.title
         self.state.campaign_tracker.current_terrain_type = self.state.campaign_tracker.current_terrain_type  # Already set
 
         # Increment day number
