@@ -325,6 +325,53 @@ def menu_and_run(engine: GameEngine) -> None:
     run_game_loop(engine, with_ui=True)
 
 
+def start_new_day(campaign_tracker, role_card: Card) -> GameEngine:
+    """
+    Start a new day by creating a fresh GameState and GameEngine.
+
+    Args:
+        campaign_tracker: The campaign tracker with persistent state
+        role_card: The ranger's role card
+
+    Returns:
+        A new GameEngine ready for the new day
+    """
+    # Create fresh game state for new day
+    state = GameEngine.setup_new_day(campaign_tracker, role_card)
+
+    # Build ranger deck (for now, use demo cards)
+    state.ranger.deck = pick_demo_cards()
+
+    # Create engine with decision functions
+    engine = GameEngine(
+        state,
+        card_chooser=choose_target,
+        response_decider=choose_response,
+        order_decider=choose_order,
+        option_chooser=choose_option,
+        amount_chooser=choose_amount
+    )
+
+    # Perform day setup
+    engine.add_message(f"=== DAY {campaign_tracker.day_number} BEGIN ===")
+    engine.add_message(f"Step 1: Set up player area (skipped)")
+    engine.add_message(f"Step 2: Draw starting hand")
+
+    # Draw starting hand
+    for _ in range(5):
+        card, _ = state.ranger.draw_card(engine)
+        if card is None:
+            raise RuntimeError(f"Deck should not run out during setup!")
+
+    engine.add_message(f"Step 3: Elect lead Ranger (skipped)")
+    engine.add_message(f"Step 4: Shuffle challenge deck (skipped)")
+
+    # Arrival setup
+    engine.arrival_setup(start_of_day=True)
+
+    return engine
+
+
 def main() -> None:
     # Parse command-line arguments
     parser = argparse.ArgumentParser(description="Earthborne Rangers text-based game demo")
@@ -338,43 +385,50 @@ def main() -> None:
     # Configure display options
     set_show_art_descriptions(args.show_art)
 
-    ranger_deck = pick_demo_cards()
-    ranger_fatigue = pick_demo_cards()[0:5]
-    ranger = RangerState(name="Demo Ranger", hand=[], aspects={Aspect.AWA: 99, Aspect.FIT: 99, Aspect.SPI: 99, Aspect.FOC: 99}, deck=ranger_deck, fatigue_stack=ranger_fatigue)
+    # Initialize campaign tracker for a new campaign
+    from src.models import CampaignTracker
+    campaign_tracker = CampaignTracker(
+        day_number=1,
+        ranger_name="Demo Ranger",
+        ranger_aspects={Aspect.AWA: 99, Aspect.FIT: 99, Aspect.SPI: 99, Aspect.FOC: 99},
+        current_location_id="Ancestor's Grove",
+        current_terrain_type="Woods"
+    )
+
+    # Role card stays the same throughout campaign
     role_card = PeerlessPathfinder()
-    state = GameState(ranger=ranger, role_card=role_card)
-    engine = GameEngine(state, card_chooser=choose_target, response_decider=choose_response, order_decider=choose_order, option_chooser=choose_option, amount_chooser=choose_amount)
-    engine.add_message(f"===BEGIN SETUP===")
-    engine.add_message(f"Step 1: Set up player area (skipped)")
-    #TODO: simulate ranger setup
-    engine.add_message(f"Step 2: Draw starting hand")
-    for _ in range(5):
-        card, msg, _ = state.ranger.draw_card(engine)  # Draw cards during setup
-        if card is not None:
-            engine.add_message(msg)
-        else:
-            raise RuntimeError(f"Deck should not run out during setup!")
-    
-    engine.add_message(f"Step 3: Elect lead Ranger (skipped)")
-    engine.add_message(f"Step 4: Shuffle challenge deck (skipped)")
-    #TODO: trigger stuff that cares about challenge deck being shuffled
-    #or well, whatever method eventually gets called here should trigger that
 
-    engine.arrival_setup(start_of_day=True)
-    #force a copy of a card on top of the deck for quick testing
-    state.path_deck.insert(0, QuisiVosRascal())
+    # Day transition loop
+    max_days = 30  # Limit for demo purposes
+    for day in range(max_days):
+        print(f"\n{'='*60}")
+        print(f"Starting Day {campaign_tracker.day_number}")
+        print(f"{'='*60}\n")
 
-    # Run the game, catching DayEndException
-    try:
-        menu_and_run(engine)
-    except DayEndException:
-        # Day ended - for now just display messages and exit
-        # TODO: Implement proper day transition with save/load
-        print("\n" + "="*50)
-        display_and_clear_messages(engine)
-        print("="*50)
-        print("\nDemo complete. Day transition system coming soon!")
-        print("Thanks for playing!")
+        # Start new day
+        engine = start_new_day(campaign_tracker, role_card)
+
+        # Force a demo card on top for testing
+        engine.state.path_deck.insert(0, QuisiVosRascal())
+
+        # Run the day
+        try:
+            menu_and_run(engine)
+        except DayEndException:
+            # Day ended successfully
+            print("\n" + "="*50)
+            display_and_clear_messages(engine)
+            print("="*50)
+            print(f"\nDay {campaign_tracker.day_number - 1} complete!")
+
+            # Check if we should continue to next day
+            if day < max_days - 1:
+                print(f"\nPress Enter to start Day {campaign_tracker.day_number}...")
+                input()
+            else:
+                print(f"\nDemo complete after {max_days} days!")
+                print("Thanks for playing!")
+                break
 
 
 if __name__ == "__main__":

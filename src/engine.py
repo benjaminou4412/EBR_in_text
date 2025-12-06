@@ -5,7 +5,7 @@ from typing import Callable, Optional, Any, cast
 from .models import (
     GameState, Action, CommitDecision, RangerState, Card, ChallengeIcon,
     Aspect, Approach, Area, CardType, EventType, TimingType, EventListener,
-    MessageEvent, Keyword, ConstantAbility, ConstantAbilityType
+    MessageEvent, Keyword, ConstantAbility, ConstantAbilityType, CampaignTracker
 )
 from .utils import get_display_id
 from .decks import build_woods_path_deck, select_three_random_valley_cards, get_new_location, get_current_weather
@@ -702,6 +702,50 @@ class GameEngine:
 
         raise DayEndException()
 
+    @staticmethod
+    def setup_new_day(campaign_tracker: 'CampaignTracker', role_card: Card) -> 'GameState':
+        """
+        Create a fresh GameState for a new day using the campaign tracker.
+
+        Args:
+            campaign_tracker: The campaign tracker with persistent state
+            role_card: The ranger's role card
+
+        Returns:
+            A fresh GameState ready for a new day
+        """
+        from .models import RangerState, GameState, Area
+
+        # TODO: Load ranger deck from card IDs in campaign tracker
+        # For now, this is a placeholder - the actual deck loading will be implemented
+        # when we have a card registry system
+        ranger_deck = []  # Will be populated by caller
+
+        # Create fresh ranger state
+        ranger = RangerState(
+            name=campaign_tracker.ranger_name,
+            hand=[],
+            deck=ranger_deck,
+            fatigue_stack=[],
+            aspects=campaign_tracker.ranger_aspects.copy()
+        )
+
+        # Create fresh game state with campaign tracker
+        state = GameState(
+            ranger=ranger,
+            role_card=role_card,
+            campaign_tracker=campaign_tracker,
+            areas={
+                Area.SURROUNDINGS: [],
+                Area.ALONG_THE_WAY: [],
+                Area.WITHIN_REACH: [],
+                Area.PLAYER_AREA: [role_card],
+            },
+            round_number=1
+        )
+
+        return state
+
     def draw_path_card(self, card_to_draw: Card | None, target: Card | None) -> None:
         """Draw one path card and put it into play, reshuffling path discard if necessary"""
         """If card_to_draw parameter is given, put it into play without drawing from path deck."""
@@ -935,7 +979,8 @@ class GameEngine:
     def arrival_setup(self, start_of_day: bool):
         if start_of_day:
             self.add_message(f"Step 5: Set up starting location")
-            self.state.location = get_new_location(Card()) #TODO: reference campaign log for start of day location
+            from .decks import get_location_by_id
+            self.state.location = get_location_by_id(self.state.campaign_tracker.current_location_id)
             self.state.areas[Area.SURROUNDINGS].append(self.state.location)
             self.state.location.enters_play(self, Area.SURROUNDINGS, None)
             self.add_message(f"Step 6: Set up the weather card")
@@ -976,14 +1021,10 @@ class GameEngine:
             self.add_message(f"Your ranger is injured, so you suffer fatigue.")
             self.state.ranger.fatigue(self, self.state.ranger.injury)
         #Step 2: Draw 1 Ranger Card
-        card, draw_message, should_end_day = self.state.ranger.draw_card(self)
+        card, should_end_day = self.state.ranger.draw_card(self)
         if should_end_day:
-            if draw_message:
-                self.add_message(draw_message)
             self.end_day()
             return
-        if draw_message:
-            self.add_message(draw_message)
         #Step 3: Refill energy
         self.state.ranger.refresh_all_energy()
         self.add_message("Your energy is restored.")

@@ -684,7 +684,8 @@ class Card:
         
     def enters_hand(self, engine: GameEngine) -> list[EventListener]:
         """Called when card enters hand. Shows art description. Override to add listeners."""
-        if self.art_description:
+        from .view import _show_art_descriptions
+        if self.art_description and _show_art_descriptions:
             engine.add_message(f"   Art description: {self.art_description}")
         if self.flavor_text:
             engine.add_message(f"   Flavor text: {self.flavor_text}")
@@ -703,7 +704,8 @@ class Card:
 
         #Messaging
         engine.add_message(f"{get_display_id(engine.state.all_cards_in_play(), self)} enters play in {area.value}.")
-        if self.art_description:
+        from .view import _show_art_descriptions
+        if self.art_description and _show_art_descriptions:
             engine.add_message(f"   Art description: {self.art_description}")
         if self.has_keyword(Keyword.AMBUSH) and self.starting_area == Area.WITHIN_REACH:
             engine.add_message(f"   {self.title} Ambushes you!")
@@ -1000,17 +1002,19 @@ class RangerState:
     def __post_init__(self):
         self.energy = dict(self.aspects)
 
-    def draw_card(self, eng: GameEngine) -> tuple[Card | None, str, bool]:
+    def draw_card(self, eng: GameEngine) -> tuple[Card | None, bool]:
         """Draw a card from deck to hand.
         Returns (card, message, should_end_day).
         If deck is empty, returns (None, error_message, True)."""
         if len(self.deck) == 0:
-            return None, "Cannot draw from empty deck - the day must end!", True
+            return None, True
         else:
             drawn: Card = self.deck.pop(0)
             self.hand.append(drawn)
+            eng.add_message(f"You draw a copy of {drawn.title}.")
             eng.register_listeners(drawn.enters_hand(eng))
-            return drawn, f"You draw a copy of {drawn.title}.", False
+            return drawn, False
+            
 
     def spend_energy(self, amount: int, aspect: Aspect) -> tuple[bool, str | None]:
         """Attempt to spend the specified amount of energy from the specified aspect's energy pool.
