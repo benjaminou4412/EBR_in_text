@@ -32,8 +32,12 @@ API-ish notes:
 
 A living checklist. Roughly prioritized.
 
+- Make sure Day system:
+  - properly re-randomizes decks between days
+  - properly retains the location the previous day ended at and starts the new day at that location
+  - properly retains other campaign tracker state.
 - Implement missions
-- Implement Day system and save/load/autosave
+- Implement save/load/autosave
 - Implement full Travel map
 - Implement fully rules-compliant faceup/facedown cards
   - https://thelivingvalley.earthbornegames.com/docs/rules_glossary/F/facedown_cards/

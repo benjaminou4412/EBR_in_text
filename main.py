@@ -120,7 +120,7 @@ def run_game_loop(engine: GameEngine, with_ui: bool = True) -> None:
     """
     if with_ui:
         # Print welcome header once
-        print("=== Earthborne Rangers - Demo ===")
+        print("====== Earthborne Rangers - Demo ======")
         print("Welcome to the demo! Press Enter to begin...")
         input()
         display_and_clear_messages(engine)
@@ -135,7 +135,7 @@ def run_game_loop(engine: GameEngine, with_ui: bool = True) -> None:
         if with_ui:
             render_state(engine, phase_header=f"Round {engine.state.round_number} — Phase 1: Draw Path Cards")
             print("")
-            print("--- Event log ---")
+            print("==== Event log ====")
             display_and_clear_messages(engine)
             input("Press Enter to proceed to Phase 2...")
 
@@ -145,7 +145,7 @@ def run_game_loop(engine: GameEngine, with_ui: bool = True) -> None:
                 clear_screen()
                 render_state(engine, phase_header=f"Round {engine.state.round_number} — Phase 2: Ranger Turns")
                 print("")
-                print("--- Event log and choices ---")
+                print("==== Event log and choices ====")
 
             # derive actions
             all_tests = provide_card_tests(engine) + provide_common_tests(engine.state)
@@ -278,7 +278,7 @@ def run_game_loop(engine: GameEngine, with_ui: bool = True) -> None:
             clear_screen()
             render_state(engine, phase_header=f"Round {engine.state.round_number} — Phase 3: Travel")
             print("")
-            print("--- Event log ---")
+            print("==== Event log ====")
         camped = engine.phase3_travel()
         if with_ui:
             display_and_clear_messages(engine)
@@ -304,7 +304,7 @@ def run_game_loop(engine: GameEngine, with_ui: bool = True) -> None:
         if with_ui:
             render_state(engine, phase_header=f"Round {engine.state.round_number} — Phase 4: Refresh")
             print("")
-            print("--- Event log ---")
+            print("==== Event log ====")
             display_and_clear_messages(engine)
 
         # Check if day ended during Phase 4 (e.g., drawing from empty deck)

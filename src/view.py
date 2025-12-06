@@ -163,7 +163,7 @@ def render_state(engine: GameEngine, phase_header: str = "") -> None:
 
     # Phase header if provided
     if phase_header:
-        print(f"=== {phase_header} ===")
+        print(f"===== {phase_header} =====")
 
     # Track displayed card IDs to prevent duplicate rendering of attachments
     displayed_ids: set[str] = set()

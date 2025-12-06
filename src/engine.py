@@ -757,18 +757,14 @@ class GameEngine:
                 self.state.path_deck.extend(self.state.path_discard)
                 self.state.path_discard.clear()
             card = self.state.path_deck.pop(0)
-            if card.starting_area is not None:
-                    self.state.areas[card.starting_area].append(card)
-                    card.enters_play(self, card.starting_area, target)
-            else:
-                raise AttributeError("Path card drawn is missing a starting area.")
         else:
             card = card_to_draw
-            if card.starting_area is not None:
-                    self.state.areas[card.starting_area].append(card)
-                    card.enters_play(self, card.starting_area, target)
-            else:
-                raise AttributeError("Path card drawn is missing a starting area.")
+        if card.starting_area is not None:
+                self.add_message(f"You drew {card.title}.")
+                self.state.areas[card.starting_area].append(card)
+                card.enters_play(self, card.starting_area, target)
+        else:
+            raise AttributeError("Path card drawn is missing a starting area.")
 
     def scout_cards(self, deck: list[Card], count: int) -> None:
         """Scout X cards from a deck: look at top X cards, then place each on top or bottom in any order.
