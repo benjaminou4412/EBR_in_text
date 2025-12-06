@@ -32,11 +32,13 @@ API-ish notes:
 
 A living checklist. Roughly prioritized.
 
-- Make sure Day system:
-  - properly re-randomizes decks between days
-  - properly retains the location the previous day ended at and starts the new day at that location
-  - properly retains other campaign tracker state.
+
 - Implement missions
+  -Implement Biscuit Delivery
+    -implement and enforce campaign guide entry override
+    -integrate and test listener for mission objective
+  -Implement Biscuit Basket
+    -mostly unimplemented
 - Implement save/load/autosave
 - Implement full Travel map
 - Implement fully rules-compliant faceup/facedown cards

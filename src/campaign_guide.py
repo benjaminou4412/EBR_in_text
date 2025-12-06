@@ -6,6 +6,7 @@ if TYPE_CHECKING:
 class CampaignGuide:
     def __init__(self):
         self.entries : dict[str, Callable[['CampaignGuide', 'GameEngine', str | None], bool]] = {
+            "47": self.resolve_entry_47, #placeholder to prevent crashing when Hy Pimpot enters play
             "80": self.resolve_entry_80,
             "80.1": self.resolve_entry_80_1,
             "80.2": self.resolve_entry_80_2,
@@ -13,8 +14,14 @@ class CampaignGuide:
             "80.5": self.resolve_entry_80_5,
             "80.6": self.resolve_entry_80_6,
             "85": self.resolve_entry_85, #placeholder to prevent crashing when Calypsa enters play
-            "86": self.resolve_entry_86, #placeholder to prevent crashing when The Fundamentalist enters play
+            "86": self.resolve_entry_86 #placeholder to prevent crashing when The Fundamentalist enters play
             }
+        
+    def resolve_entry_47(self, engine: 'GameEngine', clear_type: str | None) -> bool:
+        engine.add_message("")
+        engine.add_message("")
+        engine.add_message("=== Campaign Log Entry 47: Hy Pimpot, Chef (PLACEHOLDER) ===")
+        return False
 
     def resolve_entry_80(self, engine: 'GameEngine', clear_type: str | None) -> bool: #clear_type of None indicates non-clear resolution
         engine.add_message("")
@@ -154,7 +161,13 @@ class CampaignGuide:
         return True
     
     def resolve_entry_85(self, engine: 'GameEngine', clear_type: str | None) -> bool:
+        engine.add_message("")
+        engine.add_message("")
+        engine.add_message("=== Campaign Log Entry 85: Calypsa, Ranger Mentor (PLACEHOLDER) ===")
         return False
     
     def resolve_entry_86(self, engine: 'GameEngine', clear_type: str | None) -> bool:
+        engine.add_message("")
+        engine.add_message("")
+        engine.add_message("=== Campaign Log Entry 86: The Fundamentalist (PLACEHOLDER) ===")
         return False
