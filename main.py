@@ -392,7 +392,7 @@ def main() -> None:
         day_number=1,
         ranger_name="Demo Ranger",
         ranger_aspects={Aspect.AWA: 99, Aspect.FIT: 99, Aspect.SPI: 99, Aspect.FOC: 99},
-        current_location_id="Ancestor's Grove",
+        current_location_id="Lone Tree Station",
         current_terrain_type="Woods"
     )
 

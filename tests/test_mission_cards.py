@@ -98,8 +98,11 @@ class BiscuitDeliveryListenerTests(unittest.TestCase):
                        "Should have a TRAVEL listener from Biscuit Delivery")
 
     def test_biscuit_delivery_listener_active_when_hy_pimpot_in_play(self):
-        """Test that the listener's active condition is true when Hy Pimpot is in play."""
+        """Test that the listener's active condition is true when Hy Pimpot is in play
+        and the current location is Lone Tree Station."""
         state, biscuit = make_test_state_with_mission(include_hy=True)
+        # The listener only fires when traveling from Lone Tree Station
+        state.location.title = "Lone Tree Station"
         engine = GameEngine(state)
 
         listeners = biscuit.get_listeners()
@@ -107,11 +110,13 @@ class BiscuitDeliveryListenerTests(unittest.TestCase):
 
         # Check the active condition
         is_active = listener.active(engine, None)
-        self.assertTrue(is_active, "Listener should be active when Hy Pimpot is in play")
+        self.assertTrue(is_active,
+                       "Listener should be active when Hy Pimpot is in play and at Lone Tree Station")
 
     def test_biscuit_delivery_listener_inactive_when_hy_pimpot_not_in_play(self):
         """Test that the listener's active condition is false when Hy Pimpot is NOT in play."""
         state, biscuit = make_test_state_with_mission(include_hy=False)
+        state.location.title = "Lone Tree Station"  # Even at correct location
         engine = GameEngine(state)
 
         listeners = biscuit.get_listeners()
@@ -120,6 +125,21 @@ class BiscuitDeliveryListenerTests(unittest.TestCase):
         # Check the active condition
         is_active = listener.active(engine, None)
         self.assertFalse(is_active, "Listener should be inactive when Hy Pimpot is not in play")
+
+    def test_biscuit_delivery_listener_inactive_when_not_at_lone_tree_station(self):
+        """Test that the listener's active condition is false when NOT at Lone Tree Station,
+        even if Hy Pimpot is in play."""
+        state, biscuit = make_test_state_with_mission(include_hy=True)
+        # Location is "Test Location" by default, not Lone Tree Station
+        engine = GameEngine(state)
+
+        listeners = biscuit.get_listeners()
+        listener = listeners[0]
+
+        # Check the active condition - should be false because we're not at Lone Tree Station
+        is_active = listener.active(engine, None)
+        self.assertFalse(is_active,
+                        "Listener should be inactive when not at Lone Tree Station")
 
     def test_biscuit_delivery_listener_cleaned_up_on_discard(self):
         """Test that the listener is removed when Biscuit Delivery is discarded."""

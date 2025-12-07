@@ -21,27 +21,42 @@ def select_three_random_valley_cards() -> list[Card]:
     #TODO: actually select three random valley cards
     return [CalypsaRangerMentor(), QuisiVosRascal(), TheFundamentalist()]
 
-def get_new_location(current_location: Card) -> Card:
-    # Import inside function to avoid circular import
-    from .cards import BoulderField, AncestorsGrove
+def get_available_travel_destinations(current_location: Card) -> list[Card]:
+    """Return the available travel destinations from the current location.
 
-    return BoulderField() if current_location.title == "Ancestor's Grove" else AncestorsGrove()
+    Currently implements a triangle of three locations:
+    Lone Tree Station <-> Boulder Field <-> Ancestor's Grove <-> Lone Tree Station
+    """
+    # Import inside function to avoid circular import
+    from .cards import BoulderField, AncestorsGrove, LoneTreeStation
+
+    # All three locations form a connected triangle
+    all_locations = {
+        "Lone Tree Station": LoneTreeStation,
+        "Boulder Field": BoulderField,
+        "Ancestor's Grove": AncestorsGrove,
+    }
+
+    # Return all locations except the current one
+    return [loc_class() for title, loc_class in all_locations.items()
+            if title != current_location.title]
 
 def get_location_by_id(location_id: str) -> Card:
-    """Get a location card by its ID. Returns Ancestor's Grove as default if unknown."""
+    """Get a location card by its ID. Returns Lone Tree Station as default if unknown."""
     # Import inside function to avoid circular import
-    from .cards import BoulderField, AncestorsGrove
+    from .cards import BoulderField, AncestorsGrove, LoneTreeStation
 
     location_registry = {
         "Boulder Field": BoulderField,
         "Ancestor's Grove": AncestorsGrove,
+        "Lone Tree Station": LoneTreeStation,
     }
 
     if location_id in location_registry:
         return location_registry[location_id]()
     else:
-        # Default to Ancestor's Grove for unknown locations
-        return AncestorsGrove()
+        # Default to Lone Tree Station for unknown locations (campaign start)
+        return LoneTreeStation()
 
 def get_current_weather() -> Card:
     #TODO: Reference campaign tracker for today's weather

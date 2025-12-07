@@ -8,7 +8,7 @@ from .models import (
     MessageEvent, Keyword, ConstantAbility, ConstantAbilityType, CampaignTracker
 )
 from .utils import get_display_id
-from .decks import build_woods_path_deck, select_three_random_valley_cards, get_new_location, get_current_weather, get_current_missions
+from .decks import build_woods_path_deck, select_three_random_valley_cards, get_current_weather, get_current_missions
 from .campaign_guide import CampaignGuide
 
 
@@ -967,10 +967,15 @@ class GameEngine:
 
         #Step 2: Travel to a new location
 
-        #TODO: Render valley map and offer choice
-        #For now: fixed choice to single other implemented location
         curr_location = self.state.location
-        new_location = get_new_location(curr_location)
+        from .decks import get_available_travel_destinations
+        available_destinations = get_available_travel_destinations(curr_location)
+        destination_titles = [loc.title for loc in available_destinations]
+
+        chosen_title = self.option_chooser(self, destination_titles,
+                                           f"Choose your travel destination from {curr_location.title}:")
+        new_location = next(loc for loc in available_destinations if loc.title == chosen_title)
+
         self.state.areas[Area.SURROUNDINGS].append(new_location)
         self.state.areas[Area.SURROUNDINGS].remove(curr_location)
         self.state.location = new_location

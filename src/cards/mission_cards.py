@@ -20,10 +20,13 @@ class BiscuitDelivery(Card):
 
     def get_listeners(self) -> list[EventListener] | None:
         return [EventListener(event_type=EventType.TRAVEL,
-                              active=lambda e, _c: e.state.get_cards_by_title("Hy Pimpot, Chef") is not None,
+                              active=lambda e, _c: (
+                                  e.state.get_cards_by_title("Hy Pimpot, Chef") is not None and
+                                  e.state.location.title == "Lone Tree Station"
+                              ),
                               effect_fn=self.resolve_objective_entry,
-                              source_card_id=self.id, 
-                              timing_type=TimingType.BEFORE, 
+                              source_card_id=self.id,
+                              timing_type=TimingType.BEFORE,
                               test_type=None)]
     
     def resolve_objective_entry(self, eng: GameEngine, effort: int) -> int:

@@ -162,7 +162,7 @@ class CampaignTracker:
     ranger_aspects: dict[Aspect, int] = field(default_factory=dict)
 
     # Location and terrain persist between days
-    current_location_id: str = "White Sky"  # Default starting location
+    current_location_id: str = "Lone Tree Station"  # Default starting location
     current_terrain_type: str = "Woods"  # Hardcoded for now, will be swappable later
 
 
