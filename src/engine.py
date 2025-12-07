@@ -8,7 +8,7 @@ from .models import (
     MessageEvent, Keyword, ConstantAbility, ConstantAbilityType, CampaignTracker
 )
 from .utils import get_display_id
-from .decks import build_woods_path_deck, select_three_random_valley_cards, get_new_location, get_current_weather
+from .decks import build_woods_path_deck, select_three_random_valley_cards, get_new_location, get_current_weather, get_current_missions
 from .campaign_guide import CampaignGuide
 
 
@@ -927,6 +927,14 @@ class GameEngine:
 
         self.add_message(f"Step 1: Clear Play Area")
 
+        #Resolve Missions that instruct you to "travel away" from a location
+        self.add_message(f'   Resolving "travel away" missions...')
+        self.trigger_listeners(event_type=EventType.TRAVEL,
+                               timing_type=TimingType.BEFORE,
+                               action=None,
+                               effort=0,
+                               cleared=None)
+
         self.add_message(f"   Discarding all non-persistent path cards from play...")
         for card in [card for card in list(self.state.all_cards_in_play()) 
                      if card.has_type(CardType.PATH) and not card.has_keyword(Keyword.PERSISTENT)]:
@@ -945,7 +953,7 @@ class GameEngine:
         self.state.path_deck.clear()
         self.state.path_discard.clear()
 
-        #TODO: resolve Missions that instruct you to "travel away" from a location
+        
 
         #Step 2: Travel to a new location
 
@@ -984,8 +992,12 @@ class GameEngine:
             self.state.weather = get_current_weather()
             self.state.areas[Area.SURROUNDINGS].insert(0, self.state.weather)
             self.state.weather.enters_play(self, Area.SURROUNDINGS, None)
-            self.add_message(f"Step 7: Set up mission cards (skipped)")
-            #TODO: setup missions
+            self.add_message(f"Step 7: Set up mission cards")
+            #TODO: Set up mission cards based on Campaign Tracker information
+            self.state.missions = get_current_missions()
+            self.state.areas[Area.SURROUNDINGS].extend(self.state.missions)
+            for card in self.state.missions:
+                card.enters_play(self, Area.SURROUNDINGS, None)
             self.add_message(f"Steps 8, 9, and 10: Build path deck, resolve arrival setup, and finishing touches.")
 
 

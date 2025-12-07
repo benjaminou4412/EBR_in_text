@@ -18,7 +18,7 @@ from src.cards import (
     OvergrownThicket, SunberryBramble, SitkaDoe, WalkWithMe, ADearFriend,
     ProwlingWolhund, SitkaBuck, CalypsaRangerMentor, PeerlessPathfinder,
     CausticMulcher, BoulderField, QuisiVosRascal, BoundarySensor, AffordedByNature,
-    CradledbytheEarth
+    CradledbytheEarth, HyPimpotChef
 )
 
 
@@ -363,8 +363,9 @@ def start_new_day(campaign_tracker, role_card: Card) -> GameEngine:
         if card is None:
             raise RuntimeError(f"Deck should not run out during setup!")
 
-    engine.add_message(f"Step 3: Elect lead Ranger (skipped)")
-    engine.add_message(f"Step 4: Shuffle challenge deck (skipped)")
+    engine.add_message(f"Step 3: Elect lead Ranger (only one ranger; automatically chosen)")
+    engine.add_message(f"Step 4: Shuffle challenge deck")
+    engine.state.challenge_deck.reshuffle()
 
     # Arrival setup
     engine.arrival_setup(start_of_day=True)
@@ -409,7 +410,7 @@ def main() -> None:
         engine = start_new_day(campaign_tracker, role_card)
 
         # Force a demo card on top for testing
-        engine.state.path_deck.insert(0, QuisiVosRascal())
+        engine.state.path_deck.insert(0, HyPimpotChef())
 
         # Run the day
         try:

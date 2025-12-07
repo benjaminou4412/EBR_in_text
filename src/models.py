@@ -938,7 +938,7 @@ class Card:
 
         
     
-    def flip(self, engine: GameEngine) -> None:
+    def flip(self, engine: GameEngine) -> Card:
         current_area = engine.state.get_card_area_by_id(self.id)
         if current_area is None:
             raise RuntimeError(f"Any card that flips should be in an area!")
@@ -967,6 +967,8 @@ class Card:
                 engine.register_constant_abilities(constant_abilities)
             if event_listeners:
                 engine.register_listeners(event_listeners)
+
+        return self.backside
 
     
 @dataclass
@@ -1144,6 +1146,7 @@ class GameState:
     role_card: Card = field(default_factory=lambda: Card()) #pointer to a card that always exists in the Player Area
     location: Card = field(default_factory=lambda: Card()) #pointer to a card that always exists in the Surroundings
     weather: Card = field(default_factory=lambda: Card()) #pointer to a card that always exists in the Surroundings
+    missions: list[Card] = field(default_factory=lambda: cast(list[Card], [])) #pointer to a potentially-empty list of cards that always exists in the Surroundings
     challenge_deck: ChallengeDeck = field(default_factory=lambda: ChallengeDeck())
     areas: dict[Area, list[Card]] = field(
         default_factory=lambda: cast(

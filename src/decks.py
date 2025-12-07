@@ -44,6 +44,11 @@ def get_location_by_id(location_id: str) -> Card:
         return AncestorsGrove()
 
 def get_current_weather() -> Card:
-    #TODO: Reference campaign log for today's weather
+    #TODO: Reference campaign tracker for today's weather
     from .cards import APerfectDay
     return APerfectDay()
+
+def get_current_missions() -> list[Card]:
+    #TODO: Reference campaign tracker for active missions
+    from .cards import BiscuitDelivery
+    return [BiscuitDelivery()]

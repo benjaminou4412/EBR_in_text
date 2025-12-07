@@ -35,10 +35,16 @@ A living checklist. Roughly prioritized.
 
 - Implement missions
   -Implement Biscuit Delivery
-    -implement and enforce campaign guide entry override
-    -integrate and test listener for mission objective
-  -Implement Biscuit Basket
-    -mostly unimplemented
+    -Currently functioning:
+      -Biscuit delivery enters play during setup and sets up a listener for its objective
+      -this objective properly triggers when you travel while hy pimpot is in play
+      -as part of resolving the corresponding campaign entry, biscuit delivery flips into biscuit basket and is equipped to the ranger
+    -still to do:
+      -implement and enforce biscuit delivery's campaign guide entry overrides for Quisi, Hy, etc.
+      -implement Lone Tree Station and have Biscuit Delivery's listener only active when the current location is Lone Tree Station
+      -have view.py properly display the mission description and mission objective on Missions
+      -check equip slots when Biscuit Basket is equipped
+      -Implement Biscuit Basket (currently mostly unimplemented)
 - Implement save/load/autosave
 - Implement full Travel map
 - Implement fully rules-compliant faceup/facedown cards

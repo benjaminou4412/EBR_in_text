@@ -11,6 +11,8 @@ from .woods_cards import SitkaBuck, OvergrownThicket, SunberryBramble, SitkaDoe,
 from .valley_cards import CalypsaRangerMentor, QuisiVosRascal, TheFundamentalist
 from .location_cards import BoulderField, AncestorsGrove
 from .weather_cards import APerfectDay, MiddaySun
+from .mission_cards import BiscuitBasket, BiscuitDelivery
+from .lone_tree_station_cards import HyPimpotChef
 
 __all__ = ["WalkWithMe",
             "ADearFriend",
@@ -33,4 +35,7 @@ __all__ = ["WalkWithMe",
             "BoundarySensor",
             "ShareintheValleysSecrets",
             "CradledbytheEarth",
-            "AffordedByNature"]
+            "AffordedByNature",
+            "BiscuitBasket",
+            "BiscuitDelivery",
+            "HyPimpotChef"]

@@ -6,6 +6,7 @@ if TYPE_CHECKING:
 class CampaignGuide:
     def __init__(self):
         self.entries : dict[str, Callable[['CampaignGuide', 'GameEngine', str | None], bool]] = {
+            "1.01": self.resolve_entry_1_01,
             "47": self.resolve_entry_47, #placeholder to prevent crashing when Hy Pimpot enters play
             "80": self.resolve_entry_80,
             "80.1": self.resolve_entry_80_1,
@@ -16,6 +17,30 @@ class CampaignGuide:
             "85": self.resolve_entry_85, #placeholder to prevent crashing when Calypsa enters play
             "86": self.resolve_entry_86 #placeholder to prevent crashing when The Fundamentalist enters play
             }
+    
+    def resolve_entry_1_01(self, engine: 'GameEngine', clear_type: str | None) -> bool:
+        engine.add_message("")
+        engine.add_message("")
+        engine.add_message("== Campaign Log Entry 1.01 ==")
+        engine.add_message("")
+        engine.add_message("--- Story ---")
+        engine.add_message("Hy Pimpot places the last juniper biscuit into the basket and hands it to you. " \
+        "“There’s no better way to begin a friendship than with a freshly baked biscuit,” he says. " \
+        "“The people of White Sky just love meeting new Rangers. They always come bearing treats!” " \
+        "Hy Pimpot winks and takes a biscuit for himself.")
+        engine.add_message("You shoulder the basket and walk down the trail. As you do, the enticing aroma " \
+        "of the biscuits wafts up from the basket. You remember that you haven’t eaten anything since " \
+        "breakfast. Your stomach growls. Surely they won’t miss one or two.")
+        engine.add_message("")
+        engine.add_message("--- Results ---")
+        engine.add_message("Flip the BISCUIT DELIVERY mission to the BISCUIT BASKET side.")
+        biscuit_delivery = engine.state.get_cards_by_title("Biscuit Delivery")[0]
+        biscuit_basket = biscuit_delivery.flip(engine)
+        engine.add_message("Then choose a Ranger to equip it. (Only one ranger; automatically chosen)")
+        from .models import Area
+        engine.move_card(biscuit_basket.id, Area.PLAYER_AREA)
+
+        return False
         
     def resolve_entry_47(self, engine: 'GameEngine', clear_type: str | None) -> bool:
         engine.add_message("")
