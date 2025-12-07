@@ -35,15 +35,7 @@ A living checklist. Roughly prioritized.
 
 - Implement missions
   -Implement Biscuit Delivery
-    -Currently functioning:
-      -Biscuit delivery enters play during setup and sets up a listener for its objective
-      -this objective properly triggers when you travel while hy pimpot is in play
-      -as part of resolving the corresponding campaign entry, biscuit delivery flips into biscuit basket and is equipped to the ranger
-      -campaign guide entries are overridden
-      -implemented Lone Tree Station and had Biscuit Delivery's listener only active when the current location is Lone Tree Station
     -still to do:
-      -Sun effect on Biscuit Delivery
-      -check equip slots when Biscuit Basket is equipped
       -Implement Biscuit Basket (currently mostly unimplemented)
 - Add campaign log entries to Arrival Setup for each location card
 - Add campaign log entries for all other already-implemented cards that don't already have them

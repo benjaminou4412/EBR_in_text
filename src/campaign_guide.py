@@ -59,6 +59,7 @@ class CampaignGuide:
         engine.add_message("Then choose a Ranger to equip it. (Only one ranger; automatically chosen)")
         from .models import Area
         engine.move_card(biscuit_basket.id, Area.PLAYER_AREA)
+        engine.enforce_equip_limit()
 
         return False
         
