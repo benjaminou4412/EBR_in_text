@@ -33,10 +33,8 @@ API-ish notes:
 A living checklist. Roughly prioritized.
 
 
-- Implement missions
-  -Implement Biscuit Delivery
-    -still to do:
-      -Implement Biscuit Basket (currently mostly unimplemented)
+- Implement main menu selecting between full campaign and demo scenarios
+- Implement custom Day 1 setup + story sequence for start of campaign
 - Add campaign log entries to Arrival Setup for each location card
 - Add campaign log entries for all other already-implemented cards that don't already have them
 - Implement save/load/autosave

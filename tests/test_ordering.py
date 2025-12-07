@@ -186,7 +186,7 @@ class ChallengeEffectOrderingTests(unittest.TestCase):
         self.assertIn(buck_b, state.areas[Area.WITHIN_REACH])
         self.assertIn(buck_c, state.areas[Area.WITHIN_REACH])
 
-def test_challenge_effects_resolve_in_specified_order(self):
+    def test_challenge_effects_resolve_in_specified_order(self):
         """Test that challenge effects actually resolve in the order specified by order_decider"""
         from src.cards import SitkaDoe, SitkaBuck
 

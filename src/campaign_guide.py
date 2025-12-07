@@ -126,7 +126,7 @@ class CampaignGuide:
         return self.resolve_entry("1.03", source_card, engine, clear_type)
             
     def resolve_entry_1_03(self, source_card: 'Card | None', engine: 'GameEngine', clear_type: str | None) -> bool:
-        engine.add_message("== Campaign Log Entry 1.02A ==")
+        engine.add_message("== Campaign Log Entry 1.03 ==")
         engine.add_message("")
         engine.add_message("--- Story ---")
         engine.add_message('From down the path comes the sound of melodic whistling. Before long, a man wearing many ' \

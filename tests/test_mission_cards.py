@@ -3,7 +3,7 @@
 
 import unittest
 from src.models import (
-    Card, RangerState, GameState, Aspect, Area, CardType,
+    Card, RangerState, GameState, Aspect, Approach, Area, CardType,
     EventType, TimingType, Keyword, Mission, DayEndException
 )
 from src.engine import GameEngine
@@ -670,6 +670,288 @@ class BiscuitDeliverySunEffectTests(unittest.TestCase):
         # Verify she entered play properly (should be in an area)
         quisi_area = state.get_card_area_by_id(quisi.id)
         self.assertIsNotNone(quisi_area, "Quisi should be in a play area")
+
+
+class BiscuitBasketActionTests(unittest.TestCase):
+    """Tests for Biscuit Basket's Give and Sneak test actions."""
+
+    def _setup_basket_in_play(self):
+        """Helper to set up a game state with Biscuit Basket in play."""
+        state, biscuit_delivery = make_test_state_with_mission()
+        engine = GameEngine(state)
+        engine.state.campaign_tracker.active_missions.append(Mission("Biscuit Delivery"))
+
+        # Flip to get Biscuit Basket equipped
+        biscuit_delivery.enters_play(engine, Area.SURROUNDINGS, None)
+        basket = biscuit_delivery.flip(engine)
+        engine.move_card(basket.id, Area.PLAYER_AREA)
+
+        return state, engine, basket
+
+    def test_biscuit_basket_has_two_tests(self):
+        """Biscuit Basket should provide Give and Sneak tests."""
+        basket = BiscuitBasket()
+        tests = basket.get_tests()
+
+        self.assertEqual(len(tests), 2, "Should have exactly two tests")
+
+        verbs = [t.verb for t in tests]
+        self.assertIn("Give", verbs, "Should have Give test")
+        self.assertIn("Sneak", verbs, "Should have Sneak test")
+
+    def test_give_test_targets_humans_without_biscuits(self):
+        """Give test should only target humans that don't already have biscuits."""
+        state, engine, basket = self._setup_basket_in_play()
+
+        # Add two humans - one with a biscuit, one without
+        hy = HyPimpotChef()
+        state.areas[Area.ALONG_THE_WAY].append(hy)
+
+        quisi = QuisiVosRascal()
+        state.areas[Area.ALONG_THE_WAY].append(quisi)
+
+        # Give Hy a biscuit
+        hy.unique_tokens["biscuit"] = 1
+
+        # Get the Give test
+        tests = basket.get_tests()
+        give_test = [t for t in tests if t.verb == "Give"][0]
+
+        # Get valid targets
+        targets = give_test.target_provider(state)
+
+        # Only Quisi should be a valid target (Hy already has a biscuit)
+        target_titles = [t.title for t in targets]
+        self.assertIn("Quisi Vos, Rascal", target_titles, "Quisi should be valid target")
+        self.assertNotIn("Hy Pimpot, Chef", target_titles, "Hy should not be valid target (has biscuit)")
+
+    def test_give_test_success_moves_biscuit_and_adds_progress(self):
+        """Successful Give test should move 1 biscuit to target and add 4 progress."""
+        state, engine, basket = self._setup_basket_in_play()
+
+        # Add a human target
+        hy = HyPimpotChef()
+        state.areas[Area.ALONG_THE_WAY].append(hy)
+
+        initial_biscuits = basket.unique_tokens["biscuit"]
+        initial_progress = hy.progress
+
+        # Simulate successful Give
+        basket._on_give_success(engine, 0, hy)
+
+        # Biscuit should be moved
+        self.assertEqual(basket.unique_tokens["biscuit"], initial_biscuits - 1,
+                        "Basket should have one fewer biscuit")
+        self.assertEqual(hy.unique_tokens.get("biscuit", 0), 1,
+                        "Target should have received one biscuit")
+
+        # Progress should be added
+        self.assertEqual(hy.progress, initial_progress + 4,
+                        "Target should have 4 more progress")
+
+    def test_sneak_test_success_soothes_and_moves_biscuit_to_role(self):
+        """Successful Sneak test should soothe 3 fatigue and move 1 biscuit to role card."""
+        state, engine, basket = self._setup_basket_in_play()
+
+        # Add some fatigue cards to the ranger's fatigue stack
+        fatigue_cards = [Card(id=f"fatigue{i}", title=f"Fatigue Card {i}") for i in range(5)]
+        state.ranger.fatigue_stack = fatigue_cards.copy()
+
+        initial_biscuits = basket.unique_tokens["biscuit"]
+        initial_fatigue_count = len(state.ranger.fatigue_stack)
+
+        # Simulate successful Sneak
+        basket._on_sneak_success(engine, 0, None)
+
+        # Fatigue should be soothed (3 cards moved from fatigue stack to hand)
+        self.assertEqual(len(state.ranger.fatigue_stack), initial_fatigue_count - 3,
+                        "Ranger should have 3 fewer cards in fatigue stack")
+
+        # Biscuit should be on role card
+        self.assertEqual(basket.unique_tokens["biscuit"], initial_biscuits - 1,
+                        "Basket should have one fewer biscuit")
+        self.assertEqual(state.role_card.unique_tokens.get("biscuit", 0), 1,
+                        "Role card should have received one biscuit")
+
+    def test_sneak_test_has_correct_aspect_and_approach(self):
+        """Sneak test should be AWA + Reason."""
+        basket = BiscuitBasket()
+        tests = basket.get_tests()
+        sneak_test = [t for t in tests if t.verb == "Sneak"][0]
+
+        self.assertEqual(sneak_test.aspect, Aspect.AWA, "Sneak should use AWA")
+        self.assertEqual(sneak_test.approach, Approach.REASON, "Sneak should use Reason approach")
+
+    def test_give_test_has_correct_aspect_and_approach(self):
+        """Give test should be SPI + Connection."""
+        basket = BiscuitBasket()
+        tests = basket.get_tests()
+        give_test = [t for t in tests if t.verb == "Give"][0]
+
+        self.assertEqual(give_test.aspect, Aspect.SPI, "Give should use SPI")
+        self.assertEqual(give_test.approach, Approach.CONNECTION, "Give should use Connection approach")
+
+
+class Entry102BranchingTests(unittest.TestCase):
+    """Tests for Campaign Entry 1.02 conditional branching."""
+
+    def _setup_completed_basket_scenario(self, biscuits_on_role: int = 0):
+        """Helper to set up a game state ready to resolve entry 1.02.
+
+        Args:
+            biscuits_on_role: Number of biscuits to put on the role card
+        """
+        state, biscuit_delivery = make_test_state_with_mission()
+        engine = GameEngine(state)
+        engine.state.campaign_tracker.active_missions.append(Mission("Biscuit Delivery"))
+
+        # Flip to get Biscuit Basket
+        biscuit_delivery.enters_play(engine, Area.SURROUNDINGS, None)
+        basket = biscuit_delivery.flip(engine)
+        engine.move_card(basket.id, Area.PLAYER_AREA)
+
+        # Set biscuits on role card
+        if biscuits_on_role > 0:
+            state.role_card.unique_tokens["biscuit"] = biscuits_on_role
+
+        # Override response_decider to always say yes to camping
+        engine.response_decider = lambda _e, _m: True
+
+        return state, engine, basket
+
+    def test_entry_1_02_goes_to_1_02A_when_no_biscuits_on_role(self):
+        """Entry 1.02 should branch to 1.02A when no biscuits on role card."""
+        state, engine, basket = self._setup_completed_basket_scenario(biscuits_on_role=0)
+
+        engine.clear_messages()
+
+        with self.assertRaises(DayEndException):
+            engine.campaign_guide.resolve_entry("1.02", basket, engine, None)
+
+        messages = " ".join([m.message for m in engine.message_queue])
+
+        self.assertIn("1.02A", messages, "Should branch to entry 1.02A")
+        self.assertIn("no crumbs", messages.lower(), "Should show 1.02A story about no crumbs")
+
+    def test_entry_1_02_continues_when_biscuits_on_role(self):
+        """Entry 1.02 should NOT branch to 1.02A when biscuits are on role card."""
+        state, engine, basket = self._setup_completed_basket_scenario(biscuits_on_role=2)
+
+        engine.clear_messages()
+
+        with self.assertRaises(DayEndException):
+            engine.campaign_guide.resolve_entry("1.02", basket, engine, None)
+
+        messages = " ".join([m.message for m in engine.message_queue])
+
+        # Check that 1.02A header is NOT present (the entry title)
+        self.assertNotIn("== Campaign Log Entry 1.02A ==", messages,
+                        "Should NOT branch to entry 1.02A")
+        self.assertIn("crumbs speak for themselves", messages.lower(),
+                     "Should show 1.02 story about crumbs")
+
+
+class MissionCompletionTests(unittest.TestCase):
+    """Tests for mission completion and cleanup when Biscuit Delivery is finished."""
+
+    def _setup_completed_basket_scenario(self, biscuits_on_role: int = 0):
+        """Helper to set up a game state ready to resolve entry 1.02."""
+        state, biscuit_delivery = make_test_state_with_mission()
+        engine = GameEngine(state)
+        engine.state.campaign_tracker.active_missions.append(Mission("Biscuit Delivery"))
+
+        # Flip to get Biscuit Basket
+        biscuit_delivery.enters_play(engine, Area.SURROUNDINGS, None)
+        basket = biscuit_delivery.flip(engine)
+        engine.move_card(basket.id, Area.PLAYER_AREA)
+
+        # Set biscuits on role card
+        if biscuits_on_role > 0:
+            state.role_card.unique_tokens["biscuit"] = biscuits_on_role
+
+        # Override response_decider to always say yes to camping
+        engine.response_decider = lambda _e, _m: True
+
+        return state, engine, basket
+
+    def test_mission_marked_completed_in_campaign_tracker(self):
+        """Completing the mission should mark it as completed in campaign tracker."""
+        state, engine, basket = self._setup_completed_basket_scenario()
+
+        # Verify mission is in active missions
+        active_names = [m.name for m in engine.state.campaign_tracker.active_missions]
+        self.assertIn("Biscuit Delivery", active_names, "Should start as active mission")
+
+        with self.assertRaises(DayEndException):
+            engine.campaign_guide.resolve_entry("1.02", basket, engine, None)
+
+        # Check mission was completed
+        cleared_names = [m.name for m in engine.state.campaign_tracker.cleared_missions]
+        self.assertIn("Biscuit Delivery", cleared_names,
+                     "Mission should be in cleared_missions")
+
+        # Check mission removed from active
+        active_after = [m.name for m in engine.state.campaign_tracker.active_missions]
+        self.assertNotIn("Biscuit Delivery", active_after,
+                        "Mission should be removed from active_missions")
+
+    def test_biscuit_basket_removed_from_play_on_completion(self):
+        """Biscuit Basket should be removed from play on mission completion."""
+        state, engine, basket = self._setup_completed_basket_scenario()
+
+        # Verify basket is in player area
+        basket_in_play = state.get_in_play_cards_by_title("Biscuit Basket")
+        self.assertEqual(len(basket_in_play), 1, "Basket should be in play before completion")
+
+        with self.assertRaises(DayEndException):
+            engine.campaign_guide.resolve_entry("1.02", basket, engine, None)
+
+        # Basket should not be in any play area
+        basket_after = state.get_in_play_cards_by_title("Biscuit Basket")
+        self.assertEqual(len(basket_after), 0, "Basket should not be in play after completion")
+
+    def test_biscuit_basket_removed_from_discard_on_completion(self):
+        """Biscuit Basket should be removed from ranger discard (returned to collection)."""
+        state, engine, basket = self._setup_completed_basket_scenario()
+
+        with self.assertRaises(DayEndException):
+            engine.campaign_guide.resolve_entry("1.02", basket, engine, None)
+
+        # Basket should not be in ranger discard
+        discard_titles = [c.title for c in state.ranger.discard]
+        self.assertNotIn("Biscuit Basket", discard_titles,
+                        "Basket should not be in ranger discard (returned to collection)")
+
+    def test_ranger_soothes_fatigue_on_mission_completion(self):
+        """Ranger should soothe 2 fatigue when mission is completed."""
+        state, engine, basket = self._setup_completed_basket_scenario()
+
+        # Give ranger some fatigue cards
+        fatigue_cards = [Card(id=f"fatigue{i}", title=f"Fatigue Card {i}") for i in range(5)]
+        state.ranger.fatigue_stack = fatigue_cards.copy()
+        initial_fatigue_count = len(state.ranger.fatigue_stack)
+
+        with self.assertRaises(DayEndException):
+            engine.campaign_guide.resolve_entry("1.02", basket, engine, None)
+
+        # Should have soothed 2 fatigue (2 cards moved from fatigue stack to hand)
+        self.assertEqual(len(state.ranger.fatigue_stack), initial_fatigue_count - 2,
+                        "Ranger should have 2 fewer cards in fatigue stack (5-2=3)")
+
+    def test_entry_1_03_resolves_after_completion(self):
+        """Entry 1.03 should resolve after 1.02 completes."""
+        state, engine, basket = self._setup_completed_basket_scenario()
+
+        engine.clear_messages()
+
+        with self.assertRaises(DayEndException):
+            engine.campaign_guide.resolve_entry("1.02", basket, engine, None)
+
+        messages = " ".join([m.message for m in engine.message_queue])
+
+        self.assertIn("1.03", messages, "Should resolve entry 1.03")
+        self.assertIn("master aell", messages.lower(),
+                     "Should show entry 1.03 story about Master Aell")
 
 
 class BiscuitBasketListenerTests(unittest.TestCase):
