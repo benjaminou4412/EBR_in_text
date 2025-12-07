@@ -44,6 +44,7 @@ A living checklist. Roughly prioritized.
 - Implement fully rules-compliant faceup/facedown cards
   - https://thelivingvalley.earthbornegames.com/docs/rules_glossary/F/facedown_cards/
   - https://thelivingvalley.earthbornegames.com/docs/rules_glossary/A/attach
+  - Ruling: Cards that flip face-up are not considered to enter play, but if it's the first time they've been face-up in-play, they get their starting tokens and Campaign Guide Entries as if they've just entered play
 - automatic keyword loading from JSON
 - implement multi-target tests
   - need to have interaction/obstacle rules consider multiple interaction targets

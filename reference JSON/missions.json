@@ -11,7 +11,7 @@
     "progress_threshold": -1,
     "enters_play": "player_area",
     "enters_play_with": {
-      "type": "biscuits",
+      "type": "biscuit",
       "amount": 3
     },
     "description": null,

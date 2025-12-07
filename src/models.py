@@ -269,7 +269,7 @@ class Card:
     traits: set[str] = field(default_factory=lambda: set()) #mutable from cards like Trails Markers
     keywords: set[Keyword] = field(default_factory=lambda: set())
     abilities_text: list[str] = field(default_factory=lambda: cast(list[str], [])) #will be mutable in expansion content (mycileal). includes keywords, tests, rules, and challenge effects
-    starting_tokens: tuple[str, int] = field(default_factory=lambda: cast(tuple[str, int], {})) #a card only ever has a single type of starting token
+    starting_tokens: tuple[str, int] | None = None #a card only ever has a single type of starting token
     starting_area: Area | None = None #None for cards that don't enter play, like moments, attributes, etc. Attachments default to None and use targeting to determine their area
     backside: Card | None = None
     #ranger cards only
@@ -962,7 +962,8 @@ class Card:
         engine.state.areas[current_area].append(self.backside)
         self.backside.progress = self.progress
         self.backside.harm = self.harm
-        self.backside.unique_tokens = dict(self.unique_tokens)  # Copy
+        self.backside.unique_tokens = dict(self.unique_tokens) | self.backside.unique_tokens  # Kludge merge to get Biscuit Basket's biscuits not overwritten
+        #TODO: Think through all the cases of token transfer from flipping cards; take into account ruling regardling flipping cards' tokens
         self.backside.attached_card_ids = list(self.attached_card_ids)  # Copy
         if isinstance(self.backside, FacedownCard):
             engine.add_message(f"{self.title} flips over facedown.")

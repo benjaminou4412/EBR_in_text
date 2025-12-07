@@ -142,13 +142,13 @@ def load_card_json_by_title(title: str, card_set: str) -> dict: #type: ignore
 
     raise ValueError(f"Card '{title}' not found in {json_file}")
 
-def parse_starting_tokens(card_data : dict) -> tuple[str,int]: #type:ignore
+def parse_starting_tokens(card_data : dict) -> tuple[str,int] | None: #type:ignore
     enters_play_with = card_data.get("enters_play_with", {}) #type:ignore
     if enters_play_with:
         token_type = enters_play_with.get("type", "").lower() #type:ignore
         token_amount = enters_play_with.get("amount", 0) #type:ignore
         return (token_type, token_amount) #type:ignore
-    return ("", 0)
+    return None
 
 
 def parse_card_abilities(card_data : dict) -> list[str]: #type:ignore
