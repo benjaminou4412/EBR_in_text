@@ -42,7 +42,6 @@ A living checklist. Roughly prioritized.
     -still to do:
       -implement and enforce biscuit delivery's campaign guide entry overrides for Quisi, Hy, etc.
       -implement Lone Tree Station and have Biscuit Delivery's listener only active when the current location is Lone Tree Station
-      -have view.py properly display the mission description and mission objective on Missions
       -check equip slots when Biscuit Basket is equipped
       -Implement Biscuit Basket (currently mostly unimplemented)
 - Implement save/load/autosave

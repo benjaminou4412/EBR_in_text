@@ -130,6 +130,27 @@ def render_card_detail(card: Card, engine: GameEngine, displayed_ids: set[str], 
         if parts:
             print(f"{indent}   {' | '.join(parts)}")
 
+    # Mission fields (for Mission cards)
+    if card.mission_description or card.mission_locations or card.mission_objective:
+        terminal_width = shutil.get_terminal_size(fallback=(120, 24)).columns
+        max_width = terminal_width - 6 - len(indent)
+
+        if card.mission_description:
+            print(f"{indent}   --- Mission Description ---")
+            wrapped_lines = textwrap.wrap(card.mission_description, width=max_width)
+            for line in wrapped_lines:
+                print(f"{indent}   {line}")
+
+        if card.mission_locations:
+            locations_str = ", ".join(card.mission_locations)
+            print(f"{indent}   Locations: {locations_str}")
+
+        if card.mission_objective:
+            print(f"{indent}   --- Objective ---")
+            wrapped_lines = textwrap.wrap(card.mission_objective, width=max_width)
+            for line in wrapped_lines:
+                print(f"{indent}   {line}")
+
     # Rules text
     if card.abilities_text:
         # Get terminal width, default to 120 if unable to detect
@@ -137,13 +158,15 @@ def render_card_detail(card: Card, engine: GameEngine, displayed_ids: set[str], 
         max_ability_width = terminal_width - 6 - len(indent)  # Account for indentation
 
         for ability in card.abilities_text:
+            # Capitalize first character while preserving rest of string
+            display_ability = ability[0].upper() + ability[1:] if ability else ability
             # Word wrap long abilities instead of truncating
-            if len(ability) > max_ability_width:
-                wrapped_lines = textwrap.wrap(ability, width=max_ability_width)
+            if len(display_ability) > max_ability_width:
+                wrapped_lines = textwrap.wrap(display_ability, width=max_ability_width)
                 for line in wrapped_lines:
                     print(f"{indent}   {line}")
             else:
-                print(f"{indent}   {ability}")
+                print(f"{indent}   {display_ability}")
 
     # Render attachments recursively
     if card.attached_card_ids:
