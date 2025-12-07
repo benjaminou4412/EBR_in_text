@@ -21,7 +21,7 @@ class BiscuitDelivery(Card):
     def get_listeners(self) -> list[EventListener] | None:
         return [EventListener(event_type=EventType.TRAVEL,
                               active=lambda e, _c: (
-                                  e.state.get_cards_by_title("Hy Pimpot, Chef") is not None and
+                                  e.state.get_in_play_cards_by_title("Hy Pimpot, Chef") is not None and
                                   e.state.location.title == "Lone Tree Station"
                               ),
                               effect_fn=self.resolve_objective_entry,
@@ -59,7 +59,23 @@ class BiscuitDelivery(Card):
 
     def _sun_effect(self, engine: GameEngine) -> bool:
         """Sun effect: If Quisi Vos is not in the path discard, she is drawn by baked goods. »» Search the Valley set for Quisi and put her into play."""
-        return False
+        engine.add_message(f"Challenge (Sun) on {self.title}: If Quisi Vos is not in the path discard »» Search the Valley set for Quisi and put her into play.")
+        engine.add_message(f"Checking for Quisi in path discard...")
+        quisi = engine.state.get_card_by_title("Quisi Vos, Rascal") #quisi == None indicates she's in the Valley set and not in any game zone 
+        if quisi in engine.state.path_discard:
+            engine.add_message(f"Quisi found in path discard; Challenge(Sun) on {self.title} does not resolve.")
+            return False
+        else:
+            engine.add_message(f"Quisi not found in path discard. Searching for Quisi in Valley set...")
+            if quisi is None:
+                engine.add_message(f"Quisi found in Valley set; putting her into play.")
+                from .valley_cards import QuisiVosRascal
+                quisi = QuisiVosRascal()
+                engine.draw_path_card(quisi, None)
+                return True
+            else:
+                engine.add_message(f"Quisi not found in Valley set; Challenge(Sun) on {self.title} does not resolve.")
+                return False
     
 class BiscuitBasket(Card):
     def __init__(self, fresh: bool = True): #"fresh" flag to prevent infinite recursion

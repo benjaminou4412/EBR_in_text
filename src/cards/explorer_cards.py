@@ -114,7 +114,7 @@ class AffordedByNature(Card):
         "bared as it falls helplessly."
     
     def get_play_targets(self, state: GameState) -> list[Card] | None:
-        return state.get_cards_by_trait("trail")
+        return state.get_in_play_cards_by_trait("trail")
 
     def resolve_moment_effect(self, engine: GameEngine, effort: int, target: Card | None) -> None:
         """Discard any number of progress from a trail to add an equal number of harm to a being."""
@@ -179,7 +179,7 @@ class CradledbytheEarth(Card):
         "companions."
     
     def get_play_targets(self, state: GameState) -> list[Card] | None:
-        return state.get_cards_by_trait("trail")
+        return state.get_in_play_cards_by_trait("trail")
 
     def resolve_moment_effect(self, engine: GameEngine, effort: int, target: Card | None) -> None:
         """Choose a trail. Soothe fatigue equal to the number of progress on that trail. This fatigue may be divided 

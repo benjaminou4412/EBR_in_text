@@ -20,7 +20,7 @@ class ProwlingWolhund(Card):
     def enters_play(self, engine: GameEngine, area: Area, action_target: Card | None = None) -> None:
         """If there is another predator in play, this predator comes into play exhausted"""
         super().enters_play(engine, area, action_target)
-        predators = engine.state.get_cards_by_trait("Predator")
+        predators = engine.state.get_in_play_cards_by_trait("Predator")
         # Check if there's another predator besides this one
         if predators and any(p.id != self.id for p in predators):
             self.exhaust()
@@ -37,7 +37,7 @@ class ProwlingWolhund(Card):
     def _sun_effect(self, engine: GameEngine) -> bool:
         """Sun effect: Ready another Prowling Wolhund"""
         self_display_id = engine.get_display_id_cached(self)
-        wolhunds = engine.state.get_cards_by_title("Prowling Wolhund")
+        wolhunds = engine.state.get_in_play_cards_by_title("Prowling Wolhund")
         if wolhunds is None:
             engine.add_message(f"Challenge (Sun) on {self_display_id}: (no other Wolhunds in play)")
             return False
@@ -91,7 +91,7 @@ class SitkaBuck(Card):
         """If there is another active Sitka Buck, exhaust this being >> Add 2[harm] to both this
         and the other Sitka Buck."""
         self_display_id = engine.get_display_id_cached(self)
-        bucks = engine.state.get_cards_by_title("Sitka Buck")
+        bucks = engine.state.get_in_play_cards_by_title("Sitka Buck")
         if not bucks:
             raise RuntimeError("This card should count itself as a buck, so we can't get no-bucks-found here.")
         else:
@@ -114,7 +114,7 @@ class SitkaBuck(Card):
         """If there is an active predator, exhaust it >> Add 2 harm to it, then add harm to this
         being equal to that predator's presence."""
         self_display_id = engine.get_display_id_cached(self)
-        predators = engine.state.get_cards_by_trait("Predator")
+        predators = engine.state.get_in_play_cards_by_trait("Predator")
         if not predators:
             engine.add_message(f"Challenge (Mountain) on {self_display_id}: (no predators in play)")
             return False
@@ -140,7 +140,7 @@ class SitkaBuck(Card):
     def _crest_effect(self, engine: GameEngine) -> bool:
         """If there is an active Sitka Doe, the buck charges >> Suffer 1 injury."""
         self_display_id = engine.get_display_id_cached(self)
-        does = engine.state.get_cards_by_title("Sitka Doe")
+        does = engine.state.get_in_play_cards_by_title("Sitka Doe")
         if does and any(doe.is_ready() for doe in does):
             engine.add_message(f"Challenge (Crest) on {self_display_id}: There is an active Sitka Doe, so the buck charges.")
             engine.state.ranger.injure(engine)
@@ -187,7 +187,7 @@ class SitkaDoe(Card):
 
     def _sun_effect(self, engine: GameEngine) -> bool:
         """Sun effect: If there are 1 or more Sitka Bucks in play >> Move each Sitka Buck within reach"""
-        bucks = engine.state.get_cards_by_title("Sitka Buck")
+        bucks = engine.state.get_in_play_cards_by_title("Sitka Buck")
         self_display_id = engine.get_display_id_cached(self)
         if bucks is None:
             engine.add_message(f"Challenge (Sun) on {self_display_id}: (no Sitka Buck in play)")

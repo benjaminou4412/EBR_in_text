@@ -337,7 +337,7 @@ class BiscuitDeliveryCampaignOverrideTests(unittest.TestCase):
         biscuit.enters_play(engine, Area.SURROUNDINGS, None)
 
         # Get Hy from the state
-        hy = state.get_cards_by_title("Hy Pimpot, Chef")[0]
+        hy = state.get_in_play_cards_by_title("Hy Pimpot, Chef")[0]
 
         # Clear messages
         engine.clear_messages()
@@ -558,6 +558,118 @@ class Entry91RoutingTests(unittest.TestCase):
         self.assertIn("91.8", message_text,
                      "Entry 91 should route to 91.8 for Quisi cleared by progress")
         self.assertTrue(result, "Entry 91.8 should return True (Quisi discarded)")
+
+
+class BiscuitDeliverySunEffectTests(unittest.TestCase):
+    """Tests for Biscuit Delivery's Sun challenge effect that searches for Quisi."""
+
+    def test_sun_effect_does_not_fire_when_quisi_in_path_discard(self):
+        """Sun effect should NOT resolve if Quisi is in the path discard."""
+        state, biscuit = make_test_state_with_mission()
+        engine = GameEngine(state)
+
+        # Put Quisi in the path discard
+        quisi = QuisiVosRascal()
+        state.path_discard.append(quisi)
+
+        engine.clear_messages()
+        result = biscuit._sun_effect(engine)
+
+        self.assertFalse(result, "Sun effect should not resolve when Quisi is in path discard")
+        messages = " ".join([m.message for m in engine.message_queue])
+        self.assertIn("path discard", messages.lower(),
+                     "Should mention Quisi was found in path discard")
+
+    def test_sun_effect_fires_when_quisi_in_valley_set(self):
+        """Sun effect SHOULD resolve if Quisi is not in any game zone (in Valley set)."""
+        state, biscuit = make_test_state_with_mission()
+        engine = GameEngine(state)
+
+        # Don't add Quisi anywhere - she's in the "Valley set"
+        # Verify she's not in any zone
+        self.assertIsNone(state.get_card_by_title("Quisi Vos, Rascal"),
+                         "Quisi should not be in any game zone initially")
+
+        engine.clear_messages()
+        result = biscuit._sun_effect(engine)
+
+        self.assertTrue(result, "Sun effect should resolve when Quisi is in Valley set")
+
+        # Quisi should now be in play
+        quisi_in_play = state.get_in_play_cards_by_title("Quisi Vos, Rascal")
+        self.assertIsNotNone(quisi_in_play, "Quisi should now be in play")
+        self.assertEqual(len(quisi_in_play), 1, "Should be exactly one Quisi in play")
+
+        messages = " ".join([m.message for m in engine.message_queue])
+        self.assertIn("valley set", messages.lower(),
+                     "Should mention searching Valley set")
+        self.assertIn("putting her into play", messages.lower(),
+                     "Should mention putting Quisi into play")
+
+    def test_sun_effect_does_not_fire_when_quisi_already_in_play(self):
+        """Sun effect should NOT resolve if Quisi is already in play."""
+        state, biscuit = make_test_state_with_mission()
+        engine = GameEngine(state)
+
+        # Put Quisi in play
+        quisi = QuisiVosRascal()
+        state.areas[Area.ALONG_THE_WAY].append(quisi)
+
+        engine.clear_messages()
+        result = biscuit._sun_effect(engine)
+
+        self.assertFalse(result, "Sun effect should not resolve when Quisi is already in play")
+        messages = " ".join([m.message for m in engine.message_queue])
+        self.assertIn("does not resolve", messages.lower(),
+                     "Should indicate effect does not resolve")
+
+    def test_sun_effect_does_not_fire_when_quisi_in_path_deck(self):
+        """Sun effect should NOT resolve if Quisi is in the path deck."""
+        state, biscuit = make_test_state_with_mission()
+        engine = GameEngine(state)
+
+        # Put Quisi in the path deck
+        quisi = QuisiVosRascal()
+        state.path_deck.append(quisi)
+
+        engine.clear_messages()
+        result = biscuit._sun_effect(engine)
+
+        self.assertFalse(result, "Sun effect should not resolve when Quisi is in path deck")
+
+    def test_sun_effect_does_not_fire_when_quisi_in_ranger_hand(self):
+        """Sun effect should NOT resolve if Quisi is in the ranger's hand."""
+        state, biscuit = make_test_state_with_mission()
+        engine = GameEngine(state)
+
+        # Put Quisi in ranger's hand
+        quisi = QuisiVosRascal()
+        state.ranger.hand.append(quisi)
+
+        engine.clear_messages()
+        result = biscuit._sun_effect(engine)
+
+        self.assertFalse(result, "Sun effect should not resolve when Quisi is in ranger's hand")
+
+    def test_sun_effect_quisi_enters_play_correctly(self):
+        """When Sun effect fires, Quisi should enter play via draw_path_card."""
+        state, biscuit = make_test_state_with_mission()
+        engine = GameEngine(state)
+
+        # Quisi not in any zone - she's in Valley set
+        engine.clear_messages()
+        result = biscuit._sun_effect(engine)
+
+        self.assertTrue(result)
+
+        # Find Quisi in play
+        quisi_cards = state.get_in_play_cards_by_title("Quisi Vos, Rascal")
+        self.assertIsNotNone(quisi_cards)
+        quisi = quisi_cards[0]
+
+        # Verify she entered play properly (should be in an area)
+        quisi_area = state.get_card_area_by_id(quisi.id)
+        self.assertIsNotNone(quisi_area, "Quisi should be in a play area")
 
 
 if __name__ == '__main__':

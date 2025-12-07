@@ -750,7 +750,7 @@ class Card:
     
     def harm_from_predator(self, engine: GameEngine, symbol: ChallengeIcon, harm_target: Card) -> bool:
         """Common challenge effect where an active predator exhausts and adds harm to a harm_target (usually this card)"""
-        predators = engine.state.get_cards_by_trait("Predator")
+        predators = engine.state.get_in_play_cards_by_trait("Predator")
         self_display_id = engine.get_display_id_cached(self)
         harm_target_display_id = engine.get_display_id_cached(harm_target)
         if predators is not None:
@@ -780,7 +780,7 @@ class Card:
     def harm_from_prey(self, engine: GameEngine, symbol: ChallengeIcon, harm_target: Card) -> bool:
         """Common challenge effect form where an active prey exhausts and adds harm to a harm_target (usually this card),
         as well as progress to itself."""
-        prey_list = engine.state.get_cards_by_trait("Prey")
+        prey_list = engine.state.get_in_play_cards_by_trait("Prey")
         self_display_id = engine.get_display_id_cached(self)
         harm_target_display_id = engine.get_display_id_cached(harm_target)
         if prey_list is not None:
@@ -1221,17 +1221,25 @@ class GameState:
     def features_in_play(self) -> list[Card]:
         """Get all features currently in play"""
         return self.cards_by_type(CardType.FEATURE)
-
-    def get_card_by_id(self, card_id: str | None) -> Card | None:
-        """Get a specific card by its instance ID"""
-        all_cards = (self.all_cards_in_play() + 
+    
+    def get_all_cards(self) -> list[Card]:
+        """Return the list of all cards from all possible places"""
+        return (self.all_cards_in_play() + 
                      self.path_deck + 
                      self.path_discard +
                      self.ranger.hand + 
                      self.ranger.discard + 
                      self.ranger.deck + 
                      self.ranger.fatigue_stack)
+
+    def get_card_by_id(self, card_id: str | None) -> Card | None:
+        """Get a specific card by its instance ID"""
+        all_cards = self.get_all_cards()
         return next((c for c in all_cards if c.id == card_id), None)
+    
+    def get_card_by_title(self, title: str) -> Card | None:
+        all_cards = self.get_all_cards()
+        return next((c for c in all_cards if c.title == title), None)
     
     def get_card_area_by_id(self, card_id: str | None) -> Area | None:
         """Get a card's current area by its instance ID"""
@@ -1241,7 +1249,7 @@ class GameState:
                     return area
         return None
     
-    def get_cards_by_title(self, title: str) -> list[Card] | None:
+    def get_in_play_cards_by_title(self, title: str) -> list[Card] | None:
         """Get all in-play cards of a given title"""
         results: list[Card] = []
         for area in self.areas:
@@ -1253,7 +1261,7 @@ class GameState:
         else:
             return None
     
-    def get_cards_by_trait(self, trait: str) -> list[Card] | None:
+    def get_in_play_cards_by_trait(self, trait: str) -> list[Card] | None:
         """Get all in-play cards with a given trait"""
         results: list[Card] = []
         for area in self.areas:

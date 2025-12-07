@@ -77,14 +77,14 @@ class CampaignGuide:
         if clear_type is None:
             engine.add_message("Quisi entered play:")
             engine.add_message("    If a Ranger has Biscuit Basket equipped, go to 80.1.")
-            if engine.state.get_cards_by_title("Biscuit Basket") is not None:
+            if engine.state.get_in_play_cards_by_title("Biscuit Basket") is not None:
                 engine.add_message("    Biscuit Basket found. Resolving Entry 80.1...")
                 engine.add_message("")
                 engine.add_message("")
                 return self.resolve_entry("80.1", source_card, engine, clear_type)
             engine.add_message("    Biscuit Basket not found. Proceeding...")
             engine.add_message("    If Oura Vos is in play, go to 80.2.")
-            if engine.state.get_cards_by_title("Oura Vos, Traveler") is not None:
+            if engine.state.get_in_play_cards_by_title("Oura Vos, Traveler") is not None:
                 engine.add_message("    Oura Vos found. Resolving Entry 80.2...")
                 engine.add_message("")
                 engine.add_message("")
@@ -145,7 +145,7 @@ class CampaignGuide:
         engine.state.record_notable_event("ACCEPTED SNACKS")
 
         engine.add_message("Discard Oura and Quisi.")
-        oura = engine.state.get_cards_by_title("Oura Vos, Traveler")[0]
+        oura = engine.state.get_in_play_cards_by_title("Oura Vos, Traveler")[0]
         quisi = source_card
         oura.discard_from_play(engine)
         quisi.discard_from_play(engine)
