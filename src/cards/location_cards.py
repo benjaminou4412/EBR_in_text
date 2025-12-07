@@ -40,7 +40,7 @@ class LoneTreeStation(Card):
 
     def get_tests(self) -> list[Action]:
         from ..registry import get_search_test
-        return [get_search_test()]
+        return [get_search_test(self, "Search")]
 
 
 class AncestorsGrove(Card):

@@ -208,7 +208,7 @@ def get_search_test(source_card: Card, verb: str) -> Action:
     )
 
 def _search_test_success(engine: GameEngine, effort: int, _target: Card | None) -> None:
-        """Scout path cards equal to your effort, then draw 1 path card"""
-        deck = engine.state.path_deck
-        engine.scout_cards(deck, effort)
-        engine.draw_path_card(None, None)
+    """Scout path cards equal to your effort, then draw 1 path card"""
+    deck = engine.state.path_deck
+    engine.scout_cards(deck, effort)
+    engine.draw_path_card(None, None)
