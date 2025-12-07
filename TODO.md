@@ -39,8 +39,8 @@ A living checklist. Roughly prioritized.
       -Biscuit delivery enters play during setup and sets up a listener for its objective
       -this objective properly triggers when you travel while hy pimpot is in play
       -as part of resolving the corresponding campaign entry, biscuit delivery flips into biscuit basket and is equipped to the ranger
+      -campaign guide entries are overridden
     -still to do:
-      -implement and enforce biscuit delivery's campaign guide entry overrides for Quisi, Hy, etc.
       -implement Lone Tree Station and have Biscuit Delivery's listener only active when the current location is Lone Tree Station
       -check equip slots when Biscuit Basket is equipped
       -Implement Biscuit Basket (currently mostly unimplemented)

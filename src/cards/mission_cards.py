@@ -27,8 +27,26 @@ class BiscuitDelivery(Card):
                               test_type=None)]
     
     def resolve_objective_entry(self, eng: GameEngine, effort: int) -> int:
-        eng.campaign_guide.entries[self.mission_clear_log](eng, None)
+        eng.campaign_guide.resolve_entry(
+            entry_number=self.mission_clear_log,
+            source_card=self,
+            engine=eng,
+            clear_type=None
+        )
         return 0
+
+    def get_constant_abilities(self) -> list[ConstantAbility] | None:
+        """During this mission, use [Campaign Log Entry] 91 instead of the normal entries for Hy Pimpot, Kordo, Nal, and Quisi Vos."""
+        return [ConstantAbility(ConstantAbilityType.OVERRIDE_CAMPAIGN_ENTRY,
+                                source_card_id=self.id,
+                                condition_fn=lambda _s, c: (
+                                    c.title == "Hy Pimpot, Chef" or
+                                    c.title == "Kordo, Ranger Veteran" or
+                                    c.title == "Spirit Speaker Nal" or
+                                    c.title == "Quisi Vos, Rascal"
+                                    ),
+                                override_entry = "91",
+                                modifier=None)]
 
     def get_challenge_handlers(self) -> dict[ChallengeIcon, Callable[[GameEngine], bool]] | None:
         """Returns challenge symbol effects for this card"""

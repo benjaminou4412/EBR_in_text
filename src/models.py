@@ -135,6 +135,9 @@ class ConstantAbilityType(Enum):
     GRANT_TEST = "grant_test" #trained stilt-horse
     GRANT_KEYWORD = "grant_keyword" #puffercrawler, bloodbeckoned velox, trained stilt-horse
 
+    # Overrides (replace one value with another)
+    OVERRIDE_CAMPAIGN_ENTRY = "override_campaign_entry"
+
 
 # Exception for day ending
 class DayEndException(Exception):
@@ -721,7 +724,12 @@ class Card:
 
         #Campaign Guide Entry
         if self.on_enter_log is not None:
-            engine.campaign_guide.entries[self.on_enter_log](engine, None)
+            engine.campaign_guide.resolve_entry(
+                entry_number=self.on_enter_log,
+                source_card=self,
+                engine=engine,
+                clear_type=None
+            )
     
     #path card only methods
     def get_current_presence(self, engine: GameEngine) -> int | None:
@@ -1346,6 +1354,7 @@ class ConstantAbility:
     condition_fn: Callable[[GameState, Card], bool]
 
     modifier: ValueModifier | None = None
+    override_entry: str | None = None
 
     # Optional: human-readable description for debugging
     description: str = ""

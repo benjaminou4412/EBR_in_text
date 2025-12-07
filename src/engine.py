@@ -420,7 +420,12 @@ class GameEngine:
                         # Some cards might have special effects or stay in play
                         self.add_message(f"{card.title} cleared by progress!")
                         if card.on_progress_clear_log is not None:
-                            discarded = self.campaign_guide.entries[card.on_progress_clear_log](self, clear_type)
+                            discarded = self.campaign_guide.resolve_entry(
+                                entry_number=card.on_progress_clear_log,
+                                source_card=card,
+                                engine=self,
+                                clear_type=clear_type
+                            )
                         if not discarded:
                             to_clear.append(card)
                     elif clear_type == "harm":
@@ -428,7 +433,12 @@ class GameEngine:
                         # Some cards might have special effects or stay in play
                         self.add_message(f"{card.title} cleared by harm!")
                         if card.on_harm_clear_log is not None:
-                            discarded = self.campaign_guide.entries[card.on_harm_clear_log](self, clear_type)
+                            discarded = self.campaign_guide.resolve_entry(
+                                entry_number=card.on_harm_clear_log,
+                                source_card=card,
+                                engine=self,
+                                clear_type=clear_type
+                            )
                         if not discarded:
                             to_clear.append(card)
 

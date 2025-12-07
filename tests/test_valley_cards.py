@@ -891,7 +891,7 @@ class QuisiCampaignGuideTests(unittest.TestCase):
         eng = GameEngine(state)
 
         # Manually trigger entry 80 (enters play)
-        eng.campaign_guide.entries["80"](eng, None)
+        eng.campaign_guide.resolve_entry("80", quisi, eng, None)
 
         # Check messages for entry 80.1 text
         messages = [m.message for m in eng.message_queue]
@@ -919,7 +919,7 @@ class QuisiCampaignGuideTests(unittest.TestCase):
         eng = GameEngine(state)
 
         # Manually trigger entry 80 (enters play)
-        eng.campaign_guide.entries["80"](eng, None)
+        eng.campaign_guide.resolve_entry("80", quisi, eng, None)
 
         # Check for entry 80.2 effects
         messages = [m.message for m in eng.message_queue]
@@ -954,7 +954,7 @@ class QuisiCampaignGuideTests(unittest.TestCase):
         eng = GameEngine(state)
 
         # Manually trigger entry 80 (enters play) - no Biscuit Basket, no Oura
-        eng.campaign_guide.entries["80"](eng, None)
+        eng.campaign_guide.resolve_entry("80", quisi, eng, None)
 
         # Check for entry 80.3 text
         messages = [m.message for m in eng.message_queue]
@@ -989,7 +989,7 @@ class QuisiCampaignGuideTests(unittest.TestCase):
         eng = GameEngine(state)
 
         # Trigger entry 80 with BOTH conditions present
-        eng.campaign_guide.entries["80"](eng, None)
+        eng.campaign_guide.resolve_entry("80", quisi, eng, None)
 
         # Should route to 80.1 (Biscuit Basket), not 80.2 (Oura)
         messages = [m.message for m in eng.message_queue]
@@ -1019,7 +1019,7 @@ class QuisiCampaignGuideTests(unittest.TestCase):
         eng = GameEngine(state)
 
         # Manually trigger entry 80.5
-        eng.campaign_guide.entries["80.5"](eng, None)
+        eng.campaign_guide.resolve_entry("80.5", quisi, eng, None)
 
         # Verify soothe happened (2 cards moved from fatigue to hand)
         self.assertEqual(len(ranger.fatigue_stack), 1,
@@ -1048,7 +1048,7 @@ class QuisiCampaignGuideTests(unittest.TestCase):
 
         # Manually trigger entry 80.6 (should raise DayEndException)
         with self.assertRaises(DayEndException):
-            eng.campaign_guide.entries["80.6"](eng, None)
+            eng.campaign_guide.resolve_entry("80.6", quisi, eng, None)
 
         # Check for entry 80.6 story text
         messages = [m.message for m in eng.message_queue]
@@ -1076,11 +1076,11 @@ class QuisiCampaignGuideTests(unittest.TestCase):
         eng = GameEngine(state)
 
         # Entry 80.1 should return False (card NOT discarded by entry)
-        result_80_1 = eng.campaign_guide.entries["80.1"](eng, None)
+        result_80_1 = eng.campaign_guide.resolve_entry("80.1", quisi, eng, None)
         self.assertFalse(result_80_1, "Entry 80.1 should return False (card not discarded)")
 
         # Entry 80.2 should return True (card discarded by entry)
-        result_80_2 = eng.campaign_guide.entries["80.2"](eng, None)
+        result_80_2 = eng.campaign_guide.resolve_entry("80.2", quisi, eng, None)
         self.assertTrue(result_80_2, "Entry 80.2 should return True (card discarded)")
 
         # Re-create state for next test
@@ -1094,7 +1094,7 @@ class QuisiCampaignGuideTests(unittest.TestCase):
         eng2 = GameEngine(state2)
 
         # Entry 80.5 should return True (card discarded by entry)
-        result_80_5 = eng2.campaign_guide.entries["80.5"](eng2, None)
+        result_80_5 = eng.campaign_guide.resolve_entry("80.5", quisi, eng2, None)
         self.assertTrue(result_80_5, "Entry 80.5 should return True (card discarded)")
 
     def test_quisi_campaign_log_fields_loaded_from_json(self):
