@@ -21,6 +21,13 @@ def select_three_random_valley_cards() -> list[Card]:
     #TODO: actually select three random valley cards
     return [CalypsaRangerMentor(), QuisiVosRascal(), TheFundamentalist()]
 
+def get_pivotal_cards(location: Card) -> list[Card]:
+    from .cards import HyPimpotChef
+    if location.title == "Lone Tree Station":
+        return [HyPimpotChef()] #TODO: Add other Lone Tree Station cards
+    else:
+        raise RuntimeError("Pivotal location not yet implemented; can't fetch Pivotal set!")
+
 def get_available_travel_destinations(current_location: Card) -> list[Card]:
     """Return the available travel destinations from the current location.
 

@@ -8,7 +8,7 @@ from .models import (
     MessageEvent, Keyword, ConstantAbility, ConstantAbilityType, CampaignTracker
 )
 from .utils import get_display_id
-from .decks import build_woods_path_deck, select_three_random_valley_cards, get_current_weather, get_current_missions
+from .decks import build_woods_path_deck, select_three_random_valley_cards, get_current_weather, get_current_missions, get_pivotal_cards
 from .campaign_guide import CampaignGuide
 
 
@@ -1020,9 +1020,8 @@ class GameEngine:
         woods_set: list[Card] = build_woods_path_deck() #TODO: path set should vary based on terrain type
         
         
-        #TODO: load location set or 3 random Valley NPCs 
         if self.state.location.has_trait("Pivotal"):
-            location_set_or_valley: list[Card] = select_three_random_valley_cards() #TODO: replace with pivotal card set
+            location_set_or_valley: list[Card] = get_pivotal_cards(self.state.location)
         else:
             location_set_or_valley: list[Card] = select_three_random_valley_cards()
         

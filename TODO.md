@@ -40,12 +40,9 @@ A living checklist. Roughly prioritized.
       -this objective properly triggers when you travel while hy pimpot is in play
       -as part of resolving the corresponding campaign entry, biscuit delivery flips into biscuit basket and is equipped to the ranger
       -campaign guide entries are overridden
+      -implemented Lone Tree Station and had Biscuit Delivery's listener only active when the current location is Lone Tree Station
     -still to do:
-      -implement Lone Tree Station and have Biscuit Delivery's listener only active when the current location is Lone Tree Station
-        -Lone tree station itself is implemented, though not yet integrated. So still todo:
-          -Have Lone Tree Station be the new starting location in the demo (with the path deck appropriately only containing Hy Pimpot, as he's the only one from the Lone Tree Station pivotal set implemented so far)
-          -Provide options to Travel to either Boulder Field or Ancestor's Grove upon traveling, with their respective path decks containing Valley NPCs
-          -Make biscuit delivery fire only when you're traveling away from lone tree station
+      -Sun effect on Biscuit Delivery
       -check equip slots when Biscuit Basket is equipped
       -Implement Biscuit Basket (currently mostly unimplemented)
 - Add campaign log entries to Arrival Setup for each location card
