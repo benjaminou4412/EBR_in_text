@@ -1250,6 +1250,13 @@ class GameState:
                     return area
         return None
     
+    def get_in_play_card_by_id(self, id: str) -> Card | None:
+        for area in self.areas:
+            for card in self.areas[area]:
+                if card.id == id:
+                    return card
+        return None
+    
     def get_in_play_cards_by_title(self, title: str) -> list[Card] | None:
         """Get all in-play cards of a given title"""
         results: list[Card] = []

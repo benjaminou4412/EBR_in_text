@@ -628,6 +628,39 @@ class GameEngine:
                     self.state.ranger.fatigue(self, curr_presence)
                 return True
         return False
+    
+    def move_token(self, source_card_id: str, target_card_id: str, source_token_type: str, amount: int) -> int:
+        """Move AMOUNT tokens of type SOURCE_TOKEN_TPE from SOURCE_CARD to TARGET_CARD. 
+        
+        Returns the amount of tokens actually moved.
+        """
+        source_card = self.state.get_in_play_card_by_id(source_card_id)
+        if source_card is None:
+            raise RuntimeError(f"Attempting to move token off card not in play!")
+        
+        target_card = self.state.get_in_play_card_by_id(target_card_id)
+        if target_card is None:
+            raise RuntimeError(f"Attempting to move token to card not in play!")
+        
+        if source_token_type.casefold() == "progress".casefold():
+            removed, msg = source_card.remove_progress(amount)
+            self.add_message(msg)
+            msg = target_card.add_progress(removed)
+            self.add_message(msg)
+            return removed
+        elif source_token_type.casefold() == "harm".casefold():
+            removed, msg = source_card.remove_harm(amount)
+            self.add_message(msg)
+            msg = target_card.add_harm(removed)
+            self.add_message(msg)
+            return removed
+        else: #move unique tokens
+            removed, msg = source_card.remove_unique_tokens(source_token_type, amount)
+            self.add_message(msg)
+            msg = target_card.add_unique_tokens(source_token_type, removed)
+            self.add_message(msg)
+            return removed
+        
 
     def _move_attachments_recursively(self, card: Card, target_area: Area) -> None:
         """Helper method to recursively move all attachments when a card moves."""
