@@ -83,6 +83,7 @@ class EventType(str, Enum):
     CHALLENGE_DECK_SHUFFLE = "challenge-deck-shuffle"
     DRAW_CHALLENGE_CARD = "draw-challenge-card"
     REFRESH = "refresh"
+    HAVE_X_TOKENS = "have-x-tokens" #typically used by mission cards for mission objectives regarding special tokens
 
 class Keyword(str, Enum):
     """Keywords that modify card behavior and game rules."""
@@ -613,7 +614,7 @@ class Card:
         #TODO: take into account harm threshold modifiers
         return self.harm_threshold
 
-    def add_unique_tokens(self, token_type: str, amount: int) -> str:
+    def add_unique_tokens(self, engine: GameEngine, token_type: str, amount: int):
         token_type = token_type.casefold()
         if amount < 0:
             raise ValueError(f"Amount cannot be negative, use remove_unique_tokens instead!")
@@ -621,16 +622,33 @@ class Card:
             self.unique_tokens[token_type] = self.unique_tokens[token_type] + amount
         else:
             self.unique_tokens[token_type] = amount
-        return(f"Added {amount} {token_type} token(s) to {self.title}, now at {self.unique_tokens[token_type]}.")
+        engine.add_message(f"Added {amount} {token_type} token(s) to {self.title}, now at {self.unique_tokens[token_type]}.")
+        engine.trigger_listeners(
+            EventType.HAVE_X_TOKENS,
+            TimingType.AFTER,
+            None,
+            0,
+            self
+        )
     
-    def remove_unique_tokens(self, token_type: str, amount: int) -> tuple[int,str]:
+    def remove_unique_tokens(self, engine: GameEngine, token_type: str, amount: int) -> int:
         token_type = token_type.casefold()
+        amount_removed = 0
         if self.has_unique_token_type(token_type):
             amount_removed = min(self.unique_tokens[token_type], amount)
             self.unique_tokens[token_type] = self.unique_tokens[token_type] - amount_removed
-            return amount_removed, f"Removed {amount} {token_type} token(s) from {self.title}. Now at {self.unique_tokens[token_type]}."
+            engine.add_message(f"Removed {amount} {token_type} token(s) from {self.title}. Now at {self.unique_tokens[token_type]}.")
+            engine.trigger_listeners(
+                EventType.HAVE_X_TOKENS,
+                TimingType.AFTER,
+                None,
+                0,
+                self
+            )
         else:
-            return 0, f"No {token_type} tokens on {self.title}."
+            engine.add_message(f"No {token_type} tokens on {self.title}.")
+        
+        return amount_removed
     
     def get_unique_token_count(self, token_type: str) -> int:
         token_type = token_type.casefold()

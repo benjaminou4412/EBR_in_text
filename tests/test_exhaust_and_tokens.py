@@ -812,9 +812,7 @@ class BoundarySensorTests(unittest.TestCase):
 
     def test_boundary_sensor_listener_does_not_trigger_when_out_of_tokens(self):
         """Boundary Sensor with 0 sensors should not trigger its listener"""
-        sensor = BoundarySensor()
-        # Remove all sensor tokens
-        sensor.remove_unique_tokens("sensor", 4)  # Starts with 4, remove all
+        
 
         feature = OvergrownThicket()
 
@@ -823,6 +821,8 @@ class BoundarySensorTests(unittest.TestCase):
             aspects={Aspect.AWA: 2, Aspect.FIT: 2, Aspect.SPI: 2, Aspect.FOC: 2},
             deck=[Card(title=f"Card {i}", card_types={CardType.ATTRIBUTE}) for i in range(10)]
         )
+
+        sensor = BoundarySensor()
         state = GameState(
             ranger=ranger,
             areas={
@@ -833,6 +833,9 @@ class BoundarySensorTests(unittest.TestCase):
             }
         )
         engine = GameEngine(state)
+        
+        # Remove all sensor tokens
+        sensor.remove_unique_tokens(engine, "sensor", 4)  # Starts with 4, remove all
 
         # Register the listener
         listeners = sensor.get_listeners()

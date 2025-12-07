@@ -96,8 +96,7 @@ class BoundarySensor(Card):
         decision = self.exhaust_prompt(eng, "You may exhaust Boundary Sensor and spend 1 sensor " \
                                             "token off of it to commit 1 effort to this Traverse.")
         if decision:
-            _amount, msg = self.remove_unique_tokens("sensor", 1)
-            eng.add_message(msg)
+            _amount = self.remove_unique_tokens(eng, "sensor", 1)
             self.exhaust()
             return 1
         else:

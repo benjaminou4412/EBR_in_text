@@ -84,3 +84,22 @@ class BiscuitBasket(Card):
         if fresh:
             self.backside = BiscuitDelivery(fresh=False)
             self.backside.backside = self
+
+    def get_listeners(self) -> list[EventListener] | None:
+        return [EventListener(event_type=EventType.HAVE_X_TOKENS,
+                              active=lambda _e, c: (
+                                  c.id == self.id and self.unique_tokens["biscuit"] == 0
+                              ),
+                              effect_fn=self.resolve_objective_entry,
+                              source_card_id=self.id,
+                              timing_type=TimingType.BEFORE,
+                              test_type=None)]
+    
+    def resolve_objective_entry(self, eng: GameEngine, effort: int) -> int:
+        eng.campaign_guide.resolve_entry(
+            entry_number=self.mission_clear_log,
+            source_card=self,
+            engine=eng,
+            clear_type=None
+        )
+        return 0

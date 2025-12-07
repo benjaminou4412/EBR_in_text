@@ -101,10 +101,9 @@ class QuisiVosRascal(Card):
             # Remove the chosen token type
             if chosen_token == "progress":
                 _removed, msg = target.remove_progress(1)
+                engine.add_message(msg)
             else:
-                _removed, msg = target.remove_unique_tokens(chosen_token, 1)
-
-            engine.add_message(msg)
+                _removed = target.remove_unique_tokens(engine, chosen_token, 1)
             return True
         else:
             engine.add_message(f"Challenge (Sun) on {self.title}: (no valid targets)")

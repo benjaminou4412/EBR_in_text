@@ -491,7 +491,7 @@ class GameEngine:
     # Listener management methods
 
     def trigger_listeners(self, event_type: EventType, timing_type: TimingType, action: Action | None, effort: int, cleared: Card | None = None) -> int:
-        """Trigger all listeners that are active, pasing in effort and a cleared card for effects that need it.
+        """Trigger all listeners that are active, pasing in effort and a "cleared" card for effects that need it.
         Returns an integer for effects that involve a variable result amount, such as committed effort."""
         triggered : list[EventListener]= []
         for listener in self.listeners:
@@ -643,22 +643,16 @@ class GameEngine:
             raise RuntimeError(f"Attempting to move token to card not in play!")
         
         if source_token_type.casefold() == "progress".casefold():
-            removed, msg = source_card.remove_progress(amount)
-            self.add_message(msg)
-            msg = target_card.add_progress(removed)
-            self.add_message(msg)
+            removed = source_card.remove_progress(amount)
+            target_card.add_progress(removed)
             return removed
         elif source_token_type.casefold() == "harm".casefold():
-            removed, msg = source_card.remove_harm(amount)
-            self.add_message(msg)
-            msg = target_card.add_harm(removed)
-            self.add_message(msg)
+            removed = source_card.remove_harm(amount)
+            target_card.add_harm(removed)
             return removed
         else: #move unique tokens
-            removed, msg = source_card.remove_unique_tokens(source_token_type, amount)
-            self.add_message(msg)
-            msg = target_card.add_unique_tokens(source_token_type, removed)
-            self.add_message(msg)
+            removed = source_card.remove_unique_tokens(self, source_token_type, amount)
+            target_card.add_unique_tokens(self, source_token_type, removed)
             return removed
         
 

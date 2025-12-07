@@ -49,7 +49,7 @@ class APerfectDay(Card):
                               )]
     
     def _tick_down_clouds(self, engine: GameEngine, effort: int) -> int:
-        self.remove_unique_tokens("Cloud", 1)
+        self.remove_unique_tokens(engine, "Cloud", 1)
         if self.get_unique_token_count("Cloud") == 0:
             self.flip(engine)
         return 0 #doesn't involve effort
@@ -102,7 +102,7 @@ class MiddaySun(Card):
         ]
 
     def _on_locate_success(self, engine: GameEngine, _effort: int, _target: Card | None) -> None:
-        self.add_unique_tokens("Cloud", 1)
+        self.add_unique_tokens(engine, "Cloud", 1)
         engine.state.ranger.soothe(engine, 1)
         return None
     
@@ -116,7 +116,7 @@ class MiddaySun(Card):
                               )]
     
     def _tick_up_clouds(self, engine: GameEngine, effort: int) -> int:
-        self.add_unique_tokens("Cloud", 1)
+        self.add_unique_tokens(engine, "Cloud", 1)
         if self.get_unique_token_count("Cloud") >= 3:
             self.flip(engine)
         return 0 #doesn't involve effort
