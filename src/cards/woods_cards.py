@@ -38,7 +38,7 @@ class ProwlingWolhund(Card):
         """Sun effect: Ready another Prowling Wolhund"""
         self_display_id = engine.get_display_id_cached(self)
         wolhunds = engine.state.get_in_play_cards_by_title("Prowling Wolhund")
-        if wolhunds is None:
+        if not wolhunds:
             engine.add_message(f"Challenge (Sun) on {self_display_id}: (no other Wolhunds in play)")
             return False
         else:
@@ -189,7 +189,7 @@ class SitkaDoe(Card):
         """Sun effect: If there are 1 or more Sitka Bucks in play >> Move each Sitka Buck within reach"""
         bucks = engine.state.get_in_play_cards_by_title("Sitka Buck")
         self_display_id = engine.get_display_id_cached(self)
-        if bucks is None:
+        if not bucks:
             engine.add_message(f"Challenge (Sun) on {self_display_id}: (no Sitka Buck in play)")
             return False
         else:

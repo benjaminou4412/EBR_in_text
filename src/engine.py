@@ -490,8 +490,8 @@ class GameEngine:
 
     # Listener management methods
 
-    def trigger_listeners(self, event_type: EventType, timing_type: TimingType, action: Action | None, effort: int, cleared: Card | None = None) -> int:
-        """Trigger all listeners that are active, pasing in effort and a "cleared" card for effects that need it.
+    def trigger_listeners(self, event_type: EventType, timing_type: TimingType, action: Action | None, effort: int, card: Card | None = None) -> int:
+        """Trigger all listeners that are active, pasing in effort and a card for effects that need it (cleared cards, mission objectives, etc.).
         Returns an integer for effects that involve a variable result amount, such as committed effort."""
         triggered : list[EventListener]= []
         for listener in self.listeners:
@@ -517,7 +517,7 @@ class GameEngine:
 
         committed_effort = 0
         for listener in triggered:
-            if listener.active(self, cleared):  # Pass engine to check playability/activation
+            if listener.active(self, card):  # Pass engine to check playability/activation
                 committed_effort = committed_effort + listener.effect_fn(self, effort)
 
         return committed_effort #ignored by listener consumers who don't care about effort
@@ -970,7 +970,7 @@ class GameEngine:
                                timing_type=TimingType.BEFORE,
                                action=None,
                                effort=0,
-                               cleared=None)
+                               card=None)
 
         self.add_message(f"   Discarding all non-persistent path cards from play...")
         for card in [card for card in list(self.state.all_cards_in_play()) 

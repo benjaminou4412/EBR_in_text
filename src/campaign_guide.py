@@ -8,6 +8,9 @@ class CampaignGuide:
     def __init__(self):
         self.entries : dict[str, Callable[['CampaignGuide', 'Card | None', 'GameEngine', str | None], bool]] = {
             "1.01": self.resolve_entry_1_01,
+            "1.02": self.resolve_entry_1_02,
+            "1.02A": self.resolve_entry_1_02_A,
+            "1.03": self.resolve_entry_1_03,
             "47": self.resolve_entry_47, #placeholder to prevent crashing when Hy Pimpot enters play
             "80": self.resolve_entry_80,
             "80.1": self.resolve_entry_80_1,
@@ -62,6 +65,99 @@ class CampaignGuide:
         engine.enforce_equip_limit()
 
         return False
+    
+    def resolve_entry_1_02(self, source_card: 'Card | None', engine: 'GameEngine', clear_type: str | None) -> bool:
+        engine.add_message("")
+        engine.add_message("")
+        engine.add_message("== Campaign Log Entry 1.02 ==")
+        engine.add_message("")
+        engine.add_message("--- Checking conditionals ---")
+        engine.add_message("    If the rangers have no biscuits on their role cards, go to 1.02A.")
+        engine.add_message("    Checking for biscuits on role cards...")
+        biscuits = engine.state.role_card.unique_tokens.get("biscuit")
+        if biscuits is not None and biscuits > 0:
+            engine.add_message("    Biscuits found. Proceeding...")
+            engine.add_message("")
+            engine.add_message("--- Story ---")
+            engine.add_message('With an empty basket, you continue down the path until you come across ' \
+            'Calypsa and Kal, resting beside a bubbling stream. Calypsa gestures toward the basket.')
+            engine.add_message('“How did it go?” she asks.')
+            engine.add_message('Before you can answer, Kal gives a mirthless laugh. “I think those crumbs speak for themselves.”')
+            engine.add_message('You glance down and self-consciously brush the biscuit crumbs off your shirt.')
+            engine.add_message("")
+            engine.add_message("--- Results ---")
+            engine.add_message("Complete the BISCUIT DELIVERY Mission and return Biscuit Basket to the collection.")
+            engine.state.complete_mission("Biscuit Delivery")
+            biscuit_basket = engine.state.get_in_play_cards_by_title("Biscuit Basket")[0] 
+            #should always be in play since it had to be in play to trigger this entry
+            engine.add_message(biscuit_basket.discard_from_play(engine))
+            engine.state.ranger.discard.remove(biscuit_basket)
+
+            engine.add_message("Each Ranger soothes 2 fatigue. Then go to 1.03.")
+            engine.state.ranger.soothe(engine, 2)
+            return self.resolve_entry("1.03", source_card, engine, clear_type)
+        else:
+            engine.add_message("    No biscuits found. Proceeding to 1.02A...")
+            return self.resolve_entry("1.02A", source_card, engine, clear_type)
+        
+    def resolve_entry_1_02_A(self, source_card: 'Card | None', engine: 'GameEngine', clear_type: str | None) -> bool:
+        engine.add_message("== Campaign Log Entry 1.02A ==")
+        engine.add_message("")
+        engine.add_message("--- Story ---")
+        engine.add_message('With an empty basket, you continue down the path until you come across ' \
+        'Calypsa and Kal, resting beside a bubbling stream. Calypsa gestures toward the basket.')
+        engine.add_message('“How did it go?” she asks.')
+        engine.add_message('You tell her of the people you met in your travels today and how each was ' \
+        'appreciative of Hy Pimpot’s bakery.')
+        engine.add_message('Calypsa stands and makes a show of studying you closely. “And … no crumbs! ' \
+                           'I’m impressed. Kal, I believe this settles our bet. He figured you would have snuck a few for yourself.”')
+        engine.add_message('Kal looks at you suspiciously. “You need to learn to live a little,” he says.')
+        engine.add_message("")
+        engine.add_message("--- Results ---")
+        engine.add_message("Complete the BISCUIT DELIVERY Mission and return Biscuit Basket to the collection.")
+        engine.state.complete_mission("Biscuit Delivery")
+        biscuit_basket = engine.state.get_in_play_cards_by_title("Biscuit Basket")[0] 
+        #should always be in play since it had to be in play to trigger this entry
+        engine.add_message(biscuit_basket.discard_from_play(engine))
+        engine.state.ranger.discard.remove(biscuit_basket)
+
+        engine.add_message("Each Ranger soothes 2 fatigue. Then go to 1.03.")
+        engine.state.ranger.soothe(engine, 2)
+        return self.resolve_entry("1.03", source_card, engine, clear_type)
+            
+    def resolve_entry_1_03(self, source_card: 'Card | None', engine: 'GameEngine', clear_type: str | None) -> bool:
+        engine.add_message("== Campaign Log Entry 1.02A ==")
+        engine.add_message("")
+        engine.add_message("--- Story ---")
+        engine.add_message('From down the path comes the sound of melodic whistling. Before long, a man wearing many ' \
+        'layers of cloaks and walking with the aid of an ornate conduit follows. As he passes, he tips his wide-brimmed ' \
+        'hat in your direction.')
+        engine.add_message('“Good day to you, friends!”')
+        engine.add_message('“Good day, Master Aell,” Calypsa replies. “Lone Tree’s hanging gardens are thirsty. ' \
+                           'They’ll be grateful for some rain.”')
+        engine.add_message('“Fear not, my dear Calypsa! For there is no shaper more skilled at stirring the clouds ' \
+                           'than I. By the time you return, those gardens will be thoroughly soaked!”')
+        engine.add_message('With that, the shaper continues down the path. He resumes his whistling as he passes from sight.')
+        engine.add_message('Kal shakes his head. “That fool is overly impressed by his own abilities,” he says. ' \
+                           '“Trouble will come of it. Mark my words.”')
+        engine.add_message('Calypsa nods then turns to you. “It\'s time you should be on your way," she says. "The ' \
+                           'village elders often have tasks that require the help of the Rangers. I recommend that ' \
+                           'you seek them out on your travels. I know also that Kordo would like some help dealing ' \
+                           'with the caustic mulcher that roams the woodlands. I\'m not sure what he has in mind, ' \
+                           'but you can seek him out at Lone Tree Station if you\'re interested. Farewell!”')
+        engine.add_message('With that, Calypsa and Kal disappear into the forest, leaving you to explore the Valley on your own.')
+        engine.add_message("")
+        engine.add_message("--- Guidance ---")
+        engine.add_message('What you do now is entirely up to you. You could, for example, spend time exploring ' \
+        'the different path types to familiarize yourself with the flora and fauna, or you could travel to pivotal ' \
+        'locations on the map and delve into the path deck to find people in need of assistance and missions to ' \
+        'complete. Take your time. You will be called upon if there’s an emergency. Now, you may end the day or ' \
+        'continue playing. If you end the day, you are considered to have camped.')
+        will_camp = engine.response_decider(engine, f"Will you end the day by camping? (y/n):")
+        if will_camp:
+            #TODO: take into account ending-day-by-camping to allow reward card swaps
+            engine.end_day()
+        return True
         
     def resolve_entry_47(self, source_card: 'Card | None', engine: 'GameEngine', clear_type: str | None) -> bool:
         engine.add_message("")
@@ -78,14 +174,14 @@ class CampaignGuide:
         if clear_type is None:
             engine.add_message("Quisi entered play:")
             engine.add_message("    If a Ranger has Biscuit Basket equipped, go to 80.1.")
-            if engine.state.get_in_play_cards_by_title("Biscuit Basket") is not None:
+            if engine.state.get_in_play_cards_by_title("Biscuit Basket"):
                 engine.add_message("    Biscuit Basket found. Resolving Entry 80.1...")
                 engine.add_message("")
                 engine.add_message("")
                 return self.resolve_entry("80.1", source_card, engine, clear_type)
             engine.add_message("    Biscuit Basket not found. Proceeding...")
             engine.add_message("    If Oura Vos is in play, go to 80.2.")
-            if engine.state.get_in_play_cards_by_title("Oura Vos, Traveler") is not None:
+            if engine.state.get_in_play_cards_by_title("Oura Vos, Traveler"):
                 engine.add_message("    Oura Vos found. Resolving Entry 80.2...")
                 engine.add_message("")
                 engine.add_message("")

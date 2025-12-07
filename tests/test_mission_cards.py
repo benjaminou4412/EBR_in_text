@@ -4,7 +4,7 @@
 import unittest
 from src.models import (
     Card, RangerState, GameState, Aspect, Area, CardType,
-    EventType, TimingType, Keyword
+    EventType, TimingType, Keyword, Mission, DayEndException
 )
 from src.engine import GameEngine
 from src.cards import BiscuitDelivery, BiscuitBasket, HyPimpotChef, QuisiVosRascal, PeerlessPathfinder
@@ -670,6 +670,50 @@ class BiscuitDeliverySunEffectTests(unittest.TestCase):
         # Verify she entered play properly (should be in an area)
         quisi_area = state.get_card_area_by_id(quisi.id)
         self.assertIsNotNone(quisi_area, "Quisi should be in a play area")
+
+
+class BiscuitBasketListenerTests(unittest.TestCase):
+    """Tests for Biscuit Basket's HAVE_X_TOKENS listener."""
+
+    def test_biscuit_basket_listener_triggers_when_biscuits_reach_zero(self):
+        """Moving the last biscuit off Biscuit Basket should trigger its listener.
+
+        Expected: Listener fires and attempts to resolve campaign entry 1.02,
+        which doesn't exist yet, causing a KeyError.
+        """
+        state, biscuit_delivery = make_test_state_with_mission()
+        engine = GameEngine(state)
+        engine.state.campaign_tracker.active_missions.append(Mission("Biscuit Delivery"))
+
+        # Flip Biscuit Delivery to get Biscuit Basket
+        # First need to put it in play properly
+        biscuit_delivery.enters_play(engine, Area.SURROUNDINGS, None)
+        basket = biscuit_delivery.flip(engine)
+
+        # Verify the listener was registered
+        have_x_listeners = [l for l in engine.listeners if l.event_type == EventType.HAVE_X_TOKENS]
+        self.assertEqual(len(have_x_listeners), 1, "Should have one HAVE_X_TOKENS listener registered")
+        self.assertEqual(have_x_listeners[0].source_card_id, basket.id,
+                        "Listener should be from Biscuit Basket")
+
+        # Basket should start with 3 biscuits
+        self.assertEqual(basket.unique_tokens.get("biscuit", 0), 3,
+                        "Biscuit Basket should start with 3 biscuits")
+
+        # Add a human to receive biscuits
+        hy = HyPimpotChef()
+        state.areas[Area.ALONG_THE_WAY].append(hy)
+
+        # Move biscuits off one at a time - last one should trigger listener
+        engine.move_token(basket.id, hy.id, "biscuit", 1)
+        self.assertEqual(basket.unique_tokens["biscuit"], 2)
+
+        engine.move_token(basket.id, hy.id, "biscuit", 1)
+        self.assertEqual(basket.unique_tokens["biscuit"], 1)
+
+        # This should trigger the listener and cause the day to end
+        with self.assertRaises(DayEndException, msg="Should raise DayEndException for completing entry 1.03"):
+            engine.move_token(basket.id, hy.id, "biscuit", 1)
 
 
 if __name__ == '__main__':

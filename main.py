@@ -387,13 +387,14 @@ def main() -> None:
     set_show_art_descriptions(args.show_art)
 
     # Initialize campaign tracker for a new campaign
-    from src.models import CampaignTracker
+    from src.models import CampaignTracker, Mission
     campaign_tracker = CampaignTracker(
         day_number=1,
         ranger_name="Demo Ranger",
         ranger_aspects={Aspect.AWA: 99, Aspect.FIT: 99, Aspect.SPI: 99, Aspect.FOC: 99},
         current_location_id="Lone Tree Station",
-        current_terrain_type="Woods"
+        current_terrain_type="Woods",
+        active_missions=[Mission("Biscuit Delivery")]
     )
 
     # Role card stays the same throughout campaign

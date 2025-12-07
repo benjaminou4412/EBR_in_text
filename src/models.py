@@ -771,7 +771,7 @@ class Card:
         predators = engine.state.get_in_play_cards_by_trait("Predator")
         self_display_id = engine.get_display_id_cached(self)
         harm_target_display_id = engine.get_display_id_cached(harm_target)
-        if predators is not None:
+        if predators:
             active_predators = [predator for predator in predators if predator.is_ready()]
             if not active_predators:
                 engine.add_message(f"Challenge ({symbol.value}) on {self_display_id}: (no active predators in play)")
@@ -801,7 +801,7 @@ class Card:
         prey_list = engine.state.get_in_play_cards_by_trait("Prey")
         self_display_id = engine.get_display_id_cached(self)
         harm_target_display_id = engine.get_display_id_cached(harm_target)
-        if prey_list is not None:
+        if prey_list:
             active_prey = [prey for prey in prey_list if prey.is_ready()]
             if not active_prey:
                 engine.add_message(f"Challenge ({symbol.value}) on {self_display_id}: (no active prey in play)")
@@ -933,7 +933,7 @@ class Card:
                 area_cards.remove(self)
                 break
 
-        # Determine correct discard pile (polymorphism!)
+        # Determine correct discard pile
         if self.has_type(CardType.PATH):
             engine.state.path_discard.append(self)
         elif self.has_type(CardType.RANGER):
@@ -1275,19 +1275,16 @@ class GameState:
                     return card
         return None
     
-    def get_in_play_cards_by_title(self, title: str) -> list[Card] | None:
+    def get_in_play_cards_by_title(self, title: str) -> list[Card]:
         """Get all in-play cards of a given title"""
         results: list[Card] = []
         for area in self.areas:
             for card in self.areas[area]:
                 if card.title == title:
                     results.append(card)
-        if results:
-            return results
-        else:
-            return None
+        return results
     
-    def get_in_play_cards_by_trait(self, trait: str) -> list[Card] | None:
+    def get_in_play_cards_by_trait(self, trait: str) -> list[Card]:
         """Get all in-play cards with a given trait"""
         results: list[Card] = []
         for area in self.areas:
@@ -1296,10 +1293,7 @@ class GameState:
                     if trait.casefold() == curr_trait.casefold():
                         results.append(card)
                 
-        if results:
-            return results
-        else:
-            return None
+        return results
 
     def get_cards_between_ranger_and_target(self, target: Card) -> list[Card]:
         """Get all cards that are 'between' the ranger and a target in the given area.
