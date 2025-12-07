@@ -758,9 +758,9 @@ class GameEngine:
         return state
 
     def draw_path_card(self, card_to_draw: Card | None, target: Card | None) -> None:
-        """Draw one path card and put it into play, reshuffling path discard if necessary"""
-        """If card_to_draw parameter is given, put it into play without drawing from path deck."""
-        """If target is given, pass it to enters_play so ETB effects with targeting can use it"""
+        """Draw one path card and put it into play, reshuffling path discard if necessary.
+        If card_to_draw parameter is given, put it into play without drawing from path deck.
+        If target is given, pass it to enters_play so ETB effects with targeting can use it"""
         if card_to_draw is None:
             if not self.state.path_deck:
                 self.add_message(f"Path deck empty; shuffling in path discard.")

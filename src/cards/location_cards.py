@@ -10,6 +10,39 @@ from ..models import *
 from ..json_loader import load_card_fields #type:ignore
 from ..engine import GameEngine
 
+class LoneTreeStation(Card):
+    def __init__(self):
+        # Load all common PathCard fields from JSON
+        super().__init__(**load_card_fields("Lone Tree Station", "Locations")) #type:ignore
+        self.art_description = "A towering tree straddles much of a grassy plateau, standing " \
+        "as tall as a skyscraper and several times as wide. A few buildings dot its surroundings, " \
+        "some a small distance away and others ensconsced by its enormous roots. Some structures " \
+        "are visible in its branches, including large hanging planters the size of rooms and balconies " \
+        "carved out from the trunk."
+
+    def do_arrival_setup(self, engine: GameEngine) -> None:
+        engine.add_message(f"Search the path deck for the next predator and discard it.")
+        target = None
+        engine.add_message(f"Searching...")
+        for card in engine.state.path_deck:
+            if card.has_trait("Predator"):
+                target = card
+                break
+        if target is not None:
+            engine.add_message(f"Found Predator {target.title}. Discarding...")
+            engine.state.path_deck.remove(target)
+            engine.state.path_discard.append(target)
+        else:
+            engine.add_message(f"No predator found in path deck.")
+        
+        engine.add_message(f"Lead Ranger: Draw 1 path card.")
+        engine.draw_path_card(None, None)
+
+    def get_tests(self) -> list[Action]:
+        from ..registry import get_search_test
+        return [get_search_test()]
+
+
 class AncestorsGrove(Card):
     def __init__(self):
         # Load all common PathCard fields from JSON

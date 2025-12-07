@@ -9,7 +9,7 @@ from .conciliator_cards import ADearFriend
 from .personality_cards import Passionate
 from .woods_cards import SitkaBuck, OvergrownThicket, SunberryBramble, SitkaDoe, ProwlingWolhund, CausticMulcher
 from .valley_cards import CalypsaRangerMentor, QuisiVosRascal, TheFundamentalist
-from .location_cards import BoulderField, AncestorsGrove
+from .location_cards import BoulderField, AncestorsGrove, LoneTreeStation
 from .weather_cards import APerfectDay, MiddaySun
 from .mission_cards import BiscuitBasket, BiscuitDelivery
 from .lone_tree_station_cards import HyPimpotChef
@@ -38,4 +38,5 @@ __all__ = ["WalkWithMe",
             "AffordedByNature",
             "BiscuitBasket",
             "BiscuitDelivery",
-            "HyPimpotChef"]
+            "HyPimpotChef",
+            "LoneTreeStation"]

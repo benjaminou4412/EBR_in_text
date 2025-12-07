@@ -115,7 +115,7 @@ def provide_common_tests(state: GameState) -> list[Action]:
             verb="Remember",
             target_provider=None,
             difficulty_fn=lambda _s, _t: 1,
-            on_success=remember_success,  # No deck manipulation yet; placeholder
+            on_success=remember_success, 
             source_id="common",
             source_title="Common Test",
         )
@@ -190,3 +190,25 @@ def provide_play_options(engine: GameEngine) -> list[Action]:
             actions.append(play_action)
     return actions
 
+def get_search_test(source_card: Card, verb: str) -> Action:
+    """Many cards have a similar test (albeit with varying verbs) with the effect 
+    "scout path cards equal to your effort, then draw 1 path card. This helper
+    function provides that test to those cards"""
+    return Action(
+        id=source_card.id + "-search-test",
+        name=source_card.title + " Search Test",
+        aspect=Aspect.AWA,
+        approach=Approach.CONNECTION,
+        is_test=True,
+        verb=verb,
+        target_provider=lambda _s: [source_card],
+        on_success=_search_test_success,
+        source_id=source_card.id,
+        source_title=source_card.title
+    )
+
+def _search_test_success(engine: GameEngine, effort: int, _target: Card | None) -> None:
+        """Scout path cards equal to your effort, then draw 1 path card"""
+        deck = engine.state.path_deck
+        engine.scout_cards(deck, effort)
+        engine.draw_path_card(None, None)
