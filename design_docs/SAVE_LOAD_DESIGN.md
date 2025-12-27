@@ -4,13 +4,18 @@
 
 This document describes the approach for serializing and deserializing game state. The core insight is that **game state is data + behavior**, but only data needs to be saved. Behavior (listeners, abilities, lambdas) is reconstructed from the cards present in the loaded state.
 
-## Design Decision: Custom Serialization (Path 2)
+## Design Decision: Custom Serialization
 
 We use custom serialization rather than making GameState directly serializable because:
 - Cards are rich objects with methods that return listeners/abilities containing lambdas
 - Circular references exist (Card.backside)
 - The engine already has `reconstruct()` which rebuilds listeners from cards in play
 - Minimal refactoring required
+
+## UI: "Menu" option in Phase 2
+- Currently, players mainly make decisions during Phase 2: Ranger Turns.
+- These options include playing cards, taking tests, resting, and ending the day.
+- We'll add a "Menu" option here, at the bottom, having it lead to choices to save the gamestate, load a gamestate, or "return to title"
 
 ## What Gets Saved
 

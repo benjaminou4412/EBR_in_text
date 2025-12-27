@@ -32,7 +32,7 @@ API-ish notes:
 
 A living checklist. Roughly prioritized.
 
-
+- Implement rolling message log
 - Implement main menu selecting between full campaign and demo scenarios
 - Implement custom Day 1 setup + story sequence for start of campaign
 - Add campaign log entries to Arrival Setup for each location card
