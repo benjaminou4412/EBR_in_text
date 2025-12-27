@@ -238,24 +238,27 @@ Then on load, call `load_card_fields("Overgrown Thicket", "Woods")` to get base 
 ## reconstruct() Enhancements Needed
 
 The current `reconstruct()` only handles:
-- Hand cards (enters_hand listeners)
+- Hand cards (via enters_hand, which has message side effects)
 - Constant abilities from in-play cards
 
-It needs to also handle:
-- Listeners from in-play cards via `get_listeners()`
+It needs enhancement to:
+- Avoid `enters_hand()` and `enters_play()` since they add messages
+- Call `get_listeners()` directly on all relevant cards
+- Only register hand listeners for Moment cards (matching enters_hand behavior)
 
 ```python
 def reconstruct(self) -> None:
     self.listeners.clear()
     self.constant_abilities.clear()
 
-    # Listeners from hand
+    # Listeners from Moment cards in hand (only Moments have hand listeners)
     for card in self.state.ranger.hand:
-        listeners = card.enters_hand(self)
-        if listeners:
-            self.listeners.extend(listeners)
+        if card.has_type(CardType.MOMENT):
+            listeners = card.get_listeners()
+            if listeners:
+                self.listeners.extend(listeners)
 
-    # Listeners from cards in play
+    # Listeners and abilities from cards in play
     for card in self.state.all_cards_in_play():
         listeners = card.get_listeners()
         if listeners:
@@ -309,6 +312,6 @@ Include a version field. When loading:
 
 2. **Challenge deck state**: The physical deck order matters. We'll save full deck and discard state.
 
-3. **Message queue**: Do we save pending messages? Yes, eventually I want a always-on log of the last N messages so players can "scroll up" and get a reminder for what happened recently.
+3. **Message queue**: Do we save pending messages? No, since UI-wise we'll only allow saving between turns in Phase 2, which should more or less guarantee there are no relevant messages that need to be shown to a player on a fresh load.
 
-4. **last_test_target**: I think we should actually only allow saving between, not during, tests. Alongside the gameplay options of cards to play, tests to take, and ending the day, we can implement saving and loading as a "Menu" option that leads to a submenu with save/load/quit-to-title options.
+4. **last_test_target**: Since we only allow saving between, not during, tests, we can actually ignore this, since it's only relevant during tests.
