@@ -199,15 +199,6 @@ class AutonomousGameTests(unittest.TestCase):
             "Game should have generated messages"
         )
 
-        # Print summary for debugging
-        print(f"\n=== Test Summary ===")
-        print(f"Rounds completed: {rounds_completed}")
-        print(f"Day ended: {day_ended}")
-        print(f"Deck remaining: {len(state.ranger.deck)}")
-        print(f"Hand size: {len(state.ranger.hand)}")
-        print(f"Fatigue size: {len(state.ranger.fatigue_stack)}")
-        print(f"Messages: {len(engine.message_queue)}")
-
     def test_main_game_loop_rest_until_deck_out(self):
         """
         Integration test using the actual run_game_loop from main.py.
@@ -288,13 +279,6 @@ class AutonomousGameTests(unittest.TestCase):
 
         # Verify the game ran and messages were generated
         self.assertGreater(len(engine.message_queue), 0, "Game should have generated messages")
-
-        print(f"\n=== Main Loop Test Summary ===")
-        print(f"Round reached: {engine.state.round_number}")
-        print(f"Deck remaining: {len(state.ranger.deck)}")
-        print(f"Hand size: {len(state.ranger.hand)}")
-        print(f"Fatigue size: {len(state.ranger.fatigue_stack)}")
-        print(f"Messages: {len(engine.message_queue)}")
 
 
 class DayTransitionTests(unittest.TestCase):
@@ -405,14 +389,6 @@ class DayTransitionTests(unittest.TestCase):
 
         # The path deck should be freshly shuffled (different object)
         self.assertIsNot(state2.path_deck, state1.path_deck, "Path deck should be a new list")
-
-        print(f"\n=== Day Transition Test Summary ===")
-        print(f"Day 1 ended at: {day1_location.title}")
-        print(f"Day 2 started at: {state2.location.title}")
-        print(f"Campaign events preserved: {len(state2.campaign_tracker.notable_events)}")
-        print(f"Day 2 round number: {state2.round_number}")
-        print(f"Day 2 hand size: {len(state2.ranger.hand)}")
-        print(f"Day 2 fatigue size: {len(state2.ranger.fatigue_stack)}")
 
     def test_end_day_saves_location(self):
         """Test that end_day() properly saves the current location to campaign tracker."""
