@@ -959,14 +959,7 @@ class MultipleBoundarySensorsTests(unittest.TestCase):
             }
         )
         engine = GameEngine(state)
-
-        # Register both listeners
-        listeners1 = sensor1.get_listeners()
-        listeners2 = sensor2.get_listeners()
-        if listeners1:
-            engine.register_listeners(listeners1)
-        if listeners2:
-            engine.register_listeners(listeners2)
+        # Note: reconstruct() registers listeners for cards already in play
 
         # Accept first prompt, decline second
         prompt_count = 0

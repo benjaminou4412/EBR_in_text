@@ -540,33 +540,12 @@ class GameEngine:
                 self.listeners.remove(target)
 
     def reconstruct(self) -> None:
-        """Rebuild listener and constant ability registry from current game state (for loading saved games)"""
-        self.listeners.clear()
-
-        # Listeners from cards in hand
-        for card in self.state.ranger.hand:
-            listeners : list[EventListener] | None = card.enters_hand(self)
-            if listeners:
-                self.listeners.extend(listeners)
-
-        # TODO: listeners from cards in play with enters_play(), and any other potential source
-
-        self.constant_abilities.clear()
-
-        # Constant abilities from cards in play
-        for card in self.state.all_cards_in_play():
-            const_abilities : list[ConstantAbility] | None = card.get_constant_abilities()
-            if const_abilities:
-                self.constant_abilities.extend(const_abilities)
-
-        # TODO: constant abilities from any other sources besides cards in play
-
-    def reconstruct_silent(self) -> None:
         """
-        Rebuild listener and constant ability registry WITHOUT side effects.
+        Rebuild listener and constant ability registry from current game state.
 
-        Used when loading saved games - avoids enters_hand() and enters_play()
-        which add messages to the queue. Instead, directly calls get_listeners()
+        Used when loading saved games or manually setting up test scenarios.
+        This method does NOT call enters_hand() or enters_play() to avoid
+        side effects (messages). Instead, it directly calls get_listeners()
         and get_constant_abilities().
 
         Per game rules, only Moment cards establish listeners while in hand.

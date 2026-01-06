@@ -29,11 +29,12 @@ API-ish notes:
     -return True if the associated card gets discarded; False if it stays in play
 
 
+Features with a lot of AI-written code I haven't carefully reviewed that might pop up issues in the future:
+- General game loop structure in main.py
+- Save/load/title
 
 A living checklist. Roughly prioritized.
 
-- Implement save/load/autosave
-- Implement main menu selecting between full campaign and demo scenarios
 - Implement custom Day 1 setup + story sequence for start of campaign
 - Add campaign log entries to Arrival Setup for each location card
 - Add campaign log entries for all other already-implemented cards that don't already have them
@@ -46,6 +47,7 @@ A living checklist. Roughly prioritized.
 - implement multi-target tests
   - need to have interaction/obstacle rules consider multiple interaction targets
     (the farthest target is the one true interaction target)
+- Autosave every turn
 - Implement...the entire rest of the game.
-
+- "AI Mode" (saves, but no loading available to player; metrics tracked)
 

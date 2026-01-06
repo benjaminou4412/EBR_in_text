@@ -357,22 +357,22 @@ class SaveLoadRoundTripTests(unittest.TestCase):
 class ReconstructSilentTests(unittest.TestCase):
     """Tests for the silent reconstruction method."""
 
-    def test_reconstruct_silent_no_messages(self):
-        """Test that reconstruct_silent doesn't add messages."""
+    def test_reconstruct_no_messages(self):
+        """Test that reconstruct doesn't add messages."""
         state = make_test_state()
         engine = GameEngine(state, skip_reconstruct=True)
 
         # Clear any existing messages
         engine.message_queue.clear()
 
-        # Run silent reconstruction
-        engine.reconstruct_silent()
+        # Run reconstruction
+        engine.reconstruct()
 
         # Should have no messages
         self.assertEqual(len(engine.message_queue), 0)
 
-    def test_reconstruct_silent_registers_abilities(self):
-        """Test that reconstruct_silent properly registers constant abilities."""
+    def test_reconstruct_registers_abilities(self):
+        """Test that reconstruct properly registers constant abilities."""
         state = make_test_state()
 
         # Add a card with constant abilities
@@ -381,7 +381,7 @@ class ReconstructSilentTests(unittest.TestCase):
         state.areas[Area.ALONG_THE_WAY].append(doe)
 
         engine = GameEngine(state, skip_reconstruct=True)
-        engine.reconstruct_silent()
+        engine.reconstruct()
 
         # Should have registered the OBSTACLE ability
         self.assertGreater(len(engine.constant_abilities), 0)

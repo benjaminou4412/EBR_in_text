@@ -145,9 +145,7 @@ class BiscuitDeliveryListenerTests(unittest.TestCase):
         """Test that the listener is removed when Biscuit Delivery is discarded."""
         state, biscuit = make_test_state_with_mission()
         engine = GameEngine(state)
-
-        # Enter play to register listener
-        biscuit.enters_play(engine, Area.SURROUNDINGS, None)
+        # Note: reconstruct() registers listeners for cards already in play
 
         # Verify listener exists
         biscuit_listeners = [l for l in engine.listeners if l.source_card_id == biscuit.id]
@@ -165,9 +163,7 @@ class BiscuitDeliveryListenerTests(unittest.TestCase):
         """Test that the listener is removed when Biscuit Delivery flips to Biscuit Basket."""
         state, biscuit = make_test_state_with_mission()
         engine = GameEngine(state)
-
-        # Enter play to register listener
-        biscuit.enters_play(engine, Area.SURROUNDINGS, None)
+        # Note: reconstruct() registers listeners for cards already in play
 
         # Verify listener exists
         biscuit_listeners = [l for l in engine.listeners if l.source_card_id == biscuit.id]

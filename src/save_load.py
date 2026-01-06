@@ -123,7 +123,6 @@ class SaveData:
     """Complete serializable game state"""
     version: str
     round_number: int
-    day_has_ended: bool
 
     ranger: RangerData
     campaign_tracker: CampaignTrackerData
@@ -146,54 +145,31 @@ class SaveData:
 # ============================================================================
 
 def _build_card_class_registry() -> dict[str, type[Card]]:
-    """Build mapping from class name strings to actual classes"""
-    from .cards import (
-        WalkWithMe, PeerlessPathfinder, BoundarySensor, ShareintheValleysSecrets,
-        CradledbytheEarth, AffordedByNature, ADearFriend, Passionate,
-        SitkaBuck, OvergrownThicket, SunberryBramble, SitkaDoe, ProwlingWolhund,
-        CausticMulcher, CalypsaRangerMentor, QuisiVosRascal, TheFundamentalist,
-        BoulderField, AncestorsGrove, LoneTreeStation, APerfectDay, MiddaySun,
-        BiscuitBasket, BiscuitDelivery, HyPimpotChef
-    )
+    """
+    Build mapping from class name strings to actual classes.
 
-    return {
+    Automatically discovers all Card subclasses from the cards module,
+    so new cards are automatically available for save/load without
+    manual registration.
+    """
+    import inspect
+    from . import cards as cards_module
+
+    registry: dict[str, type[Card]] = {
         "Card": Card,
         "FacedownCard": FacedownCard,
-        # Explorer cards
-        "WalkWithMe": WalkWithMe,
-        "PeerlessPathfinder": PeerlessPathfinder,
-        "BoundarySensor": BoundarySensor,
-        "ShareintheValleysSecrets": ShareintheValleysSecrets,
-        "CradledbytheEarth": CradledbytheEarth,
-        "AffordedByNature": AffordedByNature,
-        # Conciliator cards
-        "ADearFriend": ADearFriend,
-        # Personality cards
-        "Passionate": Passionate,
-        # Woods cards
-        "SitkaBuck": SitkaBuck,
-        "OvergrownThicket": OvergrownThicket,
-        "SunberryBramble": SunberryBramble,
-        "SitkaDoe": SitkaDoe,
-        "ProwlingWolhund": ProwlingWolhund,
-        "CausticMulcher": CausticMulcher,
-        # Valley cards
-        "CalypsaRangerMentor": CalypsaRangerMentor,
-        "QuisiVosRascal": QuisiVosRascal,
-        "TheFundamentalist": TheFundamentalist,
-        # Location cards
-        "BoulderField": BoulderField,
-        "AncestorsGrove": AncestorsGrove,
-        "LoneTreeStation": LoneTreeStation,
-        # Weather cards
-        "APerfectDay": APerfectDay,
-        "MiddaySun": MiddaySun,
-        # Mission cards
-        "BiscuitBasket": BiscuitBasket,
-        "BiscuitDelivery": BiscuitDelivery,
-        # Lone Tree Station cards
-        "HyPimpotChef": HyPimpotChef,
     }
+
+    # Auto-discover all classes exported from cards module that are Card subclasses
+    for name in dir(cards_module):
+        obj = getattr(cards_module, name)
+        if (inspect.isclass(obj)
+            and issubclass(obj, Card)
+            and obj is not Card
+            and obj is not FacedownCard):
+            registry[name] = obj
+
+    return registry
 
 
 CARD_CLASSES: dict[str, type[Card]] | None = None
@@ -329,7 +305,6 @@ def serialize_game_state(engine: GameEngine) -> SaveData:
     return SaveData(
         version=SAVE_VERSION,
         round_number=state.round_number,
-        day_has_ended=False,  # We only save between actions, so day hasn't ended
         ranger=ranger_data,
         campaign_tracker=campaign_data,
         role_card_id=state.role_card.id,
@@ -490,6 +465,42 @@ def _apply_mutable_state(card: Card, card_data: dict[str, Any]) -> None:
     card.attached_card_ids = list(card_data.get('attached_card_ids', []))
 
 
+def _validate_save_structure(save_dict: dict[str, Any]) -> None:
+    """
+    Validate that a save file contains all required keys.
+    Raises ValueError with a descriptive message if validation fails.
+    """
+    required_top_level = ['version', 'round_number', 'ranger', 'campaign_tracker',
+                          'role_card_id', 'location_id', 'areas', 'path_deck',
+                          'path_discard', 'challenge_deck']
+
+    missing_top = [key for key in required_top_level if key not in save_dict]
+    if missing_top:
+        raise ValueError(f"Save file missing required keys: {', '.join(missing_top)}")
+
+    # Validate ranger structure
+    if 'ranger' in save_dict:
+        ranger_required = ['name', 'aspects', 'energy', 'ranger_token_location',
+                          'deck', 'hand', 'discard', 'fatigue_stack']
+        missing_ranger = [key for key in ranger_required if key not in save_dict['ranger']]
+        if missing_ranger:
+            raise ValueError(f"Save file 'ranger' missing required keys: {', '.join(missing_ranger)}")
+
+    # Validate campaign_tracker structure
+    if 'campaign_tracker' in save_dict:
+        ct_required = ['day_number']
+        missing_ct = [key for key in ct_required if key not in save_dict['campaign_tracker']]
+        if missing_ct:
+            raise ValueError(f"Save file 'campaign_tracker' missing required keys: {', '.join(missing_ct)}")
+
+    # Validate challenge_deck structure
+    if 'challenge_deck' in save_dict:
+        cd_required = ['deck', 'discard']
+        missing_cd = [key for key in cd_required if key not in save_dict['challenge_deck']]
+        if missing_cd:
+            raise ValueError(f"Save file 'challenge_deck' missing required keys: {', '.join(missing_cd)}")
+
+
 def load_game(filepath: str | Path) -> GameEngine:
     """
     Load a game state from a JSON file and return a fully reconstructed GameEngine.
@@ -499,6 +510,9 @@ def load_game(filepath: str | Path) -> GameEngine:
     filepath = Path(filepath)
     with open(filepath, 'r', encoding='utf-8') as f:
         save_dict = json.load(f)
+
+    # Validate save file structure
+    _validate_save_structure(save_dict)
 
     # Version check (for future migrations)
     version = save_dict.get('version', '1.0')
@@ -645,6 +659,6 @@ def load_game(filepath: str | Path) -> GameEngine:
 
     # Step 5: Create Engine and Reconstruct
     engine = GameEngine(state, skip_reconstruct=True)
-    engine.reconstruct_silent()  # Use silent version to avoid messages
+    engine.reconstruct()  # Rebuilds listeners and constant abilities
 
     return engine

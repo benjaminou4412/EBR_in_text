@@ -61,19 +61,20 @@ def show_title_screen() -> str:
         'load:<path>' - Load a saved game
         'quit' - Exit the game
     """
-    clear_screen()
-    print("")
-    print("=" * 50)
-    print("        EARTHBORNE RANGERS")
-    print("        Text-Based Adventure")
-    print("=" * 50)
-    print("")
-    print("  1. New Campaign")
-    print("  2. Load Saved Game")
-    print("  3. Quit")
-    print("")
-
     while True:
+        # Display title screen
+        clear_screen()
+        print("")
+        print("=" * 50)
+        print("        EARTHBORNE RANGERS")
+        print("        Text-Based Adventure")
+        print("=" * 50)
+        print("")
+        print("  1. New Campaign")
+        print("  2. Load Saved Game")
+        print("  3. Quit")
+        print("")
+
         choice = input("> ").strip()
 
         if choice == "1":
@@ -84,13 +85,13 @@ def show_title_screen() -> str:
             if not SAVE_DIR.exists():
                 print("\nNo save directory found.")
                 input("Press Enter to continue...")
-                return show_title_screen()  # Re-display title
+                continue  # Re-display title
 
             saves = list(SAVE_DIR.glob("*.json"))
             if not saves:
                 print("\nNo save files found.")
                 input("Press Enter to continue...")
-                return show_title_screen()  # Re-display title
+                continue  # Re-display title
 
             print("\nAvailable saves:")
             for i, save in enumerate(saves, 1):
@@ -100,7 +101,7 @@ def show_title_screen() -> str:
             try:
                 idx = int(input("> ").strip())
                 if idx == 0:
-                    return show_title_screen()  # Back to title
+                    continue  # Back to title
                 if 1 <= idx <= len(saves):
                     save_path = saves[idx - 1]
                     return f"load:{save_path}"
@@ -260,227 +261,114 @@ def build_demo_state() -> GameState:
     return state
 
 
-def _run_from_phase2(engine: GameEngine, with_ui: bool) -> str:
+def _build_phase2_actions(engine: GameEngine) -> list[Action]:
+    """Build the list of available actions during Phase 2."""
+    all_tests = provide_card_tests(engine) + provide_common_tests(engine.state)
+    filtered_tests = filter_tests_by_targets(all_tests, engine.state)
+    actions = (filtered_tests
+        + provide_exhaust_abilities(engine.state)
+        + provide_play_options(engine))  # Filters by can_be_played()
+
+    # Add system actions
+    actions.append(Action(
+        id="system-discard-gear",
+        name="[Discard Gear]",
+        verb="Discard Gear",
+        aspect="",
+        approach="",
+        is_test=False,
+        on_success=lambda s, _e, _t: None,
+    ))
+    actions.append(Action(
+        id="system-rest",
+        name="[Rest] (end actions)",
+        verb="Rest",
+        aspect="",
+        approach="",
+        is_test=False,
+        on_success=lambda s, _e, _t: None,
+    ))
+    actions.append(Action(
+        id="system-end-day",
+        name="END DAY",
+        verb="END DAY",
+        aspect="",
+        approach="",
+        is_test=False,
+        on_success=lambda s, _e, _t: None,
+    ))
+    actions.append(Action(
+        id="system-menu",
+        name="[Menu] (save/load/quit)",
+        verb="Menu",
+        aspect="",
+        approach="",
+        is_test=False,
+        on_success=lambda s, _e, _t: None,
+    ))
+
+    return actions
+
+
+def _handle_phase2_action(engine: GameEngine, act: Action, with_ui: bool) -> str | None:
     """
-    Run the game starting from Phase 2 (for loaded saves).
-    This enters directly into the Phase 2 action loop, then continues normally.
+    Handle a Phase 2 action. Returns a result string if the game loop should exit,
+    or None to continue the action loop.
     """
-    # Enter the main round loop, but skip Phase 1 on the first iteration
-    first_round = True
+    if act.id == "system-discard-gear":
+        gear_in_play = [c for c in engine.state.areas[Area.PLAYER_AREA] if c.has_type(CardType.GEAR)]
+        if not gear_in_play:
+            engine.add_message("No gear in play to discard.")
+            return None
 
-    while True:
-        if not first_round:
-            # Phase 1: Draw path cards (skip on first iteration for loaded saves)
-            if with_ui:
-                clear_screen()
-            engine.phase1_draw_paths(count=1)
-            if with_ui:
-                render_state(engine, phase_header=f"Round {engine.state.round_number} — Phase 1: Draw Path Cards")
-                print("")
-                print("==== Event log ====")
-                display_and_clear_messages(engine)
-                input("Press Enter to proceed to Phase 2...")
-
-        first_round = False
-
-        # Phase 2: Actions until Rest
-        while True:
-            if with_ui:
-                clear_screen()
-                render_state(engine, phase_header=f"Round {engine.state.round_number} — Phase 2: Ranger Turns")
-                print("")
-                print("==== Event log and choices ====")
-
-            # derive actions
-            all_tests = provide_card_tests(engine) + provide_common_tests(engine.state)
-            filtered_tests = filter_tests_by_targets(all_tests, engine.state)
-            actions = (filtered_tests
-            + provide_exhaust_abilities(engine.state)
-            + provide_play_options(engine))  # Filters by can_be_played()
-
-            # add system Discard Gear action
-            actions.append(Action(
-                id="system-discard-gear",
-                name="[Discard Gear]",
-                verb="Discard Gear",
-                aspect="",
-                approach="",
-                is_test=False,
-                on_success=lambda s, _e, _t: None,
-            ))
-            # add system Rest action
-            actions.append(Action(
-                id="system-rest",
-                name="[Rest] (end actions)",
-                verb="Rest",
-                aspect="",
-                approach="",
-                is_test=False,
-                on_success=lambda s, _e, _t: None,
-            ))
-            # add system End Day action
-            actions.append(Action(
-                id="system-end-day",
-                name="END DAY",
-                verb="END DAY",
-                aspect="",
-                approach="",
-                is_test=False,
-                on_success=lambda s, _e, _t: None,
-            ))
-            # add system Menu action (save/load/quit)
-            actions.append(Action(
-                id="system-menu",
-                name="[Menu] (save/load/quit)",
-                verb="Menu",
-                aspect="",
-                approach="",
-                is_test=False,
-                on_success=lambda s, _e, _t: None,
-            ))
-
-            # Keep prompting until we get a valid action
-            act = None
-            while not act:
-                if with_ui:
-                    act = choose_action(actions, engine.state, engine)
-                else:
-                    # In non-UI mode, use engine's decision functions
-                    act = engine.card_chooser(engine, actions) if actions else None
-
-                if act is not None and act.id == "system-end-day":
-                    yes = engine.response_decider(engine, "Are you sure?")
-                    if yes:
-                        engine.end_day()
-                        if with_ui:
-                            display_and_clear_messages(engine)
-                            print("\nThe day has ended. Demo complete!")
-                            input("Press Enter to exit...")
-                        return 'normal'
-                    else:
-                        act = None
-
-                if act is not None and act.id == "system-menu":
-                    if with_ui:
-                        menu_result = handle_menu(engine)
-                        if menu_result == 'quit':
-                            return 'quit'
-                        elif menu_result.startswith('load:'):
-                            return menu_result
-                        # 'continue' - just loop back
-                    act = None
-                    continue
-
-            if act.id == "system-discard-gear":
-                # Get all gear in Player Area
-                gear_in_play = [c for c in engine.state.areas[Area.PLAYER_AREA] if c.has_type(CardType.GEAR)]
-                if not gear_in_play:
-                    engine.add_message("No gear in play to discard.")
-                    act = None
-                    continue
-
-                # Prompt to choose gear
-                to_discard = engine.card_chooser(engine, gear_in_play)
-                to_discard.discard_from_play(engine)
-                engine.add_message(f"Discarded {to_discard.title}.")
-                if with_ui:
-                    display_and_clear_messages(engine)
-                    input("Press Enter to continue...")
-                act = None
-                continue
-
-            if act.id == "system-rest":
-                engine.resolve_fatiguing_keyword()
-                if with_ui:
-                    display_and_clear_messages(engine)
-                    print("\nYou rest and end your turn.")
-                    input("Press Enter to proceed to Phase 3...")
-                break
-
-            target_id = choose_action_target(engine.state, act, engine)
-            decision = None
-            if act.is_test:
-                engine.initiate_test(act, engine.state, target_id)
-                decision = choose_commit(act, len(engine.state.ranger.hand), engine.state, engine) if act.is_test else None
-                try:
-                    engine.perform_test(act, decision or __import__('src.models', fromlist=['CommitDecision']).CommitDecision([]), target_id)
-                except RuntimeError as e:
-                    if with_ui:
-                        print(str(e))
-                        input("There was a runtime error! Press Enter to continue...")
-                    continue
-            elif act.is_exhaust or act.is_play:
-                target_card = engine.state.get_card_by_id(target_id)
-                act.on_success(engine, 0, target_card)
-            else:
-                raise RuntimeError(f"Unknown action type: {act.id}")
-
-            engine.check_and_process_clears()
-            if with_ui:
-                display_and_clear_messages(engine)
-
-            # Check if day ended during action (e.g., fatigue from empty deck)
-            if engine.day_has_ended:
-                if with_ui:
-                    print("\nThe day has ended. Demo complete!")
-                    input("Press Enter to exit...")
-                return 'normal'
-
-            if with_ui:
-                input("Action performed. Press Enter to continue...")
-
-        # Check if day ended during Phase 2
-        if engine.day_has_ended:
-            if with_ui:
-                print("\nThe day has ended. Demo complete!")
-                input("Press Enter to exit...")
-            return 'normal'
-
-        # Phase 3: Travel
-        if with_ui:
-            clear_screen()
-            render_state(engine, phase_header=f"Round {engine.state.round_number} — Phase 3: Travel")
-            print("")
-            print("==== Event log ====")
-        camped = engine.phase3_travel()
+        to_discard = engine.card_chooser(engine, gear_in_play)
+        to_discard.discard_from_play(engine)
+        engine.add_message(f"Discarded {to_discard.title}.")
         if with_ui:
             display_and_clear_messages(engine)
+            input("Press Enter to continue...")
+        return None
 
-        # Check if day ended during Phase 3
-        if engine.day_has_ended:
-            if with_ui:
-                if camped:
-                    print("\nThe day has ended by camping. Demo complete!")
-                    input("Press Enter to exit...")
-                else:
-                    print("\nThe day has ended without camping. Demo complete!")
-                    input("Press Enter to exit...")
-            return 'normal'
-
+    if act.id == "system-rest":
+        engine.resolve_fatiguing_keyword()
         if with_ui:
-            input("Press Enter to proceed to Phase 4...")
-
-        # Phase 4: Refresh
-        if with_ui:
-            clear_screen()
-        engine.phase4_refresh()
-        if with_ui:
-            render_state(engine, phase_header=f"Round {engine.state.round_number} — Phase 4: Refresh")
-            print("")
-            print("==== Event log ====")
             display_and_clear_messages(engine)
+            print("\nYou rest and end your turn.")
+            input("Press Enter to proceed to Phase 3...")
+        return 'rest'  # Signal to break out of Phase 2 loop
 
-        # Check if day ended during Phase 4 (e.g., drawing from empty deck)
-        if engine.day_has_ended:
+    # Handle test or play/exhaust actions
+    target_id = choose_action_target(engine.state, act, engine)
+    if act.is_test:
+        engine.initiate_test(act, engine.state, target_id)
+        decision = choose_commit(act, len(engine.state.ranger.hand), engine.state, engine)
+        try:
+            engine.perform_test(act, decision or __import__('src.models', fromlist=['CommitDecision']).CommitDecision([]), target_id)
+        except RuntimeError as e:
             if with_ui:
-                print("\nThe day has ended. Demo complete!")
-                input("Press Enter to exit...")
-            return 'normal'
+                print(str(e))
+                input("There was a runtime error! Press Enter to continue...")
+            return None
+    elif act.is_exhaust or act.is_play:
+        target_card = engine.state.get_card_by_id(target_id)
+        act.on_success(engine, 0, target_card)
+    else:
+        raise RuntimeError(f"Unknown action type: {act.id}")
 
+    engine.check_and_process_clears()
+    if with_ui:
+        display_and_clear_messages(engine)
+
+    if engine.day_has_ended:
         if with_ui:
-            input("Press Enter to start next round...")
+            print("\nThe day has ended. Demo complete!")
+            input("Press Enter to exit...")
+        return 'normal'
 
-        engine.state.round_number += 1
+    if with_ui:
+        input("Action performed. Press Enter to continue...")
+
+    return None
 
 
 def run_game_loop(engine: GameEngine, with_ui: bool = True, resume_phase2: bool = False) -> str:
@@ -497,38 +385,41 @@ def run_game_loop(engine: GameEngine, with_ui: bool = True, resume_phase2: bool 
         'quit' - User chose to quit to title
         'load:<path>' - User chose to load a save file
     """
+    # Track whether to skip Phase 1 on first iteration (for loaded saves)
+    skip_phase1 = resume_phase2
+
     if resume_phase2:
-        # Loaded game - resume directly into Phase 2
+        # Show loaded game header
         if with_ui:
             clear_screen()
             print(f"=== Loaded: Day {engine.state.campaign_tracker.day_number}, Round {engine.state.round_number} ===")
             render_state(engine, phase_header=f"Round {engine.state.round_number} — Phase 2: Ranger Turns (Resumed)")
             print("")
             input("Press Enter to continue...")
-        # Jump directly into Phase 2 action loop (skip the outer while True and Phase 1)
-        result = _run_from_phase2(engine, with_ui)
-        return result
-
-    if with_ui:
-        # Print welcome header once
-        print("====== Earthborne Rangers - Demo ======")
-        print("Welcome to the demo! Press Enter to begin...")
-        input()
-        display_and_clear_messages(engine)
-        print("Press enter to continue to Phase 1...")
-        input()
+    else:
+        # Show welcome for new games
+        if with_ui:
+            print("====== Earthborne Rangers - Demo ======")
+            print("Welcome to the demo! Press Enter to begin...")
+            input()
+            display_and_clear_messages(engine)
+            print("Press enter to continue to Phase 1...")
+            input()
 
     while True:
-        # Phase 1: Draw path cards
-        if with_ui:
-            clear_screen()
-        engine.phase1_draw_paths(count=1)
-        if with_ui:
-            render_state(engine, phase_header=f"Round {engine.state.round_number} — Phase 1: Draw Path Cards")
-            print("")
-            print("==== Event log ====")
-            display_and_clear_messages(engine)
-            input("Press Enter to proceed to Phase 2...")
+        # Phase 1: Draw path cards (skip on first iteration if resuming)
+        if not skip_phase1:
+            if with_ui:
+                clear_screen()
+            engine.phase1_draw_paths(count=1)
+            if with_ui:
+                render_state(engine, phase_header=f"Round {engine.state.round_number} — Phase 1: Draw Path Cards")
+                print("")
+                print("==== Event log ====")
+                display_and_clear_messages(engine)
+                input("Press Enter to proceed to Phase 2...")
+
+        skip_phase1 = False  # Only skip once
 
         # Phase 2: Actions until Rest
         while True:
@@ -538,53 +429,7 @@ def run_game_loop(engine: GameEngine, with_ui: bool = True, resume_phase2: bool 
                 print("")
                 print("==== Event log and choices ====")
 
-            # derive actions
-            all_tests = provide_card_tests(engine) + provide_common_tests(engine.state)
-            filtered_tests = filter_tests_by_targets(all_tests, engine.state)
-            actions = (filtered_tests
-            + provide_exhaust_abilities(engine.state)
-            + provide_play_options(engine))  # Filters by can_be_played()
-
-            # add system Discard Gear action
-            actions.append(Action(
-                id="system-discard-gear",
-                name="[Discard Gear]",
-                verb="Discard Gear",
-                aspect="",
-                approach="",
-                is_test=False,
-                on_success=lambda s, _e, _t: None,
-            ))
-            # add system Rest action
-            actions.append(Action(
-                id="system-rest",
-                name="[Rest] (end actions)",
-                verb="Rest",
-                aspect="",
-                approach="",
-                is_test=False,
-                on_success=lambda s, _e, _t: None,
-            ))
-            # add system End Day action
-            actions.append(Action(
-                id="system-end-day",
-                name="END DAY",
-                verb="END DAY",
-                aspect="",
-                approach="",
-                is_test=False,
-                on_success=lambda s, _e, _t: None,
-            ))
-            # add system Menu action (save/load/quit)
-            actions.append(Action(
-                id="system-menu",
-                name="[Menu] (save/load/quit)",
-                verb="Menu",
-                aspect="",
-                approach="",
-                is_test=False,
-                on_success=lambda s, _e, _t: None,
-            ))
+            actions = _build_phase2_actions(engine)
 
             # Keep prompting until we get a valid action
             act = None
@@ -592,7 +437,6 @@ def run_game_loop(engine: GameEngine, with_ui: bool = True, resume_phase2: bool 
                 if with_ui:
                     act = choose_action(actions, engine.state, engine)
                 else:
-                    # In non-UI mode, use engine's decision functions
                     act = engine.card_chooser(engine, actions) if actions else None
 
                 if act is not None and act.id == "system-end-day":
@@ -614,69 +458,16 @@ def run_game_loop(engine: GameEngine, with_ui: bool = True, resume_phase2: bool 
                             return 'quit'
                         elif menu_result.startswith('load:'):
                             return menu_result
-                        # 'continue' - just loop back
                     act = None
                     continue
 
-            if act.id == "system-discard-gear":
-                # Get all gear in Player Area
-                gear_in_play = [c for c in engine.state.areas[Area.PLAYER_AREA] if c.has_type(CardType.GEAR)]
-                if not gear_in_play:
-                    engine.add_message("No gear in play to discard.")
-                    act = None
-                    continue
-
-                # Prompt to choose gear
-                to_discard = engine.card_chooser(engine, gear_in_play)
-                to_discard.discard_from_play(engine)
-                engine.add_message(f"Discarded {to_discard.title}.")
-                if with_ui:
-                    display_and_clear_messages(engine)
-                    input("Press Enter to continue...")
-                act = None
-                continue
-
-            if act.id == "system-rest":
-                engine.resolve_fatiguing_keyword()
-                if with_ui:
-                    display_and_clear_messages(engine)
-                    print("\nYou rest and end your turn.")
-                    input("Press Enter to proceed to Phase 3...")
-                break
-
-
-
-            target_id = choose_action_target(engine.state, act, engine)
-            decision = None
-            if act.is_test:
-                engine.initiate_test(act, engine.state, target_id)
-                decision = choose_commit(act, len(engine.state.ranger.hand), engine.state, engine) if act.is_test else None
-                try:
-                    engine.perform_test(act, decision or __import__('src.models', fromlist=['CommitDecision']).CommitDecision([]), target_id)
-                except RuntimeError as e:
-                    if with_ui:
-                        print(str(e))
-                        input("There was a runtime error! Press Enter to continue...")
-                    continue
-            elif act.is_exhaust or act.is_play:
-                target_card = engine.state.get_card_by_id(target_id)
-                act.on_success(engine, 0, target_card)
-            else:
-                raise RuntimeError(f"Unknown action type: {act.id}")
-
-            engine.check_and_process_clears()
-            if with_ui:
-                display_and_clear_messages(engine)
-
-            # Check if day ended during action (e.g., fatigue from empty deck)
-            if engine.day_has_ended:
-                if with_ui:
-                    print("\nThe day has ended. Demo complete!")
-                    input("Press Enter to exit...")
+            # Handle the selected action
+            result = _handle_phase2_action(engine, act, with_ui)
+            if result == 'rest':
+                break  # Exit Phase 2 loop
+            elif result == 'normal':
                 return 'normal'
-
-            if with_ui:
-                input("Action performed. Press Enter to continue...")
+            # result is None means continue action loop
 
         # Check if day ended during Phase 2
         if engine.day_has_ended:
