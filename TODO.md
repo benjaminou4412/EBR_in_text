@@ -32,12 +32,11 @@ API-ish notes:
 
 A living checklist. Roughly prioritized.
 
-- Implement rolling message log
+- Implement save/load/autosave
 - Implement main menu selecting between full campaign and demo scenarios
 - Implement custom Day 1 setup + story sequence for start of campaign
 - Add campaign log entries to Arrival Setup for each location card
 - Add campaign log entries for all other already-implemented cards that don't already have them
-- Implement save/load/autosave
 - Implement full Travel map
 - Implement fully rules-compliant faceup/facedown cards
   - https://thelivingvalley.earthbornegames.com/docs/rules_glossary/F/facedown_cards/

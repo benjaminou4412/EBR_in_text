@@ -2,8 +2,9 @@
 import os
 import random
 import argparse
+from pathlib import Path
 from src.models import (
-    Card, RangerState, GameState, Action, Aspect, Approach, Area, CardType,
+    Card, RangerState, GameState, Action, Aspect, Area, CardType,
     DayEndException
 )
 from src.engine import GameEngine
@@ -14,6 +15,7 @@ from src.view import (
     choose_order, choose_option, choose_amount
 )
 from src.decks import build_woods_path_deck
+from src.save_load import save_game, load_game
 from src.cards import (
     OvergrownThicket, SunberryBramble, SitkaDoe, WalkWithMe, ADearFriend,
     ProwlingWolhund, SitkaBuck, CalypsaRangerMentor, PeerlessPathfinder,
@@ -21,38 +23,122 @@ from src.cards import (
     CradledbytheEarth, HyPimpotChef
 )
 
+# Default save directory
+SAVE_DIR = Path("saves")
+
 
 def pick_demo_cards() -> list[Card]:
+    """Build a demo ranger deck using actual implemented cards."""
+    # Top of deck - specific cards we want available early
+    top_deck: list[Card] = [
+        WalkWithMe(),
+        ADearFriend(),
+        BoundarySensor(),
+        CradledbytheEarth(),
+        AffordedByNature(),
+    ]
 
+    # Fill rest of deck with copies of Boundary Sensor (has Exploration icons)
+    filler_cards: list[Card] = []
+    for _ in range(20):
+        filler_cards.append(BoundarySensor())
 
-    walk_with_me_0 : Card = WalkWithMe()
-    a_dear_friend_0 : Card= ADearFriend()
-    boundary_sensor_0: Card = BoundarySensor()
-    cradled_by_earth_0: Card = CradledbytheEarth()
-    afforded_by_nature_0: Card = AffordedByNature()
-    exploration_dummies : list[Card] = []
-    for _ in range(5):
-        exploration_dummies.append(Card(title="Demo Explore +1", card_types={CardType.ATTRIBUTE}, approach_icons={Approach.EXPLORATION: 1}))
-    conflict_dummies : list[Card]  = []
-    for _ in range(5):
-        conflict_dummies.append(Card(title="Demo Conflict +1", card_types={CardType.ATTRIBUTE}, approach_icons={Approach.CONFLICT: 1}))
-    reason_dummies : list[Card]  = []
-    for _ in range(5):
-        reason_dummies.append(Card(title="Demo Reason +1", card_types={CardType.ATTRIBUTE}, approach_icons={Approach.REASON: 1}))
-    connection_dummies : list[Card]  = []
-    for _ in range(5):
-        connection_dummies.append(Card(title="Demo Connection +1", card_types={CardType.ATTRIBUTE}, approach_icons={Approach.CONNECTION: 1}))
-
-    deck = exploration_dummies + conflict_dummies + reason_dummies + connection_dummies
-    random.shuffle(deck)
-    top_deck: list[Card] = [walk_with_me_0, a_dear_friend_0, boundary_sensor_0, afforded_by_nature_0, cradled_by_earth_0]
-
-    return top_deck + deck
+    random.shuffle(filler_cards)
+    return top_deck + filler_cards
 
 
 def clear_screen() -> None:
     # Basic clear that works on Windows terminals
     os.system("cls" if os.name == "nt" else "clear")
+
+
+def handle_menu(engine: GameEngine) -> str:
+    """
+    Display the in-game menu and handle save/load/quit options.
+
+    Returns:
+        'continue' - Return to game
+        'load' - A game was loaded (engine reference is stale)
+        'quit' - Return to title screen
+    """
+    while True:
+        print("\n===== MENU =====")
+        print(" 1. Save Game")
+        print(" 2. Load Game")
+        print(" 3. Return to Title")
+        print(" 4. Back to Game")
+
+        choice = input("> ").strip()
+
+        if choice == "1":
+            # Save Game
+            SAVE_DIR.mkdir(parents=True, exist_ok=True)
+
+            # Generate default filename
+            day = engine.state.campaign_tracker.day_number
+            round_num = engine.state.round_number
+            default_name = f"day{day}_round{round_num}.json"
+
+            print(f"\nEnter save name (default: {default_name}):")
+            save_name = input("> ").strip()
+            if not save_name:
+                save_name = default_name
+            if not save_name.endswith(".json"):
+                save_name += ".json"
+
+            save_path = SAVE_DIR / save_name
+            try:
+                save_game(engine, save_path)
+                print(f"\nGame saved to: {save_path}")
+                input("Press Enter to continue...")
+            except Exception as e:
+                print(f"\nError saving game: {e}")
+                input("Press Enter to continue...")
+
+        elif choice == "2":
+            # Load Game
+            if not SAVE_DIR.exists():
+                print("\nNo save directory found.")
+                input("Press Enter to continue...")
+                continue
+
+            saves = list(SAVE_DIR.glob("*.json"))
+            if not saves:
+                print("\nNo save files found.")
+                input("Press Enter to continue...")
+                continue
+
+            print("\nAvailable saves:")
+            for i, save in enumerate(saves, 1):
+                print(f" {i}. {save.name}")
+            print(" 0. Cancel")
+
+            try:
+                idx = int(input("> ").strip())
+                if idx == 0:
+                    continue
+                if 1 <= idx <= len(saves):
+                    save_path = saves[idx - 1]
+                    print(f"\nLoading {save_path.name}...")
+                    # Return 'load' to signal caller should load and restart
+                    return f"load:{save_path}"
+                else:
+                    print("Invalid selection.")
+            except ValueError:
+                print("Invalid input.")
+
+        elif choice == "3":
+            # Return to Title
+            confirm = input("\nReturn to title? Unsaved progress will be lost. (y/n): ").strip().lower()
+            if confirm in ('y', 'yes'):
+                return 'quit'
+
+        elif choice == "4" or choice == "":
+            # Back to Game
+            return 'continue'
+
+        else:
+            print("Invalid choice.")
 
 
 
@@ -110,14 +196,255 @@ def build_demo_state() -> GameState:
     return state
 
 
-def run_game_loop(engine: GameEngine, with_ui: bool = True) -> None:
+def _run_from_phase2(engine: GameEngine, with_ui: bool) -> str:
+    """
+    Run the game starting from Phase 2 (for loaded saves).
+    This enters directly into the Phase 2 action loop, then continues normally.
+    """
+    # Enter the main round loop, but skip Phase 1 on the first iteration
+    first_round = True
+
+    while True:
+        if not first_round:
+            # Phase 1: Draw path cards (skip on first iteration for loaded saves)
+            if with_ui:
+                clear_screen()
+            engine.phase1_draw_paths(count=1)
+            if with_ui:
+                render_state(engine, phase_header=f"Round {engine.state.round_number} — Phase 1: Draw Path Cards")
+                print("")
+                print("==== Event log ====")
+                display_and_clear_messages(engine)
+                input("Press Enter to proceed to Phase 2...")
+
+        first_round = False
+
+        # Phase 2: Actions until Rest
+        while True:
+            if with_ui:
+                clear_screen()
+                render_state(engine, phase_header=f"Round {engine.state.round_number} — Phase 2: Ranger Turns")
+                print("")
+                print("==== Event log and choices ====")
+
+            # derive actions
+            all_tests = provide_card_tests(engine) + provide_common_tests(engine.state)
+            filtered_tests = filter_tests_by_targets(all_tests, engine.state)
+            actions = (filtered_tests
+            + provide_exhaust_abilities(engine.state)
+            + provide_play_options(engine))  # Filters by can_be_played()
+
+            # add system Discard Gear action
+            actions.append(Action(
+                id="system-discard-gear",
+                name="[Discard Gear]",
+                verb="Discard Gear",
+                aspect="",
+                approach="",
+                is_test=False,
+                on_success=lambda s, _e, _t: None,
+            ))
+            # add system Rest action
+            actions.append(Action(
+                id="system-rest",
+                name="[Rest] (end actions)",
+                verb="Rest",
+                aspect="",
+                approach="",
+                is_test=False,
+                on_success=lambda s, _e, _t: None,
+            ))
+            # add system End Day action
+            actions.append(Action(
+                id="system-end-day",
+                name="END DAY",
+                verb="END DAY",
+                aspect="",
+                approach="",
+                is_test=False,
+                on_success=lambda s, _e, _t: None,
+            ))
+            # add system Menu action (save/load/quit)
+            actions.append(Action(
+                id="system-menu",
+                name="[Menu] (save/load/quit)",
+                verb="Menu",
+                aspect="",
+                approach="",
+                is_test=False,
+                on_success=lambda s, _e, _t: None,
+            ))
+
+            # Keep prompting until we get a valid action
+            act = None
+            while not act:
+                if with_ui:
+                    act = choose_action(actions, engine.state, engine)
+                else:
+                    # In non-UI mode, use engine's decision functions
+                    act = engine.card_chooser(engine, actions) if actions else None
+
+                if act is not None and act.id == "system-end-day":
+                    yes = engine.response_decider(engine, "Are you sure?")
+                    if yes:
+                        engine.end_day()
+                        if with_ui:
+                            display_and_clear_messages(engine)
+                            print("\nThe day has ended. Demo complete!")
+                            input("Press Enter to exit...")
+                        return 'normal'
+                    else:
+                        act = None
+
+                if act is not None and act.id == "system-menu":
+                    if with_ui:
+                        menu_result = handle_menu(engine)
+                        if menu_result == 'quit':
+                            return 'quit'
+                        elif menu_result.startswith('load:'):
+                            return menu_result
+                        # 'continue' - just loop back
+                    act = None
+                    continue
+
+            if act.id == "system-discard-gear":
+                # Get all gear in Player Area
+                gear_in_play = [c for c in engine.state.areas[Area.PLAYER_AREA] if c.has_type(CardType.GEAR)]
+                if not gear_in_play:
+                    engine.add_message("No gear in play to discard.")
+                    act = None
+                    continue
+
+                # Prompt to choose gear
+                to_discard = engine.card_chooser(engine, gear_in_play)
+                to_discard.discard_from_play(engine)
+                engine.add_message(f"Discarded {to_discard.title}.")
+                if with_ui:
+                    display_and_clear_messages(engine)
+                    input("Press Enter to continue...")
+                act = None
+                continue
+
+            if act.id == "system-rest":
+                engine.resolve_fatiguing_keyword()
+                if with_ui:
+                    display_and_clear_messages(engine)
+                    print("\nYou rest and end your turn.")
+                    input("Press Enter to proceed to Phase 3...")
+                break
+
+            target_id = choose_action_target(engine.state, act, engine)
+            decision = None
+            if act.is_test:
+                engine.initiate_test(act, engine.state, target_id)
+                decision = choose_commit(act, len(engine.state.ranger.hand), engine.state, engine) if act.is_test else None
+                try:
+                    engine.perform_test(act, decision or __import__('src.models', fromlist=['CommitDecision']).CommitDecision([]), target_id)
+                except RuntimeError as e:
+                    if with_ui:
+                        print(str(e))
+                        input("There was a runtime error! Press Enter to continue...")
+                    continue
+            elif act.is_exhaust or act.is_play:
+                target_card = engine.state.get_card_by_id(target_id)
+                act.on_success(engine, 0, target_card)
+            else:
+                raise RuntimeError(f"Unknown action type: {act.id}")
+
+            engine.check_and_process_clears()
+            if with_ui:
+                display_and_clear_messages(engine)
+
+            # Check if day ended during action (e.g., fatigue from empty deck)
+            if engine.day_has_ended:
+                if with_ui:
+                    print("\nThe day has ended. Demo complete!")
+                    input("Press Enter to exit...")
+                return 'normal'
+
+            if with_ui:
+                input("Action performed. Press Enter to continue...")
+
+        # Check if day ended during Phase 2
+        if engine.day_has_ended:
+            if with_ui:
+                print("\nThe day has ended. Demo complete!")
+                input("Press Enter to exit...")
+            return 'normal'
+
+        # Phase 3: Travel
+        if with_ui:
+            clear_screen()
+            render_state(engine, phase_header=f"Round {engine.state.round_number} — Phase 3: Travel")
+            print("")
+            print("==== Event log ====")
+        camped = engine.phase3_travel()
+        if with_ui:
+            display_and_clear_messages(engine)
+
+        # Check if day ended during Phase 3
+        if engine.day_has_ended:
+            if with_ui:
+                if camped:
+                    print("\nThe day has ended by camping. Demo complete!")
+                    input("Press Enter to exit...")
+                else:
+                    print("\nThe day has ended without camping. Demo complete!")
+                    input("Press Enter to exit...")
+            return 'normal'
+
+        if with_ui:
+            input("Press Enter to proceed to Phase 4...")
+
+        # Phase 4: Refresh
+        if with_ui:
+            clear_screen()
+        engine.phase4_refresh()
+        if with_ui:
+            render_state(engine, phase_header=f"Round {engine.state.round_number} — Phase 4: Refresh")
+            print("")
+            print("==== Event log ====")
+            display_and_clear_messages(engine)
+
+        # Check if day ended during Phase 4 (e.g., drawing from empty deck)
+        if engine.day_has_ended:
+            if with_ui:
+                print("\nThe day has ended. Demo complete!")
+                input("Press Enter to exit...")
+            return 'normal'
+
+        if with_ui:
+            input("Press Enter to start next round...")
+
+        engine.state.round_number += 1
+
+
+def run_game_loop(engine: GameEngine, with_ui: bool = True, resume_phase2: bool = False) -> str:
     """
     Core game loop that can run with or without UI.
 
     Args:
         engine: The game engine to run
         with_ui: If True, displays UI and waits for input. If False, runs autonomously using engine's decision functions.
+        resume_phase2: If True, skip intro and Phase 1, resume directly into Phase 2 (for loaded saves)
+
+    Returns:
+        'normal' - Day ended normally
+        'quit' - User chose to quit to title
+        'load:<path>' - User chose to load a save file
     """
+    if resume_phase2:
+        # Loaded game - resume directly into Phase 2
+        if with_ui:
+            clear_screen()
+            print(f"=== Loaded: Day {engine.state.campaign_tracker.day_number}, Round {engine.state.round_number} ===")
+            render_state(engine, phase_header=f"Round {engine.state.round_number} — Phase 2: Ranger Turns (Resumed)")
+            print("")
+            input("Press Enter to continue...")
+        # Jump directly into Phase 2 action loop (skip the outer while True and Phase 1)
+        result = _run_from_phase2(engine, with_ui)
+        return result
+
     if with_ui:
         # Print welcome header once
         print("====== Earthborne Rangers - Demo ======")
@@ -184,6 +511,16 @@ def run_game_loop(engine: GameEngine, with_ui: bool = True) -> None:
                 is_test=False,
                 on_success=lambda s, _e, _t: None,
             ))
+            # add system Menu action (save/load/quit)
+            actions.append(Action(
+                id="system-menu",
+                name="[Menu] (save/load/quit)",
+                verb="Menu",
+                aspect="",
+                approach="",
+                is_test=False,
+                on_success=lambda s, _e, _t: None,
+            ))
 
             # Keep prompting until we get a valid action
             act = None
@@ -202,9 +539,20 @@ def run_game_loop(engine: GameEngine, with_ui: bool = True) -> None:
                             display_and_clear_messages(engine)
                             print("\nThe day has ended. Demo complete!")
                             input("Press Enter to exit...")
-                        return
+                        return 'normal'
                     else:
                         act = None
+
+                if act is not None and act.id == "system-menu":
+                    if with_ui:
+                        menu_result = handle_menu(engine)
+                        if menu_result == 'quit':
+                            return 'quit'
+                        elif menu_result.startswith('load:'):
+                            return menu_result
+                        # 'continue' - just loop back
+                    act = None
+                    continue
 
             if act.id == "system-discard-gear":
                 # Get all gear in Player Area
@@ -261,7 +609,7 @@ def run_game_loop(engine: GameEngine, with_ui: bool = True) -> None:
                 if with_ui:
                     print("\nThe day has ended. Demo complete!")
                     input("Press Enter to exit...")
-                return
+                return 'normal'
 
             if with_ui:
                 input("Action performed. Press Enter to continue...")
@@ -271,7 +619,7 @@ def run_game_loop(engine: GameEngine, with_ui: bool = True) -> None:
             if with_ui:
                 print("\nThe day has ended. Demo complete!")
                 input("Press Enter to exit...")
-            return
+            return 'normal'
 
         # Phase 3: Travel
         if with_ui:
@@ -292,7 +640,7 @@ def run_game_loop(engine: GameEngine, with_ui: bool = True) -> None:
                 else:
                     print("\nThe day has ended without camping. Demo complete!")
                     input("Press Enter to exit...")
-            return
+            return 'normal'
 
         if with_ui:
             input("Press Enter to proceed to Phase 4...")
@@ -312,7 +660,7 @@ def run_game_loop(engine: GameEngine, with_ui: bool = True) -> None:
             if with_ui:
                 print("\nThe day has ended. Demo complete!")
                 input("Press Enter to exit...")
-            return
+            return 'normal'
 
         if with_ui:
             input("Press Enter to start next round...")
@@ -320,9 +668,19 @@ def run_game_loop(engine: GameEngine, with_ui: bool = True) -> None:
         engine.state.round_number += 1
 
 
-def menu_and_run(engine: GameEngine) -> None:
-    """Interactive UI wrapper around the game loop."""
-    run_game_loop(engine, with_ui=True)
+def menu_and_run(engine: GameEngine, resume_phase2: bool = False) -> str:
+    """Interactive UI wrapper around the game loop.
+
+    Args:
+        engine: The game engine to run
+        resume_phase2: If True, skip intro and Phase 1, resume directly into Phase 2 (for loaded saves)
+
+    Returns:
+        'normal' - Day ended normally
+        'quit' - User chose to quit to title
+        'load:<path>' - User chose to load a save file
+    """
+    return run_game_loop(engine, with_ui=True, resume_phase2=resume_phase2)
 
 
 def start_new_day(campaign_tracker, role_card: Card) -> GameEngine:
@@ -381,56 +739,121 @@ def main() -> None:
         action="store_true",
         help="Display card art descriptions during gameplay"
     )
+    parser.add_argument(
+        "--load",
+        type=str,
+        help="Load a saved game file"
+    )
     args = parser.parse_args()
 
     # Configure display options
     set_show_art_descriptions(args.show_art)
 
-    # Initialize campaign tracker for a new campaign
-    from src.models import CampaignTracker, Mission
-    campaign_tracker = CampaignTracker(
-        day_number=1,
-        ranger_name="Demo Ranger",
-        ranger_aspects={Aspect.AWA: 99, Aspect.FIT: 99, Aspect.SPI: 99, Aspect.FOC: 99},
-        current_location_id="Lone Tree Station",
-        current_terrain_type="Woods",
-        active_missions=[Mission("Biscuit Delivery")]
-    )
+    # Main game loop - can restart from title
+    load_path = args.load  # Check for command-line load on first iteration
+    while True:
+        engine = None
 
-    # Role card stays the same throughout campaign
-    role_card = PeerlessPathfinder()
+        if load_path:
+            # Load from save file
+            try:
+                print(f"Loading save: {load_path}")
+                engine = load_game(load_path)
+                # Set up UI decision functions
+                engine.card_chooser = choose_target
+                engine.response_decider = choose_response
+                engine.order_decider = choose_order
+                engine.option_chooser = choose_option
+                engine.amount_chooser = choose_amount
+                print("Game loaded successfully!")
+                load_path = None  # Clear so we don't reload on next iteration
+            except Exception as e:
+                print(f"Error loading save: {e}")
+                input("Press Enter to start new game...")
+                engine = None
+                load_path = None  # Clear to avoid infinite retry
 
-    # Day transition loop
-    max_days = 30  # Limit for demo purposes
-    for day in range(max_days):
-        print(f"\n{'='*60}")
-        print(f"Starting Day {campaign_tracker.day_number}")
-        print(f"{'='*60}\n")
+        if engine is None:
+            # Initialize campaign tracker for a new campaign
+            from src.models import CampaignTracker, Mission
+            campaign_tracker = CampaignTracker(
+                day_number=1,
+                ranger_name="Demo Ranger",
+                ranger_aspects={Aspect.AWA: 99, Aspect.FIT: 99, Aspect.SPI: 99, Aspect.FOC: 99},
+                current_location_id="Lone Tree Station",
+                current_terrain_type="Woods",
+                active_missions=[Mission("Biscuit Delivery")]
+            )
 
-        # Start new day
-        engine = start_new_day(campaign_tracker, role_card)
+            # Role card stays the same throughout campaign
+            role_card = PeerlessPathfinder()
 
-        # Force a demo card on top for testing
-        engine.state.path_deck.insert(0, HyPimpotChef())
+            # Day transition loop
+            max_days = 30  # Limit for demo purposes
+            for day in range(max_days):
+                print(f"\n{'='*60}")
+                print(f"Starting Day {campaign_tracker.day_number}")
+                print(f"{'='*60}\n")
 
-        # Run the day
-        try:
-            menu_and_run(engine)
-        except DayEndException:
-            # Day ended successfully
-            print("\n" + "="*50)
-            display_and_clear_messages(engine)
-            print("="*50)
-            print(f"\nDay {campaign_tracker.day_number - 1} complete!")
+                # Start new day
+                engine = start_new_day(campaign_tracker, role_card)
 
-            # Check if we should continue to next day
-            if day < max_days - 1:
-                print(f"\nPress Enter to start Day {campaign_tracker.day_number}...")
-                input()
+                # Force a demo card on top for testing
+                engine.state.path_deck.insert(0, HyPimpotChef())
+
+                # Run the day
+                try:
+                    result = menu_and_run(engine)
+                    if result == 'quit':
+                        print("\nReturning to title...")
+                        break
+                    elif result.startswith('load:'):
+                        load_path = result[5:]  # Extract path after 'load:'
+                        break
+                except DayEndException:
+                    # Day ended successfully
+                    print("\n" + "="*50)
+                    display_and_clear_messages(engine)
+                    print("="*50)
+                    print(f"\nDay {campaign_tracker.day_number - 1} complete!")
+
+                    # Check if we should continue to next day
+                    if day < max_days - 1:
+                        print(f"\nPress Enter to start Day {campaign_tracker.day_number}...")
+                        input()
+                    else:
+                        print(f"\nDemo complete after {max_days} days!")
+                        print("Thanks for playing!")
+                        return
             else:
-                print(f"\nDemo complete after {max_days} days!")
-                print("Thanks for playing!")
-                break
+                # Loop completed without break - all days done
+                return
+
+            # Check if we need to load a save
+            if load_path:
+                continue  # Restart main loop with load_path set
+
+            # Check if quit was selected
+            if result == 'quit':
+                continue  # Restart main loop (back to title)
+
+        else:
+            # Running from a loaded save - resume directly into Phase 2
+            try:
+                result = menu_and_run(engine, resume_phase2=True)
+                if result == 'quit':
+                    print("\nReturning to title...")
+                    continue
+                elif result.startswith('load:'):
+                    load_path = result[5:]
+                    continue
+            except DayEndException:
+                print("\n" + "="*50)
+                display_and_clear_messages(engine)
+                print("="*50)
+                print(f"\nDay complete!")
+                input("Press Enter to continue...")
+                continue
 
 
 if __name__ == "__main__":

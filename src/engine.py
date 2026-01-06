@@ -31,7 +31,8 @@ class GameEngine:
                   response_decider: Callable[[GameEngine, str],bool] | None = None,
                   order_decider: Callable[[GameEngine, Any, str], Any] | None = None,
                   option_chooser: Callable[[GameEngine, list[str], str | None], str] | None = None,
-                  amount_chooser: Callable[[GameEngine, int, int, str | None], int] | None = None):
+                  amount_chooser: Callable[[GameEngine, int, int, str | None], int] | None = None,
+                  skip_reconstruct: bool = False):
         self.state = state
         self.card_chooser = card_chooser if card_chooser is not None else self._default_chooser
         self.response_decider = response_decider if response_decider is not None else self._default_decider
@@ -49,7 +50,8 @@ class GameEngine:
         # These are set during test resolution and available during challenge effect resolution
         self.last_test_added_progress: bool = False
         self.last_test_target: Card | None = None
-        self.reconstruct()
+        if not skip_reconstruct:
+            self.reconstruct()
 
         self.campaign_guide = CampaignGuide()
 
@@ -558,6 +560,36 @@ class GameEngine:
                 self.constant_abilities.extend(const_abilities)
 
         # TODO: constant abilities from any other sources besides cards in play
+
+    def reconstruct_silent(self) -> None:
+        """
+        Rebuild listener and constant ability registry WITHOUT side effects.
+
+        Used when loading saved games - avoids enters_hand() and enters_play()
+        which add messages to the queue. Instead, directly calls get_listeners()
+        and get_constant_abilities().
+
+        Per game rules, only Moment cards establish listeners while in hand.
+        """
+        self.listeners.clear()
+        self.constant_abilities.clear()
+
+        # Listeners from Moment cards in hand (only Moments have hand listeners)
+        for card in self.state.ranger.hand:
+            if card.has_type(CardType.MOMENT):
+                listeners = card.get_listeners()
+                if listeners:
+                    self.listeners.extend(listeners)
+
+        # Listeners and abilities from cards in play
+        for card in self.state.all_cards_in_play():
+            listeners = card.get_listeners()
+            if listeners:
+                self.listeners.extend(listeners)
+
+            abilities = card.get_constant_abilities()
+            if abilities:
+                self.constant_abilities.extend(abilities)
 
 
     # ConstantAbility management methods
