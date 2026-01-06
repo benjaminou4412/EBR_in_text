@@ -52,6 +52,70 @@ def clear_screen() -> None:
     os.system("cls" if os.name == "nt" else "clear")
 
 
+def show_title_screen() -> str:
+    """
+    Display the title screen and get user's choice.
+
+    Returns:
+        'new' - Start new campaign
+        'load:<path>' - Load a saved game
+        'quit' - Exit the game
+    """
+    clear_screen()
+    print("")
+    print("=" * 50)
+    print("        EARTHBORNE RANGERS")
+    print("        Text-Based Adventure")
+    print("=" * 50)
+    print("")
+    print("  1. New Campaign")
+    print("  2. Load Saved Game")
+    print("  3. Quit")
+    print("")
+
+    while True:
+        choice = input("> ").strip()
+
+        if choice == "1":
+            return 'new'
+
+        elif choice == "2":
+            # Load Game
+            if not SAVE_DIR.exists():
+                print("\nNo save directory found.")
+                input("Press Enter to continue...")
+                return show_title_screen()  # Re-display title
+
+            saves = list(SAVE_DIR.glob("*.json"))
+            if not saves:
+                print("\nNo save files found.")
+                input("Press Enter to continue...")
+                return show_title_screen()  # Re-display title
+
+            print("\nAvailable saves:")
+            for i, save in enumerate(saves, 1):
+                print(f" {i}. {save.name}")
+            print(" 0. Back")
+
+            try:
+                idx = int(input("> ").strip())
+                if idx == 0:
+                    return show_title_screen()  # Back to title
+                if 1 <= idx <= len(saves):
+                    save_path = saves[idx - 1]
+                    return f"load:{save_path}"
+                else:
+                    print("Invalid selection.")
+            except ValueError:
+                print("Invalid input.")
+
+        elif choice == "3" or choice.lower() in ('q', 'quit'):
+            return 'quit'
+
+        else:
+            print("Please enter 1, 2, or 3.")
+
+
 def handle_menu(engine: GameEngine) -> str:
     """
     Display the in-game menu and handle save/load/quit options.
@@ -742,16 +806,32 @@ def main() -> None:
     parser.add_argument(
         "--load",
         type=str,
-        help="Load a saved game file"
+        help="Load a saved game file directly (skip title screen)"
     )
     args = parser.parse_args()
 
     # Configure display options
     set_show_art_descriptions(args.show_art)
 
-    # Main game loop - can restart from title
-    load_path = args.load  # Check for command-line load on first iteration
+    # Check for command-line load argument
+    load_path = args.load
+
+    # Main game loop
     while True:
+        # If no load path specified, show title screen
+        if not load_path:
+            title_choice = show_title_screen()
+
+            if title_choice == 'quit':
+                print("\nThanks for playing!")
+                return
+            elif title_choice == 'new':
+                load_path = None  # Will start new campaign below
+            elif title_choice.startswith('load:'):
+                load_path = title_choice[5:]
+            else:
+                continue  # Unknown choice, show title again
+
         engine = None
 
         if load_path:
@@ -769,12 +849,12 @@ def main() -> None:
                 load_path = None  # Clear so we don't reload on next iteration
             except Exception as e:
                 print(f"Error loading save: {e}")
-                input("Press Enter to start new game...")
-                engine = None
-                load_path = None  # Clear to avoid infinite retry
+                input("Press Enter to return to title...")
+                load_path = None
+                continue  # Back to title screen
 
         if engine is None:
-            # Initialize campaign tracker for a new campaign
+            # Start a new campaign
             from src.models import CampaignTracker, Mission
             campaign_tracker = CampaignTracker(
                 day_number=1,
@@ -805,10 +885,11 @@ def main() -> None:
                 try:
                     result = menu_and_run(engine)
                     if result == 'quit':
-                        print("\nReturning to title...")
+                        # Return to title screen
+                        load_path = None
                         break
                     elif result.startswith('load:'):
-                        load_path = result[5:]  # Extract path after 'load:'
+                        load_path = result[5:]
                         break
                 except DayEndException:
                     # Day ended successfully
@@ -829,20 +910,16 @@ def main() -> None:
                 # Loop completed without break - all days done
                 return
 
-            # Check if we need to load a save
-            if load_path:
-                continue  # Restart main loop with load_path set
-
-            # Check if quit was selected
-            if result == 'quit':
-                continue  # Restart main loop (back to title)
+            # Continue to next iteration (title screen or load)
+            continue
 
         else:
             # Running from a loaded save - resume directly into Phase 2
             try:
                 result = menu_and_run(engine, resume_phase2=True)
                 if result == 'quit':
-                    print("\nReturning to title...")
+                    # Return to title screen
+                    load_path = None
                     continue
                 elif result.startswith('load:'):
                     load_path = result[5:]
@@ -853,6 +930,7 @@ def main() -> None:
                 print("="*50)
                 print(f"\nDay complete!")
                 input("Press Enter to continue...")
+                load_path = None  # Return to title
                 continue
 
 
