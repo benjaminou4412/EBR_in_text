@@ -284,7 +284,6 @@ class GameEngine:
         mod, icon = challenge_card_drawn.mods[aspect], challenge_card_drawn.icon
         effort = max(0, base_effort + mod)
         difficulty = action.difficulty_fn(self, target_card)
-        self.add_message(f"You drew: [{aspect.value}]{mod:+d}, symbol [{icon.upper()}]")
 
 
 

@@ -1,0 +1,187 @@
+Earthborne Rangers Text Edition Rules (LLM Edition)
+
+GOAL
+You are a solo Ranger traveling the Valley. Your story will be told across a series of in-game days, each made up of some number of rounds. You explore locations, meet people and animals, solve problems and overcome terrain features, and learn ever more about the world of the Valley. Wins and losses are story-driven: missions, the campaign guide, and your choices set goals and consequences rather than a single victory condition. That said, if you wish to be prepared to face the challenges of the Valley, you'll want to accomplish as much as you can each in-game day to discover useful tech, find and befriend strong allies, and learn how best to approach the game's myriad obstacles. Overreaching has risks, though - you won't be able to do everything, and you'll have to learn to prioritize as well.
+
+CORE PRINCIPLES
+- Golden Rule: If a card contradicts a general rule, the card wins.
+- “You”: Unless a card says otherwise, “you” means the Ranger whose card/ability/test is being resolved.
+- Timing keywords: “Setup” = during setup only. “Start of Day” = once at the beginning of a day. “Refresh:” = during Phase 4. “Response:” = when the stated trigger happens; must resolve if it can, except for "response" on moments, which specifies the point in time in which they optionally can be played.
+- The letter "R": A capital R should be read as "per ranger". Typically it accompanies an integer quantity, so "2R" should be read as "2 per ranger". For solo play, R=1.
+- This guide is written to taken into account the possibility of multiple rangers, but for now this implementation of the game only allows for a solo ranger.
+
+THE PLAY AREA (ZONES)
+- Player Area (one per Ranger): your role card, aspect card, equipped gear, Ranger deck, and discard pile.
+- Within Reach (one per Ranger): path/Ranger cards physically near that Ranger.
+- Along the Way (shared): path cards on the table between Rangers and the location.
+- Surroundings (shared): the location card and global cards like weather and missions.
+
+COMPONENTS, ICONS, AND TERMINOLOGY
+- Aspects: Awareness [AWA], Fitness [FIT], Focus [FOC], Spirit [SPI]. Valued from 1 (weak) to 3 (strong)
+   - Your AWA represents your skills of observation and how well you process the world around you. It is generally used to efficiently go around threats rather than deal with them directly, and is required for quickly finding important things, places, and people.
+   - Your FIT represents your physical strength, agility, and endurance. It is generally used to overcome treacherous terrain features and is required for efficiently moving between locations.
+   - Your FOC represents your concentration, ability to recall knowledge, and how well you can stay on-task. It is generally used to flexibly approach a variety of challenges, and is required for solving unusual problems.
+   - Your SPI represents your inner strength and sense of self. It is generally used to calm wild animals in a direct confrontation, and is required for befriending the people of the Valley.
+- Energy tokens: Your “energy pool” holds tokens you use to take skill tests and advance your goals. They come in four types, each corresponding to one of the Aspects. Each round, your energy tokens refresh up to the value of the corresponding aspect.
+- Approach icons: Cards in your hand have [CONFLICT], [REASON], [EXPLORATION], [CONNECTION] icons, which can be committed to specific types of tests to improve your odds of success.
+- Tokens in play: Progress and Harm. Cards generally accumulate one or both of progress and harm tokens and eventually "clear" when the amount reaches their progress threshold or harm threshold respectively.
+- Various other quantities besides progress and harm are tracked in the physical game with "general purpose tokens", which in this implementation of the game will always be named when displayed.
+- Challenge deck icons: [CREST], [MOUNTAIN], [SUN]. Reshuffle icon: [RESHUFFLE]. These cause random effects to happen during skill tests.
+- Presence value: “presence” is an integer on cards used for fatigue calculations and the difficulty of common tests.
+
+CARD TYPES (WHAT THEY ARE AND HOW THEY BEHAVE)
+- Ranger cards types (from your deck): moments (one-shot events), attributes (committed for approach icons), gear (equip for ongoing abilities), plus your Role card which start in play.
+  • Cost is paid with matching energy tokens from your pool to play the card.
+  • Aspect requirement gates deckbuilding: your printed aspect value must meet or exceed it to include the card.
+  • Equip value (for gear) limits how much you can equip. You can have up to 5 equip value worth of gear in play; exceeding 5 requires you to discard equipped gear until you have less than 5 equip value worth in play.
+- Path cards (from the environment): beings (people/animals), features (terrain/structures), locations.
+  • Locations define where you are and what beings/features of interest are accessible to you.
+  • Beings/features have presence and progress/harm thresholds; they can fatigue you, award benefits, or present obstacles.
+  • Some path cards have a “campaign entry” number that tells you to read the campaign guide entry when drawn.
+- Other decks and cards: the Challenge deck (test variance + challenge icons), Weather (global effects), Missions (story goals and constraints), Campaign Guide entries (narrative rules), the Valley Map (travel network).
+
+STATUS & CARD STATE
+- Ready/Exhausted: In the physical game, cards are turned sideways to exhaust them and turned upright to ready them. Only ready cards are “active” for challenge effects and fatigue. In this implementation, cards are assumed Ready by default and marked Exhausted when exhausted.
+- In Play vs. Discard vs. Set Aside vs. Facedown: normal card game definitions; facedown cards in play have no active text until turned faceup.
+- "Fatigue Stack": Unique to Earthborne Rangers. Explained in more detail below, but broadly, the game usually attacks you by dealing "fatigue" to you, which discards cards from your deck face-down to your fatigue stack. Since you want to accomplish as much as you can per in-game day, and the day ends when your deck runs out, fatigue directly shortens your remaining time per day.
+
+ENERGY, ASPECTS, AND YOUR HAND
+- Start of day: you’ll gain energy equal to your printed aspect values.
+- During your turns, your energy pool can exceed your printed values; limits only matter when you refill during Refresh after your turns are over each round.
+- There’s no hand size limit.
+
+
+ROUND STRUCTURE (LOOPS UNTIL THE DAY ENDS)
+Each day has an indefinite number of rounds. Each round has four phases, each consisting of a series of steps. When all steps are completed, the game proceeds to the next phase. This implementation handles most steps automatically, only calling for player input when decisions are needed.
+
+PHASE 1 — PATH CARDS
+• This phase represents the new things you find in your exploration of the current location. It consists of the following steps:
+1) The lead ranger draws a path card from the path deck. If the path deck is empty, the path discard is shuffled to form a new path deck.
+2) The card enters play either Within Reach of the ranger who drew it or Along the Way.
+3) If the card has a campaign guide entry number, read and resolve that campaign guide entry.
+4) Then, resolve any effects that the card specifies happen when the card "enters play".
+5) If there are still rangers who have not drawn a path card, the next ranger draws a path card and goes to step 2. Otherwise, proceed to Phase 2 - Ranger Turns.
+
+PHASE 2 — RANGER TURNS
+• This phase is the bulk of the game, and represents you equipping your gear, actively interacting with the environment, and using your abilities to accomplish your goal.
+• Rangers take turns in any order. There’s no fixed limit to turns per Ranger per round, so a solo ranger can take as many turns as they want in a row until they choose to rest. Generally taking turns costs energy, and energy is reset each round, so you'll want to figure out ways to use your energy.
+1) On your turn, choose exactly one:
+  • [Perform] a Test (details below).
+  • [Play] a Ranger card from hand (pay its energy cost; if it's a Gear, Feature, or Being, it comes into play in the appropriate zone; if it's a Moment, resolve its effects immediately. Attributes cannot be played, only committed). 
+  • [Exhaust] a card you control with an "Exhaust:" ability with no specific timing. These exhaust abilities are typically found on your role card and on ranger cards in play. You cannot use the "Exhaust:" abilities of exhausted cards. You can use as many or few exhaust "Exhaust:" abilities as you want at any given window where you're allowed to use them. If an "Exhaust:" ability has a specified timing (usually of the form "When..."), it can only be used at the specified timing point, and you will be prompted on whether or not to exhaust the card at that timing point.
+  • [Discard gear] to discard equipped gear you no longer want
+  • [Rest] to end your participation this round; resolve any “when you rest” effects; you cannot take further turns this round.
+  • [End Day] to end the day and proceed to the next day; this will reset all game state except that recorded on the campaign tracker.
+2) If there are still Rangers who haven't rested, one of them can take another turn.
+3) When all Rangers have rested, proceed to Phase 3: Travel.
+
+PHASE 3 — TRAVEL
+You may travel from the current location to a nearby location if either (a) the Location has progress greater than or equal to its progress threshold, or (b) a rule instructs you to travel now (such rules will generally specify to skip to Phase 3). If you cannot travel, skip this phase and proceed to Phase 4: Refresh.
+Travel steps:
+  1) Clear Play Area: discard all path cards in play (except cards with the Persistent keyword) and Ranger cards in the play area Within Reach, Along the Way, or in the Surroundings. Ranger cards in your play area stay in play. All cards now in the path discard and path deck are removed from the game in preparation for setting up the new location's path deck.
+  2) Choose a new destination: pick a Nearby location directly connected on the Valley map; you must move to the next node along the chosen path (no skipping). Put the new Location in the surroundings.
+     • Rivers: you can’t traverse river paths until a game component allows it.
+  3) Optional: Camp (End the Day) here before exploring; usually, the only way you can edit and improve your deck is by Camping, which allows you to make changes to your deck before starting the next day. 
+  4) Build the new Path Deck: Terrain set (matching the path you used), plus Location set if the destination is pivotal; otherwise add three random Valley set cards. Also add any cards specified by Weather/Location/Missions. Shuffle.
+  5) Arrival Setup: Read the Campaign Guide entry shown on the back of the Location, then resolve Arrival Setup.
+  6) Proceed to Phase 4: Refresh.
+
+PHASE 4 — REFRESH
+In player order, each Ranger:
+  1) Suffers 1 fatigue for each [INJURY] they have (see Fatigue and Injury).
+  2) Draws 1 card. If you cannot draw due to an empty deck, the day ends.
+  3) Refills energy to printed aspect values (discard any excess).
+  4) Resolves “Refresh:” effects.
+  5) Readies all exhausted cards in all areas. 
+Then, start a new round, proceeding to Phase 1: Path Cards.
+
+PERFORMING A TEST (THE CENTRAL MECHANIC)
+You can attempt tests printed on cards (Ranger, path, weather, mission, location) and your four common tests. Tests are specified in the format "Aspect + [Approach]: Verb [Difficulty]". "Aspect" specifies the required aspect, one of AWA, FOC, FIT, and SPI. "Approach" specifies legal approach icons that can be committed, one of Conflict, Exploration, Reason, and Connection. "Verb" is mostly flavor, though particularly for the common tests (Avoid, Remember, Traverse, Connect), there may be other cards that specifically reference the verb (e.g. "Commit +1 effort to all your Traverse tests"). "Difficulty" is either a plain integer, "X" (with some accompanying definition for X), or unspecified, which defaults to difficulty=1. 
+To initiate a test, you must have at least 1 energy in the required aspect.
+Summary of steps:
+1) Choose Test
+   • Pick any test on a card in play that isn’t in another Ranger’s player area (you can target their Within Reach/Along the Way cards, just not their equipped gear etc.).
+   • Pay any costs the test specifies.
+   • Interacting and Fatigue: for each ready card "between" you and your target, you suffer fatigue equal to its presence. Friendly cards don’t fatigue you. Exhausted cards don’t fatigue you.
+      - When you interact with cards in The Surroundings, cards Along the Way, Within Reach of you, and in your Player Area are "between" you and your interaction target and fatigue you.
+      - When you interact with cards Along the Way, cards Within Reach of you and in your Player Area are "between" you and your interaction target and fatigue you.
+      - When you interact with cards Within Reach of you, only cards in your Player Area are "between" you and your interaction target and fatigue you.
+      - When you interact with cards Within Reach of another Ranger, cards in your Player Area and Within Reach of you are "between" you and your interaction target and fatigue you.
+      - When you interact with cards in your Player Area, no cards are between you and your interaction target.
+      - Cards in your Player Area rarely have a presence value, so they usually don't fatigue you. 
+2) Commit Effort
+   • Commit energy of the required aspect from your energy pool; at least 1 of that aspect must be committed to attempt the test.
+   • Discard any number of cards from hand with matching approach icons; each icon adds +1 effort.
+   • Add any effort committed by other sources (gear, helpful beings, other Rangers’ Ranger tokens, etc.).
+3) Apply Modifiers
+   • Reveal the top challenge card from the challenge deck. Add/subtract the modifier shown for the required aspect. Apply any other relevant modifiers. The resulting value after all modifiers is called your "resulting effort", or sometimes just "your effort".
+   • Some challenge cards say [RESHUFFLE]; if any revealed this test go to discard, reshuffle the challenge discard back into the deck after the test.
+   • When the challenge deck is full, it contains 24 of those cards. For each aspect, there are 6 "+1" modifiers, 10 "0" modifiers, 7 "-1" modifiers, and 1 "-2" modifier.
+4) Success or Failure
+   • If your total effort is greater than or equal to the test’s difficulty, you succeed; otherwise you fail. 
+   • If you succeeded, resolve success effects specified by the test. If the success effects scale with “your effort,” use your resulting effort (after modifiers).
+   • If you failed, resolve explicit failure effects if present; otherwise only the failure itself happens. Some tests also include effects that occur “whether you succeed or fail.” 
+   • Finally, resolve any “after you succeed/fail” triggers.
+5) Resolve Challenge Effects
+   • Look at the challenge icon on the revealed challenge card: [CREST], [MOUNTAIN], or [SUN]. Resolve all matching challenge effects on active (ready) cards in play, once each, in this order: Weather → Location → Missions → Along the Way → Within Reach → your Player Area. If you were interacting within reach of another Ranger, that Ranger’s Within Reach is also active for this step.
+   • Conditional arrows (double-arrow): only resolve the text after the arrow if you satisfied the preceding condition/instruction. If you don’t, that challenge effect did not “resolve” for other effects’ purposes.
+   • If a card is cleared/exhausted before its challenge effect would resolve, its challenge effect doesn’t trigger.
+   • If multiple challenge effects are to resolve in the same area, you choose the order of their resolution.
+
+COMMON TESTS (THE STANDARD, GO-TO WAYS TO INTERACT WITH CARDS)
+You always have access to these tests. They are specified as follows:
+- FIT + [Exploration]: Traverse [X] the nearby terrain to add [progress] to a location or feature equal to your effort. If you fail, suffer 1 injury.
+- SPI + [Connection]: Connect [X] with the life around you to add progress to a being equal to your effort.
+- FOC + [Reason]: Remember your training to scout ranger cards equal to your effort, then draw 1 ranger card.
+- AWA + [Conflict]: Avoid [X] notice to exhaust one being.
+[X] is equal to the presence of the card with which you are interacting (minimum of 1). The common Remember test interacts with no card, so it never fatigues you at the start of the test (though challenge effects on active cards will still trigger during a Remember test).
+
+INTERACTING, FATIGUE, SOOTHE, INJURY
+- Fatigue: When you "suffer N fatigue", you move the top N cards of your deck facedown to create/grow your fatigue stack (without looking). If you are told to suffer fatigue and you can’t because your deck is too small, the day ends immediately.
+- “Fatigues You”: when an effect or a ready card says it fatigues you, suffer fatigue equal to that card’s presence.
+- Soothe N: draw N cards from the top of your fatigue stack into your hand.
+- Injury: when you suffer an injury, discard your entire fatigue stack. During Phase 4 each round, suffer 1 extra fatigue per injury. When you take your third injury in a day, you must end the day at the end of your current turn and add a Lingering Injury to your deck.
+
+CLEARING CARDS & THRESHOLDS
+- Progress/Harm: add progress or harm to cards via tests or effects. When tokens on a card reach its relevant threshold (progress or harm), it "clears": discard that card from play and resolve any “when cleared” instructions.
+- "Ranger Token": Some cards have a progress threshold of "Ranger Token". These cards cannot be cleared by progress, though progress can still be added to them. Instead, they clear when every ranger has their ranger token on the card. Typically, these cards have a test with a success effect that moves your ranger token to the card.
+- Some cards lack a progress/harm threshold. Progress/harm can still be put on them, but they will never clear due to the respective token type.
+- Some cards specify they cannot have progress and/or harm be put on the card at all.
+- Note: Challenge effects that add progress/harm are not considered “added by you” for effects that care who added them.
+
+
+KEYWORDS & TERMS
+- Ambush: When a card with the ambush keyword enters play within reach or moves within reach of a Ranger, it fatigues that Ranger. Only ready cards can fatigue you; exhausted cards never fatigue you.
+- Conduit: When you have a card with the Conduit keyword equipped, you can play Manifestation cards by using (discarding) a token from that conduit. 
+- Manifestation: To play a card with the manifestation keyword, you must (discard) a token from one of your equipped cards with the conduit keyword.
+- Disconnected: You cannot add progress to this card using the Connect common test.
+- Dodge: Some game effects allow you to dodge cards when you are performing a test. When you dodge cards, those cards do not count as being between you and the card with which you are interacting. Cards dodged in this way do not fatigue you, and if they have the obstacle keyword, they do not prevent you from interacting with cards beyond them. These cards are still considered to be active , so their challenge effects still trigger.
+- Fatiguing: during Rest, if a ready card with Fatiguing is within reach/along the way/in your player area, suffer fatigue equal to its presence (or the number following "Fatiguing").
+- Friendly: a friendly card between you and your target does not fatigue you when you interact past it. Its challenge effects will still trigger if it's active.
+- Obstacle: You cannot interact with a card if a ready card with the obstacle keyword is between you and that card. You cannot travel if there are any ready cards with the obstacle keyword in play.
+- Persistent: This card (and its attachments) stay in play when you travel.
+- Setup: At the start of the day, after step 1 of setup, you can search your deck for one card with the setup keyword and put it into play.
+- Scout: Look at the top X cards of the specified deck; typically, the ability specifies X. You may put the looked-at cards on the top or bottom of the specified deck in any order.
+- Unique: A Ranger cannot have two unique cards with the same name from their deck in play at the same time. If you play a second copy of the same unique card, the first one is immediately discarded. 
+- Use: many gear/moments say “Use X tokens” or “When you use a token …”; treat each token spent as one use unless the card clearly bundles them.
+
+END OF THE DAY — HOW A DAY ENDS
+- You draw or fatigue from an empty deck for any reason → end the day.
+- You suffer your third [INJURY] → end the day after your current turn (then add a Lingering Injury if available).
+- A rule instructs you to end the day (e.g., mission text, campaign entry, or specific card effects). The most common case for this is if a Human from the path deck is cleared by harm.
+- Group may also choose to end the day as allowed by campaign rules (e.g., camping at a new location).
+- When a day ends, all cards leave play and are returned to the collection. The only state retained between days is text recorded in the campaign tracker.
+
+
+SAVING/CONTINUING BETWEEN SESSIONS (CAMPAIGN)
+- Use the campaign tracker to record: current location, terrain traveled, uncompleted missions, and today’s weather side. Keep unlocked rewards separate from the general collection.
+- Between-day deck updates: swapping in/out unlocked rewards follows the rulebook/campaign guide.
+- Travel/build-path references for the next session come from the tracker entries.
+
+MISSIONS
+- By default, when you're instructed to a gain a mission, that mission is recorded in the campaign tracker. As such, missions persist between days, representing your long-term goals.
+- Some missions, particularly "Helping Hand", explicitly instruct you to not record them. As such, these missions are limited-time opportunities, and will expire at the end of the day.
+- While missions provide you goals to pursue, they are not explicitly "required", even the ones with the Story trait that represent the campaign's main story. However, ignoring your missions will have consequences, potentially both mechanically and for the story of your Ranger.
+
+
+

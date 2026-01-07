@@ -35,7 +35,6 @@ Features with a lot of AI-written code I haven't carefully reviewed that might p
 
 A living checklist. Roughly prioritized.
 
-- Implement "view campaign tracker" option. 
 - Implement start-of-day campaign entry resolution
   - Probably a dict of in-game day numbers as keys mapped to strings referring to campaign guide entries 
   - That way, the start-of-day sequence can simply check for entries and resolve them in sequence, and the strings are serializable for easy saving
