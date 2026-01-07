@@ -7,6 +7,8 @@ if TYPE_CHECKING:
 class CampaignGuide:
     def __init__(self):
         self.entries : dict[str, Callable[['CampaignGuide', 'Card | None', 'GameEngine', str | None], bool]] = {
+            "1": self.resolve_entry_1,
+            "2": self.resolve_entry_2,
             "1.01": self.resolve_entry_1_01,
             "1.02": self.resolve_entry_1_02,
             "1.02A": self.resolve_entry_1_02_A,
@@ -31,6 +33,10 @@ class CampaignGuide:
             "91.8": self.resolve_entry_91_8
             }
     
+    """
+    Resolves the campaign guide entry at ENTRY_NUMBER, noting the SOURCE_CARD if present and CLEAR_TYPE if relevant
+    Returns whether or not the SOURCE_CARD was discarded as part of the campaign guide entry resolution
+    """
     def resolve_entry(self, entry_number: str, source_card: 'Card | None', engine: 'GameEngine', clear_type: str | None) -> bool:
         from .models import ConstantAbilityType
         actual_entry_number = entry_number
@@ -41,10 +47,161 @@ class CampaignGuide:
                 #TODO: Handle multiple overrides. 
         return self.entries[actual_entry_number](source_card, engine, clear_type)
     
+    def resolve_entry_1(self, source_card: 'Card | None', engine: 'GameEngine', clear_type: str | None) -> bool:
+        engine.add_message("")
+        engine.add_message("")
+        engine.add_message("== Campaign Guide Entry 1: Missions ==")
+        engine.add_message("")
+        engine.add_message("--- CAMPAIGN START ---")
+        engine.add_message("To start your campaign, perform the first four steps of setup on page 10 of the rulebook, " \
+        "then return here for the remainder of setup.")
+        engine.add_message("")
+        engine.add_message("--- Day 1 Setup (First four steps) ---")
+        engine.add_message("")
+        engine.add_message(f"Step 1: Set up player area (skipped)")
+        engine.add_message(f"Step 2: Draw starting hand")
+
+        # Draw starting hand
+        for _ in range(5):
+            card, _ = engine.state.ranger.draw_card(engine)
+            if card is None:
+                raise RuntimeError(f"Deck should not run out during setup!")
+
+        engine.add_message(f"Step 3: Elect lead Ranger (only one ranger; automatically chosen)")
+        engine.add_message(f"Step 4: Shuffle challenge deck")
+        engine.state.challenge_deck.reshuffle()
+        engine.add_message("First four steps of Setup complete; returning to campaign guide entry 1:")
+        engine.add_message("")
+        engine.add_message("--- Story ---")
+        engine.add_message("Cresting the gentle, grassy hill, you see the unmistakable silhouette of " \
+        "Lone Tree Station rise out of the highland plains before you. Lone Tree Station is aptly named. " \
+        "The single massive giga-redwood towers above the hills and swaying grass that surround it. You " \
+        "can just make out eaves and balconies among the gnarled bark, doors tucked into the winding roots, " \
+        "and hanging gardens suspended from branches.")
+        engine.add_message("As you draw closer, a woman in a freshly pressed cloak steps out from the main " \
+        "entrance and waves. Calypsa, your mentor for the past nine months, strides toward you with a man who " \
+        "looks just about your age at her heels.")
+        engine.add_message("“Hallo!” she calls out. “You made it. Just look at you!” She clasps your hands, her " \
+        "smile warm and her grip firm. “I’m glad to finally have you here,” she says. Then she turns. “This is Kal " \
+        "Iver. I trained Kal last year—right before I started training you.” Kal Iver gives you a nod in greeting. " \
+        "“A pleasure,” he says.")
+        engine.add_message("")
+        engine.add_message("--- Instruction ---")
+        engine.add_message("Put the Lone Tree Station location into play in the surroundings.")
+        from .decks import get_location_by_id
+        from .models import Area
+        engine.state.location = get_location_by_id("Lone Tree Station")
+        engine.state.areas[Area.SURROUNDINGS].append(engine.state.location)
+        #skip calling enters_play on Lone Tree Station; we resolve its campaign guide entry later and it has no
+        #listeners or constant abilities to register
+        engine.add_message("Lone Tree Station has entered play in the Surroundings.")
+        engine.add_message("")
+        engine.add_message("--- Story ---")
+        engine.add_message("Calypsa heads back to the station with you and Kal in tow. She speaks back over " \
+                           "her shoulder. “Please, make yourselves at home. Explore the hanging gardens. Find " \
+                           "Spirit Speaker Nal and Kordo, and strike up a conversation. Get to know the place.”")
+        engine.add_message("“After you’ve spent some time here at the Station, you should head over to White Sky,” " \
+                           "she says. “In fact, Hy Pimpot has some juniper biscuits baking right now. His food is " \
+                           "legendary around these parts. Once those biscuits are ready and you’ve had a chance to " \
+                           "poke around, take a parcel over to White Sky, and offer them to the people you meet. " \
+                           "It’s been at least a year since our neighbors have enjoyed the company of Rangers bearing " \
+                           "treats.” She turns to look at Kal. “What do you think, Kal? Good way to get started?”")
+        engine.add_message("Kal grins at you in a way that you can’t quite describe as a sneer. “Handing out baked goods? " \
+                            "I think that’s perfectly suited to their abilities,” he says.")
+        engine.add_message("")
+        engine.add_message("--- RANGERS CHOOSE: ---")
+        engine.add_message("A. Tell Kal what he can do with his condescending attitude.")
+        engine.add_message("B. Ignore him.")
+        is_A = engine.response_decider(engine, "Input 'y' for option A, 'n' for option B:")
+        if is_A:
+            engine.add_message("")
+            engine.add_message("--- Story ---")
+            engine.add_message("    Calypsa glares. “Recall the wisdom of our ancestors,” she says. “Treat each other " \
+                               "with kindness.” On “kind” she punches you on the shoulder. On “-ness,” she punches Kal’s.")
+            engine.add_message("")
+            engine.add_message("--- Result ---")
+            engine.add_message("Write STOOD UP TO KAL on the campaign tracker.")
+            engine.state.record_notable_event("STOOD UP TO KAL")
+        else:
+            engine.add_message("")
+            engine.add_message("--- Story ---")
+            engine.add_message("Calypsa shakes her head and laughs. “Oh, Kal. You’re not long past delivering biscuits " \
+                               "yourself. It’s tradition, after all.”")
+            engine.add_message("")
+            engine.add_message("--- Result ---")
+            engine.add_message("Write IMPRESSED CALYPSA on the campaign tracker.")
+            engine.state.record_notable_event("IMPRESSED CALYPSA")
+        engine.add_message("")
+        engine.add_message("--- >> Continue Reading: ---")
+        engine.add_message("")
+        engine.add_message("--- Instructions ---")
+        engine.add_message("Gain the BISCUIT DELIVERY mission. (Add it to the Missions section of the campaign tracker, and " \
+                           "put its card into play in the surroundings.)")
+        engine.state.gain_mission("Biscuit Delivery") #only adds to campaign tracker; still have to add to game state below
+        from .cards import BiscuitDelivery
+        b_d = BiscuitDelivery()
+        engine.state.missions = [b_d]
+        engine.state.areas[Area.SURROUNDINGS].extend(engine.state.missions)
+        b_d.enters_play(engine, Area.SURROUNDINGS, None)
+        engine.add_message("Check the campaign tracker for the weather for the current day (day 1). Put the corresponding weather " \
+                           "card (A Perfect Day) into play.")
+        from .cards import APerfectDay
+        a_p_d = APerfectDay()
+        engine.state.weather = a_p_d
+        engine.state.areas[Area.SURROUNDINGS].insert(0, engine.state.weather)
+        engine.state.weather.enters_play(engine, Area.SURROUNDINGS, None)
+        engine.add_message("")
+        engine.add_message("--- Story ---")
+        engine.add_message("Calypsa turns to you. “Kal and I are heading out into the Valley. We’ll be on shadow patrol. That is, " \
+                           "we’ll never be too far away from you for the next few weeks.”")
+        engine.add_message("“You shouldn’t need our help, of course,” Kal says. “I can tell by looking at you that you’re more than capable.”")
+        engine.add_message("“Farewell for now,” Calypsa says and starts down the eastern path away from Lone Tree. “Spirits guide you. " \
+                           "Follow your instinct!” She and Kal walk steadily out of sight.")
+        engine.add_message("")
+        engine.add_message("--- Guidance ---")
+        engine.add_message("Explore Lone Tree Station to find Hy Pimpot, retrieve the juniper biscuits, and learn what to do next.")
+        engine.add_message("")
+        engine.add_message("--- Instructions ---")
+        engine.add_message("Create the path deck by shuffling together the Woods and Lone Tree card sets (seventeen cards in total).")
+        from .decks import build_woods_path_deck, get_pivotal_cards
+        from random import shuffle
+        woods_set: list[Card] = build_woods_path_deck()
+        lone_tree_station_set: list[Card] = get_pivotal_cards(engine.state.location)
+        engine.state.path_deck = woods_set + lone_tree_station_set
+        shuffle(engine.state.path_deck)
+        engine.add_message("(Path deck created, shuffled, and loaded into game.)")
+        engine.add_message("Then, complete all initial setup by performing the setup steps on the back of the Lone Tree Station location card.")
+        self.resolve_entry_2(source_card, engine, clear_type)
+        engine.add_message("")
+        engine.add_message("--- Arrival Setup ---")
+        engine.state.location.do_arrival_setup(engine)
+        engine.add_message("")
+        engine.add_message("Returning to Campaign Guide Entry 1...")
+        engine.add_message("That concludes setup. You’re ready to play. Now go explore Lone Tree Station, and find Hy Pimpot!")
+        from .view import display_and_clear_messages
+        display_and_clear_messages(engine)
+        return False
+
+    def resolve_entry_2(self, source_card: 'Card | None', engine: 'GameEngine', clear_type: str | None) -> bool:
+        engine.add_message("")
+        engine.add_message("")
+        engine.add_message("== Campaign Guide Entry 2: Lone Tree Station ==")
+        engine.add_message("")
+        engine.add_message("--- Story ---")
+        engine.add_message("Visible for miles around, Lone Tree is a single enormous giga-redwood rising out of " \
+        "the thick grass of a high prairie. From far away, the tree is all you can see, but as you come closer, " \
+        "you can see the rest of the station: the large box-garden plots hanging from the branches, the airship " \
+        "Swift moored to its dock in the tree’s crown, the doors and windows carved into the trunk and peeking " \
+        "out from among the roots. Lone Tree Station has been the base of operations for the Rangers ever since " \
+        "the people came to the Valley. And ever since you became a Ranger, it’s been your home.")
+        return False
+
+
+    
     def resolve_entry_1_01(self, source_card: 'Card | None', engine: 'GameEngine', clear_type: str | None) -> bool:
         engine.add_message("")
         engine.add_message("")
-        engine.add_message("== Campaign Log Entry 1.01 ==")
+        engine.add_message("== Campaign Guide Entry 1.01 ==")
         engine.add_message("")
         engine.add_message("--- Story ---")
         engine.add_message("Hy Pimpot places the last juniper biscuit into the basket and hands it to you. " \
@@ -69,7 +226,7 @@ class CampaignGuide:
     def resolve_entry_1_02(self, source_card: 'Card | None', engine: 'GameEngine', clear_type: str | None) -> bool:
         engine.add_message("")
         engine.add_message("")
-        engine.add_message("== Campaign Log Entry 1.02 ==")
+        engine.add_message("== Campaign Guide Entry 1.02 ==")
         engine.add_message("")
         engine.add_message("--- Checking conditionals ---")
         engine.add_message("    If the rangers have no biscuits on their role cards, go to 1.02A.")
@@ -101,7 +258,7 @@ class CampaignGuide:
             return self.resolve_entry("1.02A", source_card, engine, clear_type)
         
     def resolve_entry_1_02_A(self, source_card: 'Card | None', engine: 'GameEngine', clear_type: str | None) -> bool:
-        engine.add_message("== Campaign Log Entry 1.02A ==")
+        engine.add_message("== Campaign Guide Entry 1.02A ==")
         engine.add_message("")
         engine.add_message("--- Story ---")
         engine.add_message('With an empty basket, you continue down the path until you come across ' \
@@ -126,7 +283,7 @@ class CampaignGuide:
         return self.resolve_entry("1.03", source_card, engine, clear_type)
             
     def resolve_entry_1_03(self, source_card: 'Card | None', engine: 'GameEngine', clear_type: str | None) -> bool:
-        engine.add_message("== Campaign Log Entry 1.03 ==")
+        engine.add_message("== Campaign Guide Entry 1.03 ==")
         engine.add_message("")
         engine.add_message("--- Story ---")
         engine.add_message('From down the path comes the sound of melodic whistling. Before long, a man wearing many ' \
@@ -162,13 +319,13 @@ class CampaignGuide:
     def resolve_entry_47(self, source_card: 'Card | None', engine: 'GameEngine', clear_type: str | None) -> bool:
         engine.add_message("")
         engine.add_message("")
-        engine.add_message("=== Campaign Log Entry 47: Hy Pimpot, Chef (PLACEHOLDER) ===")
+        engine.add_message("=== Campaign Guide Entry 47: Hy Pimpot, Chef (PLACEHOLDER) ===")
         return False
 
     def resolve_entry_80(self, source_card: 'Card | None', engine: 'GameEngine', clear_type: str | None) -> bool: #clear_type of None indicates non-clear resolution
         engine.add_message("")
         engine.add_message("")
-        engine.add_message("=== Campaign Log Entry 80: Quisi Vos, Rascal ===")
+        engine.add_message("=== Campaign Guide Entry 80: Quisi Vos, Rascal ===")
         engine.add_message("")
         engine.add_message("--- Checking conditionals ---")
         if clear_type is None:
@@ -207,7 +364,7 @@ class CampaignGuide:
             raise RuntimeError("Campaign guide entry resolving with invalid clear type!")
         
     def resolve_entry_80_1(self, _source_card: 'Card | None', engine: 'GameEngine', _clear_type: str | None) -> bool:
-        engine.add_message("== Campaign Log Entry 80.1 ==")
+        engine.add_message("== Campaign Guide Entry 80.1 ==")
         engine.add_message("")
         engine.add_message("--- Story ---")
         engine.add_message('From behind, you hear a giggle. You turn to find a young girl, ' \
@@ -221,7 +378,7 @@ class CampaignGuide:
         return False 
     
     def resolve_entry_80_2(self, source_card: 'Card | None', engine: 'GameEngine', _clear_type: str | None) -> bool:
-        engine.add_message("== Campaign Log Entry 80.2 ==")
+        engine.add_message("== Campaign Guide Entry 80.2 ==")
         engine.add_message("")
         engine.add_message("--- Story ---")
         engine.add_message('“Quisi!” You see a woman step onto the trail. "Didn\'t I tell you to meet me at the Ranger Station?"')
@@ -252,7 +409,7 @@ class CampaignGuide:
         return True
         
     def resolve_entry_80_3(self, _source_card: 'Card | None', engine: 'GameEngine', _clear_type: str | None) -> bool:
-        engine.add_message("== Campaign Log Entry 80.3 ==")
+        engine.add_message("== Campaign Guide Entry 80.3 ==")
         engine.add_message("")
         engine.add_message("--- Story ---")
         engine.add_message('From up ahead, you hear a child quietly singing to herself. ' \
@@ -271,7 +428,7 @@ class CampaignGuide:
         return False
     
     def resolve_entry_80_5(self, source_card: 'Card | None', engine: 'GameEngine', _clear_type: str | None) -> bool:
-        engine.add_message("== Campaign Log Entry 80.5 ==")
+        engine.add_message("== Campaign Guide Entry 80.5 ==")
         engine.add_message("")
         engine.add_message("--- Story ---")
         engine.add_message('After a nonstop barrage of questions, you’re a bit surprised when Quisi ' \
@@ -290,7 +447,7 @@ class CampaignGuide:
         return True
 
     def resolve_entry_80_6(self, _source_card: 'Card | None', engine: 'GameEngine', _clear_type: str | None) -> bool:
-        engine.add_message("== Campaign Log Entry 80.6 ==")
+        engine.add_message("== Campaign Guide Entry 80.6 ==")
         engine.add_message("")
         engine.add_message("--- Story ---")
         engine.add_message('    Quisi yelps. You kneel down next to her, comforting her with ' \
@@ -305,19 +462,19 @@ class CampaignGuide:
     def resolve_entry_85(self, source_card: 'Card | None', engine: 'GameEngine', clear_type: str | None) -> bool:
         engine.add_message("")
         engine.add_message("")
-        engine.add_message("=== Campaign Log Entry 85: Calypsa, Ranger Mentor (PLACEHOLDER) ===")
+        engine.add_message("=== Campaign Guide Entry 85: Calypsa, Ranger Mentor (PLACEHOLDER) ===")
         return False
     
     def resolve_entry_86(self, source_card: 'Card | None', engine: 'GameEngine', clear_type: str | None) -> bool:
         engine.add_message("")
         engine.add_message("")
-        engine.add_message("=== Campaign Log Entry 86: The Fundamentalist (PLACEHOLDER) ===")
+        engine.add_message("=== Campaign Guide Entry 86: The Fundamentalist (PLACEHOLDER) ===")
         return False
     
     def resolve_entry_91(self, source_card: 'Card | None', engine: 'GameEngine', clear_type: str | None) -> bool: #clear_type of None indicates non-clear resolution
         engine.add_message("")
         engine.add_message("")
-        engine.add_message("=== Campaign Log Entry 91: Biscuit Delivery ===")
+        engine.add_message("=== Campaign Guide Entry 91: Biscuit Delivery ===")
         engine.add_message("")
         engine.add_message("--- Checking conditionals ---")
         if clear_type is None:
@@ -396,7 +553,7 @@ class CampaignGuide:
             raise RuntimeError("Campaign guide entry resolving with invalid clear type!")
         
     def resolve_entry_91_1(self, _source_card: 'Card | None', engine: 'GameEngine', clear_type: str | None) -> bool:
-        engine.add_message("== Campaign Log Entry 91.1 ==")
+        engine.add_message("== Campaign Guide Entry 91.1 ==")
         engine.add_message("")
         engine.add_message("--- Story ---")
         engine.add_message('“Glad you made it through training,” the grizzled man sticks out his hand and ' \
@@ -408,7 +565,7 @@ class CampaignGuide:
         return False
     
     def resolve_entry_91_2(self, _source_card: 'Card | None', engine: 'GameEngine', clear_type: str | None) -> bool:
-        engine.add_message("== Campaign Log Entry 91.2 ==")
+        engine.add_message("== Campaign Guide Entry 91.2 ==")
         engine.add_message("")
         engine.add_message("--- Story ---")
         engine.add_message('You come across a woman sitting on a meditation pillow, her eyes closed. She doesn’t ' \
@@ -421,7 +578,7 @@ class CampaignGuide:
         return False
     
     def resolve_entry_91_3(self, _source_card: 'Card | None', engine: 'GameEngine', clear_type: str | None) -> bool:
-        engine.add_message("== Campaign Log Entry 91.3 ==")
+        engine.add_message("== Campaign Guide Entry 91.3 ==")
         engine.add_message("")
         engine.add_message("--- Story ---")
         engine.add_message('You come across a massive pile of diced and sliced vegetables, roots, and tubers. ' \
@@ -438,7 +595,7 @@ class CampaignGuide:
         return False
     
     def resolve_entry_91_4(self, _source_card: 'Card | None', engine: 'GameEngine', clear_type: str | None) -> bool:
-        engine.add_message("== Campaign Log Entry 91.4 ==")
+        engine.add_message("== Campaign Guide Entry 91.4 ==")
         engine.add_message("")
         engine.add_message("--- Story ---")
         engine.add_message('You feel a tug on your backpack and turn to see a young girl suddenly walking beside you.')
@@ -450,7 +607,7 @@ class CampaignGuide:
         return False
     
     def resolve_entry_91_5(self, source_card: 'Card | None', engine: 'GameEngine', clear_type: str | None) -> bool:
-        engine.add_message("== Campaign Log Entry 91.5 ==")
+        engine.add_message("== Campaign Guide Entry 91.5 ==")
         engine.add_message("")
         engine.add_message("--- Story ---")
         engine.add_message('“Well, I’ve been in the Rangers for a few decades. Survived more atrox attacks ' \
@@ -468,7 +625,7 @@ class CampaignGuide:
         return True
     
     def resolve_entry_91_6(self, source_card: 'Card | None', engine: 'GameEngine', clear_type: str | None) -> bool:
-        engine.add_message("== Campaign Log Entry 91.6 ==")
+        engine.add_message("== Campaign Guide Entry 91.6 ==")
         engine.add_message("")
         engine.add_message("--- Story ---")
         engine.add_message('Nal opens her eyes and slowly turns to you, her movements precise and fluid. She smiles ' \
@@ -485,7 +642,7 @@ class CampaignGuide:
         return True
     
     def resolve_entry_91_7(self, source_card: 'Card | None', engine: 'GameEngine', clear_type: str | None) -> bool:
-        engine.add_message("== Campaign Log Entry 91.7 ==")
+        engine.add_message("== Campaign Guide Entry 91.7 ==")
         engine.add_message("")
         engine.add_message("--- Story ---")
         engine.add_message('Hy Pimpot crosses his arms and gives you a severe look. “You’d better grab those ' \
@@ -501,7 +658,7 @@ class CampaignGuide:
         return False
     
     def resolve_entry_91_8(self, source_card: 'Card | None', engine: 'GameEngine', clear_type: str | None) -> bool:
-        engine.add_message("== Campaign Log Entry 91.8 ==")
+        engine.add_message("== Campaign Guide Entry 91.8 ==")
         engine.add_message("")
         engine.add_message("--- Story ---")
         engine.add_message('In your time together, Quisi has made a game of scouring Lone Tree Station for clues ' \

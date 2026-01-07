@@ -36,6 +36,8 @@ Features with a lot of AI-written code I haven't carefully reviewed that might p
 A living checklist. Roughly prioritized.
 
 - Implement custom Day 1 setup + story sequence for start of campaign
+  - Line 541 in main.py, "start_new_day"
+    1) Add a flag that checks whether it's Day 1; do special setup in case of day 1
 - Add campaign log entries to Arrival Setup for each location card
 - Add campaign log entries for all other already-implemented cards that don't already have them
 - Implement full Travel map

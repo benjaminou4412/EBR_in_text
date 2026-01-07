@@ -399,9 +399,7 @@ def run_game_loop(engine: GameEngine, with_ui: bool = True, resume_phase2: bool 
     else:
         # Show welcome for new games
         if with_ui:
-            print("====== Earthborne Rangers - Demo ======")
-            print("Welcome to the demo! Press Enter to begin...")
-            input()
+            print("====== Earthborne Rangers - DAY 1 ======")
             display_and_clear_messages(engine)
             print("Press enter to continue to Phase 1...")
             input()
@@ -567,21 +565,24 @@ def start_new_day(campaign_tracker, role_card: Card) -> GameEngine:
 
     # Perform day setup
     engine.add_message(f"=== DAY {campaign_tracker.day_number} BEGIN ===")
-    engine.add_message(f"Step 1: Set up player area (skipped)")
-    engine.add_message(f"Step 2: Draw starting hand")
+    if campaign_tracker.day_number == 1:
+        engine.campaign_guide.resolve_entry_1(None, engine, None)
+    else:
+        engine.add_message(f"Step 1: Set up player area (skipped)")
+        engine.add_message(f"Step 2: Draw starting hand")
 
-    # Draw starting hand
-    for _ in range(5):
-        card, _ = state.ranger.draw_card(engine)
-        if card is None:
-            raise RuntimeError(f"Deck should not run out during setup!")
+        # Draw starting hand
+        for _ in range(5):
+            card, _ = state.ranger.draw_card(engine)
+            if card is None:
+                raise RuntimeError(f"Deck should not run out during setup!")
 
-    engine.add_message(f"Step 3: Elect lead Ranger (only one ranger; automatically chosen)")
-    engine.add_message(f"Step 4: Shuffle challenge deck")
-    engine.state.challenge_deck.reshuffle()
+        engine.add_message(f"Step 3: Elect lead Ranger (only one ranger; automatically chosen)")
+        engine.add_message(f"Step 4: Shuffle challenge deck")
+        engine.state.challenge_deck.reshuffle()
 
-    # Arrival setup
-    engine.arrival_setup(start_of_day=True)
+        # Arrival setup
+        engine.arrival_setup(start_of_day=True)
 
     return engine
 
