@@ -117,6 +117,66 @@ def show_title_screen() -> str:
             print("Please enter 1, 2, or 3.")
 
 
+def display_campaign_tracker(engine: GameEngine) -> None:
+    """Display the campaign tracker information."""
+    tracker = engine.state.campaign_tracker
+
+    print("\n" + "=" * 50)
+    print("           CAMPAIGN TRACKER")
+    print("=" * 50)
+
+    # Basic info
+    print(f"\n  Day: {tracker.day_number}")
+    print(f"  Location: {tracker.current_location_id}")
+    print(f"  Terrain: {tracker.current_terrain_type}")
+
+    # Ranger info
+    print(f"\n  Ranger: {tracker.ranger_name}")
+
+    # Active missions
+    print("\n  Active Missions:")
+    if tracker.active_missions:
+        for mission in tracker.active_missions:
+            bubbles = []
+            if mission.left_bubble:
+                bubbles.append("L")
+            if mission.middle_bubble:
+                bubbles.append("M")
+            if mission.right_bubble:
+                bubbles.append("R")
+            bubble_str = f" [{'/'.join(bubbles)}]" if bubbles else ""
+            print(f"    - {mission.name}{bubble_str}")
+    else:
+        print("    (none)")
+
+    # Cleared missions
+    print("\n  Cleared Missions:")
+    if tracker.cleared_missions:
+        for mission in tracker.cleared_missions:
+            print(f"    - {mission.name}")
+    else:
+        print("    (none)")
+
+    # Notable events
+    print("\n  Notable Events:")
+    if tracker.notable_events:
+        for event in tracker.notable_events:
+            print(f"    - {event}")
+    else:
+        print("    (none)")
+
+    # Unlocked rewards
+    print("\n  Unlocked Rewards:")
+    if tracker.unlocked_rewards:
+        for reward in tracker.unlocked_rewards:
+            print(f"    - {reward}")
+    else:
+        print("    (none)")
+
+    print("\n" + "=" * 50)
+    input("Press Enter to continue...")
+
+
 def handle_menu(engine: GameEngine) -> str:
     """
     Display the in-game menu and handle save/load/quit options.
@@ -130,8 +190,9 @@ def handle_menu(engine: GameEngine) -> str:
         print("\n===== MENU =====")
         print(" 1. Save Game")
         print(" 2. Load Game")
-        print(" 3. Return to Title")
-        print(" 4. Back to Game")
+        print(" 3. Campaign Tracker")
+        print(" 4. Return to Title")
+        print(" 5. Back to Game")
 
         choice = input("> ").strip()
 
@@ -193,12 +254,16 @@ def handle_menu(engine: GameEngine) -> str:
                 print("Invalid input.")
 
         elif choice == "3":
+            # Campaign Tracker
+            display_campaign_tracker(engine)
+
+        elif choice == "4":
             # Return to Title
             confirm = input("\nReturn to title? Unsaved progress will be lost. (y/n): ").strip().lower()
             if confirm in ('y', 'yes'):
                 return 'quit'
 
-        elif choice == "4" or choice == "":
+        elif choice == "5" or choice == "":
             # Back to Game
             return 'continue'
 

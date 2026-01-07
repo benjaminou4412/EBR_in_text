@@ -35,7 +35,12 @@ Features with a lot of AI-written code I haven't carefully reviewed that might p
 
 A living checklist. Roughly prioritized.
 
-- Implement proper campaign-tracker based setup for non-day-1 start-of-day
+- Pass whether or not camping happened to end_day method
+- Implement "view campaign tracker" option. 
+- Implement start-of-day campaign entry resolution
+  - Probably a dict of in-game day numbers as keys mapped to strings referring to campaign guide entries 
+  - That way, the start-of-day sequence can simply check for entries and resolve them in sequence, and the strings are serializable for easy saving
+  - Plus, in-game effects, including other campaign guide entries, can modify the campaign tracker to append more campaign guide entry strings to specific day numbers
 - Add campaign log entries to Arrival Setup for each location card
 - Add campaign log entries for all other already-implemented cards that don't already have them
 - Implement full Travel map

@@ -1,0 +1,1065 @@
+{
+  "version": "1.0",
+  "round_number": 1,
+  "ranger": {
+    "name": "Demo Ranger",
+    "aspects": {
+      "AWA": 99,
+      "FIT": 99,
+      "SPI": 99,
+      "FOC": 99
+    },
+    "energy": {
+      "AWA": 99,
+      "FIT": 99,
+      "SPI": 99,
+      "FOC": 99
+    },
+    "injury": 0,
+    "ranger_token_location": "peerless-pathfinder-9385",
+    "deck": [
+      {
+        "card_class": "BoundarySensor",
+        "id": "boundary-sensor-e319",
+        "exhausted": false,
+        "progress": 0,
+        "harm": 0,
+        "unique_tokens": {
+          "sensor": 4
+        },
+        "modifiers": [],
+        "attached_to_id": null,
+        "attached_card_ids": [],
+        "backside_class": null,
+        "is_facedown": false,
+        "frontside_id": null,
+        "json_source_title": null,
+        "json_source_set": null
+      },
+      {
+        "card_class": "BoundarySensor",
+        "id": "boundary-sensor-1c1b",
+        "exhausted": false,
+        "progress": 0,
+        "harm": 0,
+        "unique_tokens": {
+          "sensor": 4
+        },
+        "modifiers": [],
+        "attached_to_id": null,
+        "attached_card_ids": [],
+        "backside_class": null,
+        "is_facedown": false,
+        "frontside_id": null,
+        "json_source_title": null,
+        "json_source_set": null
+      },
+      {
+        "card_class": "BoundarySensor",
+        "id": "boundary-sensor-e40d",
+        "exhausted": false,
+        "progress": 0,
+        "harm": 0,
+        "unique_tokens": {
+          "sensor": 4
+        },
+        "modifiers": [],
+        "attached_to_id": null,
+        "attached_card_ids": [],
+        "backside_class": null,
+        "is_facedown": false,
+        "frontside_id": null,
+        "json_source_title": null,
+        "json_source_set": null
+      },
+      {
+        "card_class": "BoundarySensor",
+        "id": "boundary-sensor-78b4",
+        "exhausted": false,
+        "progress": 0,
+        "harm": 0,
+        "unique_tokens": {
+          "sensor": 4
+        },
+        "modifiers": [],
+        "attached_to_id": null,
+        "attached_card_ids": [],
+        "backside_class": null,
+        "is_facedown": false,
+        "frontside_id": null,
+        "json_source_title": null,
+        "json_source_set": null
+      },
+      {
+        "card_class": "BoundarySensor",
+        "id": "boundary-sensor-ff65",
+        "exhausted": false,
+        "progress": 0,
+        "harm": 0,
+        "unique_tokens": {
+          "sensor": 4
+        },
+        "modifiers": [],
+        "attached_to_id": null,
+        "attached_card_ids": [],
+        "backside_class": null,
+        "is_facedown": false,
+        "frontside_id": null,
+        "json_source_title": null,
+        "json_source_set": null
+      },
+      {
+        "card_class": "BoundarySensor",
+        "id": "boundary-sensor-db66",
+        "exhausted": false,
+        "progress": 0,
+        "harm": 0,
+        "unique_tokens": {
+          "sensor": 4
+        },
+        "modifiers": [],
+        "attached_to_id": null,
+        "attached_card_ids": [],
+        "backside_class": null,
+        "is_facedown": false,
+        "frontside_id": null,
+        "json_source_title": null,
+        "json_source_set": null
+      },
+      {
+        "card_class": "BoundarySensor",
+        "id": "boundary-sensor-a30c",
+        "exhausted": false,
+        "progress": 0,
+        "harm": 0,
+        "unique_tokens": {
+          "sensor": 4
+        },
+        "modifiers": [],
+        "attached_to_id": null,
+        "attached_card_ids": [],
+        "backside_class": null,
+        "is_facedown": false,
+        "frontside_id": null,
+        "json_source_title": null,
+        "json_source_set": null
+      },
+      {
+        "card_class": "BoundarySensor",
+        "id": "boundary-sensor-1b60",
+        "exhausted": false,
+        "progress": 0,
+        "harm": 0,
+        "unique_tokens": {
+          "sensor": 4
+        },
+        "modifiers": [],
+        "attached_to_id": null,
+        "attached_card_ids": [],
+        "backside_class": null,
+        "is_facedown": false,
+        "frontside_id": null,
+        "json_source_title": null,
+        "json_source_set": null
+      },
+      {
+        "card_class": "BoundarySensor",
+        "id": "boundary-sensor-7cfb",
+        "exhausted": false,
+        "progress": 0,
+        "harm": 0,
+        "unique_tokens": {
+          "sensor": 4
+        },
+        "modifiers": [],
+        "attached_to_id": null,
+        "attached_card_ids": [],
+        "backside_class": null,
+        "is_facedown": false,
+        "frontside_id": null,
+        "json_source_title": null,
+        "json_source_set": null
+      },
+      {
+        "card_class": "BoundarySensor",
+        "id": "boundary-sensor-3e27",
+        "exhausted": false,
+        "progress": 0,
+        "harm": 0,
+        "unique_tokens": {
+          "sensor": 4
+        },
+        "modifiers": [],
+        "attached_to_id": null,
+        "attached_card_ids": [],
+        "backside_class": null,
+        "is_facedown": false,
+        "frontside_id": null,
+        "json_source_title": null,
+        "json_source_set": null
+      },
+      {
+        "card_class": "BoundarySensor",
+        "id": "boundary-sensor-fd7b",
+        "exhausted": false,
+        "progress": 0,
+        "harm": 0,
+        "unique_tokens": {
+          "sensor": 4
+        },
+        "modifiers": [],
+        "attached_to_id": null,
+        "attached_card_ids": [],
+        "backside_class": null,
+        "is_facedown": false,
+        "frontside_id": null,
+        "json_source_title": null,
+        "json_source_set": null
+      },
+      {
+        "card_class": "BoundarySensor",
+        "id": "boundary-sensor-7fe4",
+        "exhausted": false,
+        "progress": 0,
+        "harm": 0,
+        "unique_tokens": {
+          "sensor": 4
+        },
+        "modifiers": [],
+        "attached_to_id": null,
+        "attached_card_ids": [],
+        "backside_class": null,
+        "is_facedown": false,
+        "frontside_id": null,
+        "json_source_title": null,
+        "json_source_set": null
+      },
+      {
+        "card_class": "BoundarySensor",
+        "id": "boundary-sensor-a647",
+        "exhausted": false,
+        "progress": 0,
+        "harm": 0,
+        "unique_tokens": {
+          "sensor": 4
+        },
+        "modifiers": [],
+        "attached_to_id": null,
+        "attached_card_ids": [],
+        "backside_class": null,
+        "is_facedown": false,
+        "frontside_id": null,
+        "json_source_title": null,
+        "json_source_set": null
+      },
+      {
+        "card_class": "BoundarySensor",
+        "id": "boundary-sensor-669f",
+        "exhausted": false,
+        "progress": 0,
+        "harm": 0,
+        "unique_tokens": {
+          "sensor": 4
+        },
+        "modifiers": [],
+        "attached_to_id": null,
+        "attached_card_ids": [],
+        "backside_class": null,
+        "is_facedown": false,
+        "frontside_id": null,
+        "json_source_title": null,
+        "json_source_set": null
+      },
+      {
+        "card_class": "BoundarySensor",
+        "id": "boundary-sensor-59cc",
+        "exhausted": false,
+        "progress": 0,
+        "harm": 0,
+        "unique_tokens": {
+          "sensor": 4
+        },
+        "modifiers": [],
+        "attached_to_id": null,
+        "attached_card_ids": [],
+        "backside_class": null,
+        "is_facedown": false,
+        "frontside_id": null,
+        "json_source_title": null,
+        "json_source_set": null
+      },
+      {
+        "card_class": "BoundarySensor",
+        "id": "boundary-sensor-5ddc",
+        "exhausted": false,
+        "progress": 0,
+        "harm": 0,
+        "unique_tokens": {
+          "sensor": 4
+        },
+        "modifiers": [],
+        "attached_to_id": null,
+        "attached_card_ids": [],
+        "backside_class": null,
+        "is_facedown": false,
+        "frontside_id": null,
+        "json_source_title": null,
+        "json_source_set": null
+      },
+      {
+        "card_class": "BoundarySensor",
+        "id": "boundary-sensor-46b9",
+        "exhausted": false,
+        "progress": 0,
+        "harm": 0,
+        "unique_tokens": {
+          "sensor": 4
+        },
+        "modifiers": [],
+        "attached_to_id": null,
+        "attached_card_ids": [],
+        "backside_class": null,
+        "is_facedown": false,
+        "frontside_id": null,
+        "json_source_title": null,
+        "json_source_set": null
+      },
+      {
+        "card_class": "BoundarySensor",
+        "id": "boundary-sensor-b54f",
+        "exhausted": false,
+        "progress": 0,
+        "harm": 0,
+        "unique_tokens": {
+          "sensor": 4
+        },
+        "modifiers": [],
+        "attached_to_id": null,
+        "attached_card_ids": [],
+        "backside_class": null,
+        "is_facedown": false,
+        "frontside_id": null,
+        "json_source_title": null,
+        "json_source_set": null
+      },
+      {
+        "card_class": "BoundarySensor",
+        "id": "boundary-sensor-47c9",
+        "exhausted": false,
+        "progress": 0,
+        "harm": 0,
+        "unique_tokens": {
+          "sensor": 4
+        },
+        "modifiers": [],
+        "attached_to_id": null,
+        "attached_card_ids": [],
+        "backside_class": null,
+        "is_facedown": false,
+        "frontside_id": null,
+        "json_source_title": null,
+        "json_source_set": null
+      },
+      {
+        "card_class": "BoundarySensor",
+        "id": "boundary-sensor-16b0",
+        "exhausted": false,
+        "progress": 0,
+        "harm": 0,
+        "unique_tokens": {
+          "sensor": 4
+        },
+        "modifiers": [],
+        "attached_to_id": null,
+        "attached_card_ids": [],
+        "backside_class": null,
+        "is_facedown": false,
+        "frontside_id": null,
+        "json_source_title": null,
+        "json_source_set": null
+      }
+    ],
+    "hand": [
+      {
+        "card_class": "WalkWithMe",
+        "id": "walk-with-me-941e",
+        "exhausted": false,
+        "progress": 0,
+        "harm": 0,
+        "unique_tokens": {},
+        "modifiers": [],
+        "attached_to_id": null,
+        "attached_card_ids": [],
+        "backside_class": null,
+        "is_facedown": false,
+        "frontside_id": null,
+        "json_source_title": null,
+        "json_source_set": null
+      },
+      {
+        "card_class": "ADearFriend",
+        "id": "a-dear-friend-204e",
+        "exhausted": false,
+        "progress": 0,
+        "harm": 0,
+        "unique_tokens": {},
+        "modifiers": [],
+        "attached_to_id": null,
+        "attached_card_ids": [],
+        "backside_class": null,
+        "is_facedown": false,
+        "frontside_id": null,
+        "json_source_title": null,
+        "json_source_set": null
+      },
+      {
+        "card_class": "BoundarySensor",
+        "id": "boundary-sensor-3138",
+        "exhausted": false,
+        "progress": 0,
+        "harm": 0,
+        "unique_tokens": {
+          "sensor": 4
+        },
+        "modifiers": [],
+        "attached_to_id": null,
+        "attached_card_ids": [],
+        "backside_class": null,
+        "is_facedown": false,
+        "frontside_id": null,
+        "json_source_title": null,
+        "json_source_set": null
+      },
+      {
+        "card_class": "CradledbytheEarth",
+        "id": "cradled-by-the-earth-78b2",
+        "exhausted": false,
+        "progress": 0,
+        "harm": 0,
+        "unique_tokens": {},
+        "modifiers": [],
+        "attached_to_id": null,
+        "attached_card_ids": [],
+        "backside_class": null,
+        "is_facedown": false,
+        "frontside_id": null,
+        "json_source_title": null,
+        "json_source_set": null
+      },
+      {
+        "card_class": "AffordedByNature",
+        "id": "afforded-by-nature-cf25",
+        "exhausted": false,
+        "progress": 0,
+        "harm": 0,
+        "unique_tokens": {},
+        "modifiers": [],
+        "attached_to_id": null,
+        "attached_card_ids": [],
+        "backside_class": null,
+        "is_facedown": false,
+        "frontside_id": null,
+        "json_source_title": null,
+        "json_source_set": null
+      }
+    ],
+    "discard": [],
+    "fatigue_stack": []
+  },
+  "campaign_tracker": {
+    "day_number": 2,
+    "notable_events": [
+      "IMPRESSED CALYPSA"
+    ],
+    "unlocked_rewards": [],
+    "active_missions": [],
+    "cleared_missions": [
+      {
+        "name": "Biscuit Delivery",
+        "left_bubble": false,
+        "middle_bubble": false,
+        "right_bubble": false
+      }
+    ],
+    "ranger_deck_card_ids": [],
+    "ranger_name": "Demo Ranger",
+    "ranger_aspects": {
+      "AWA": 99,
+      "FIT": 99,
+      "SPI": 99,
+      "FOC": 99
+    },
+    "current_location_id": "Ancestor's Grove",
+    "current_terrain_type": "Woods"
+  },
+  "role_card_id": "peerless-pathfinder-9385",
+  "location_id": "ancestors-grove-d829",
+  "weather_id": "a-perfect-day-fdb8",
+  "mission_ids": [],
+  "areas": {
+    "Surroundings": [
+      {
+        "card_class": "APerfectDay",
+        "id": "a-perfect-day-fdb8",
+        "exhausted": false,
+        "progress": 0,
+        "harm": 0,
+        "unique_tokens": {
+          "cloud": 3
+        },
+        "modifiers": [],
+        "attached_to_id": null,
+        "attached_card_ids": [],
+        "backside_class": "MiddaySun",
+        "is_facedown": false,
+        "frontside_id": null,
+        "json_source_title": null,
+        "json_source_set": null
+      },
+      {
+        "card_class": "AncestorsGrove",
+        "id": "ancestors-grove-d829",
+        "exhausted": false,
+        "progress": 0,
+        "harm": 0,
+        "unique_tokens": {},
+        "modifiers": [],
+        "attached_to_id": null,
+        "attached_card_ids": [],
+        "backside_class": null,
+        "is_facedown": false,
+        "frontside_id": null,
+        "json_source_title": null,
+        "json_source_set": null
+      }
+    ],
+    "Along the Way": [],
+    "Within Reach": [
+      {
+        "card_class": "SitkaBuck",
+        "id": "sitka-buck-fa1f",
+        "exhausted": false,
+        "progress": 0,
+        "harm": 0,
+        "unique_tokens": {},
+        "modifiers": [],
+        "attached_to_id": null,
+        "attached_card_ids": [],
+        "backside_class": null,
+        "is_facedown": false,
+        "frontside_id": null,
+        "json_source_title": null,
+        "json_source_set": null
+      },
+      {
+        "card_class": "HyPimpotChef",
+        "id": "hy-pimpot,-chef-c88a",
+        "exhausted": false,
+        "progress": 0,
+        "harm": 0,
+        "unique_tokens": {},
+        "modifiers": [],
+        "attached_to_id": null,
+        "attached_card_ids": [],
+        "backside_class": null,
+        "is_facedown": false,
+        "frontside_id": null,
+        "json_source_title": null,
+        "json_source_set": null
+      }
+    ],
+    "Player Area": [
+      {
+        "card_class": "PeerlessPathfinder",
+        "id": "peerless-pathfinder-9385",
+        "exhausted": false,
+        "progress": 0,
+        "harm": 0,
+        "unique_tokens": {
+          "biscuit": 3
+        },
+        "modifiers": [],
+        "attached_to_id": null,
+        "attached_card_ids": [],
+        "backside_class": null,
+        "is_facedown": false,
+        "frontside_id": null,
+        "json_source_title": null,
+        "json_source_set": null
+      }
+    ]
+  },
+  "path_deck": [
+    {
+      "card_class": "ProwlingWolhund",
+      "id": "prowling-wolhund-8bfe",
+      "exhausted": false,
+      "progress": 0,
+      "harm": 0,
+      "unique_tokens": {},
+      "modifiers": [],
+      "attached_to_id": null,
+      "attached_card_ids": [],
+      "backside_class": null,
+      "is_facedown": false,
+      "frontside_id": null,
+      "json_source_title": null,
+      "json_source_set": null
+    },
+    {
+      "card_class": "QuisiVosRascal",
+      "id": "quisi-vos,-rascal-42db",
+      "exhausted": false,
+      "progress": 0,
+      "harm": 0,
+      "unique_tokens": {},
+      "modifiers": [],
+      "attached_to_id": null,
+      "attached_card_ids": [],
+      "backside_class": null,
+      "is_facedown": false,
+      "frontside_id": null,
+      "json_source_title": null,
+      "json_source_set": null
+    },
+    {
+      "card_class": "SitkaBuck",
+      "id": "sitka-buck-b3a6",
+      "exhausted": false,
+      "progress": 0,
+      "harm": 0,
+      "unique_tokens": {},
+      "modifiers": [],
+      "attached_to_id": null,
+      "attached_card_ids": [],
+      "backside_class": null,
+      "is_facedown": false,
+      "frontside_id": null,
+      "json_source_title": null,
+      "json_source_set": null
+    },
+    {
+      "card_class": "SunberryBramble",
+      "id": "sunberry-bramble-83b4",
+      "exhausted": false,
+      "progress": 0,
+      "harm": 0,
+      "unique_tokens": {},
+      "modifiers": [],
+      "attached_to_id": null,
+      "attached_card_ids": [],
+      "backside_class": null,
+      "is_facedown": false,
+      "frontside_id": null,
+      "json_source_title": null,
+      "json_source_set": null
+    },
+    {
+      "card_class": "OvergrownThicket",
+      "id": "overgrown-thicket-2154",
+      "exhausted": false,
+      "progress": 0,
+      "harm": 0,
+      "unique_tokens": {},
+      "modifiers": [],
+      "attached_to_id": null,
+      "attached_card_ids": [],
+      "backside_class": null,
+      "is_facedown": false,
+      "frontside_id": null,
+      "json_source_title": null,
+      "json_source_set": null
+    },
+    {
+      "card_class": "CalypsaRangerMentor",
+      "id": "calypsa,-ranger-mentor-4280",
+      "exhausted": false,
+      "progress": 0,
+      "harm": 0,
+      "unique_tokens": {},
+      "modifiers": [],
+      "attached_to_id": null,
+      "attached_card_ids": [],
+      "backside_class": null,
+      "is_facedown": false,
+      "frontside_id": null,
+      "json_source_title": null,
+      "json_source_set": null
+    },
+    {
+      "card_class": "ProwlingWolhund",
+      "id": "prowling-wolhund-b1a1",
+      "exhausted": false,
+      "progress": 0,
+      "harm": 0,
+      "unique_tokens": {},
+      "modifiers": [],
+      "attached_to_id": null,
+      "attached_card_ids": [],
+      "backside_class": null,
+      "is_facedown": false,
+      "frontside_id": null,
+      "json_source_title": null,
+      "json_source_set": null
+    },
+    {
+      "card_class": "SitkaDoe",
+      "id": "sitka-doe-571e",
+      "exhausted": false,
+      "progress": 0,
+      "harm": 0,
+      "unique_tokens": {},
+      "modifiers": [],
+      "attached_to_id": null,
+      "attached_card_ids": [],
+      "backside_class": null,
+      "is_facedown": false,
+      "frontside_id": null,
+      "json_source_title": null,
+      "json_source_set": null
+    },
+    {
+      "card_class": "ProwlingWolhund",
+      "id": "prowling-wolhund-49dc",
+      "exhausted": false,
+      "progress": 0,
+      "harm": 0,
+      "unique_tokens": {},
+      "modifiers": [],
+      "attached_to_id": null,
+      "attached_card_ids": [],
+      "backside_class": null,
+      "is_facedown": false,
+      "frontside_id": null,
+      "json_source_title": null,
+      "json_source_set": null
+    },
+    {
+      "card_class": "OvergrownThicket",
+      "id": "overgrown-thicket-51f5",
+      "exhausted": false,
+      "progress": 0,
+      "harm": 0,
+      "unique_tokens": {},
+      "modifiers": [],
+      "attached_to_id": null,
+      "attached_card_ids": [],
+      "backside_class": null,
+      "is_facedown": false,
+      "frontside_id": null,
+      "json_source_title": null,
+      "json_source_set": null
+    },
+    {
+      "card_class": "SitkaBuck",
+      "id": "sitka-buck-86c4",
+      "exhausted": false,
+      "progress": 0,
+      "harm": 0,
+      "unique_tokens": {},
+      "modifiers": [],
+      "attached_to_id": null,
+      "attached_card_ids": [],
+      "backside_class": null,
+      "is_facedown": false,
+      "frontside_id": null,
+      "json_source_title": null,
+      "json_source_set": null
+    },
+    {
+      "card_class": "TheFundamentalist",
+      "id": "the-fundamentalist-5502",
+      "exhausted": false,
+      "progress": 0,
+      "harm": 0,
+      "unique_tokens": {},
+      "modifiers": [],
+      "attached_to_id": null,
+      "attached_card_ids": [],
+      "backside_class": null,
+      "is_facedown": false,
+      "frontside_id": null,
+      "json_source_title": null,
+      "json_source_set": null
+    },
+    {
+      "card_class": "SunberryBramble",
+      "id": "sunberry-bramble-3503",
+      "exhausted": false,
+      "progress": 0,
+      "harm": 0,
+      "unique_tokens": {},
+      "modifiers": [],
+      "attached_to_id": null,
+      "attached_card_ids": [],
+      "backside_class": null,
+      "is_facedown": false,
+      "frontside_id": null,
+      "json_source_title": null,
+      "json_source_set": null
+    }
+  ],
+  "path_discard": [
+    {
+      "card_class": "CausticMulcher",
+      "id": "caustic-mulcher-e6d2",
+      "exhausted": false,
+      "progress": 0,
+      "harm": 0,
+      "unique_tokens": {},
+      "modifiers": [],
+      "attached_to_id": null,
+      "attached_card_ids": [],
+      "backside_class": null,
+      "is_facedown": false,
+      "frontside_id": null,
+      "json_source_title": null,
+      "json_source_set": null
+    }
+  ],
+  "challenge_deck": {
+    "deck": [
+      {
+        "icon": "crest",
+        "mods": {
+          "AWA": 0,
+          "FIT": 0,
+          "SPI": -1,
+          "FOC": 1
+        },
+        "reshuffle": false
+      },
+      {
+        "icon": "sun",
+        "mods": {
+          "AWA": 1,
+          "FIT": 0,
+          "SPI": 0,
+          "FOC": -1
+        },
+        "reshuffle": false
+      },
+      {
+        "icon": "sun",
+        "mods": {
+          "AWA": 0,
+          "FIT": 1,
+          "SPI": -1,
+          "FOC": 0
+        },
+        "reshuffle": false
+      },
+      {
+        "icon": "crest",
+        "mods": {
+          "AWA": 0,
+          "FIT": 1,
+          "SPI": 0,
+          "FOC": -1
+        },
+        "reshuffle": false
+      },
+      {
+        "icon": "sun",
+        "mods": {
+          "AWA": -2,
+          "FIT": 1,
+          "SPI": 0,
+          "FOC": 1
+        },
+        "reshuffle": true
+      },
+      {
+        "icon": "mountain",
+        "mods": {
+          "AWA": 0,
+          "FIT": -1,
+          "SPI": -1,
+          "FOC": 0
+        },
+        "reshuffle": false
+      },
+      {
+        "icon": "mountain",
+        "mods": {
+          "AWA": 1,
+          "FIT": -1,
+          "SPI": -1,
+          "FOC": 1
+        },
+        "reshuffle": false
+      },
+      {
+        "icon": "crest",
+        "mods": {
+          "AWA": 0,
+          "FIT": -1,
+          "SPI": 1,
+          "FOC": 0
+        },
+        "reshuffle": false
+      },
+      {
+        "icon": "sun",
+        "mods": {
+          "AWA": -1,
+          "FIT": 1,
+          "SPI": 0,
+          "FOC": 0
+        },
+        "reshuffle": false
+      },
+      {
+        "icon": "sun",
+        "mods": {
+          "AWA": 0,
+          "FIT": -2,
+          "SPI": 1,
+          "FOC": 1
+        },
+        "reshuffle": true
+      },
+      {
+        "icon": "mountain",
+        "mods": {
+          "AWA": -1,
+          "FIT": 1,
+          "SPI": 1,
+          "FOC": -1
+        },
+        "reshuffle": false
+      },
+      {
+        "icon": "sun",
+        "mods": {
+          "AWA": -1,
+          "FIT": 0,
+          "SPI": 1,
+          "FOC": 0
+        },
+        "reshuffle": false
+      },
+      {
+        "icon": "crest",
+        "mods": {
+          "AWA": -1,
+          "FIT": -1,
+          "SPI": 0,
+          "FOC": 0
+        },
+        "reshuffle": false
+      },
+      {
+        "icon": "mountain",
+        "mods": {
+          "AWA": 1,
+          "FIT": -1,
+          "SPI": 0,
+          "FOC": 0
+        },
+        "reshuffle": false
+      },
+      {
+        "icon": "mountain",
+        "mods": {
+          "AWA": 1,
+          "FIT": 0,
+          "SPI": -1,
+          "FOC": 0
+        },
+        "reshuffle": false
+      },
+      {
+        "icon": "crest",
+        "mods": {
+          "AWA": -1,
+          "FIT": 0,
+          "SPI": 0,
+          "FOC": 1
+        },
+        "reshuffle": false
+      },
+      {
+        "icon": "crest",
+        "mods": {
+          "AWA": 1,
+          "FIT": 1,
+          "SPI": -2,
+          "FOC": 0
+        },
+        "reshuffle": true
+      },
+      {
+        "icon": "mountain",
+        "mods": {
+          "AWA": 0,
+          "FIT": 0,
+          "SPI": 1,
+          "FOC": -1
+        },
+        "reshuffle": false
+      },
+      {
+        "icon": "crest",
+        "mods": {
+          "AWA": 1,
+          "FIT": 0,
+          "SPI": 1,
+          "FOC": -2
+        },
+        "reshuffle": true
+      },
+      {
+        "icon": "mountain",
+        "mods": {
+          "AWA": 0,
+          "FIT": -1,
+          "SPI": 0,
+          "FOC": 1
+        },
+        "reshuffle": false
+      },
+      {
+        "icon": "sun",
+        "mods": {
+          "AWA": 0,
+          "FIT": 0,
+          "SPI": -1,
+          "FOC": -1
+        },
+        "reshuffle": false
+      },
+      {
+        "icon": "crest",
+        "mods": {
+          "AWA": -1,
+          "FIT": 0,
+          "SPI": -1,
+          "FOC": 0
+        },
+        "reshuffle": false
+      },
+      {
+        "icon": "sun",
+        "mods": {
+          "AWA": 0,
+          "FIT": -1,
+          "SPI": 0,
+          "FOC": -1
+        },
+        "reshuffle": false
+      },
+      {
+        "icon": "mountain",
+        "mods": {
+          "AWA": -1,
+          "FIT": 0,
+          "SPI": 0,
+          "FOC": -1
+        },
+        "reshuffle": false
+      }
+    ],
+    "discard": []
+  }
+}
