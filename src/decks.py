@@ -56,7 +56,7 @@ def get_location_by_id(location_id: str) -> Card:
     location_registry = {
         "Boulder Field": BoulderField,
         "Ancestor's Grove": AncestorsGrove,
-        "Lone Tree Station": LoneTreeStation,
+        "Lone Tree Station": LoneTreeStation
     }
 
     if location_id in location_registry:
@@ -70,7 +70,20 @@ def get_current_weather() -> Card:
     from .cards import APerfectDay
     return APerfectDay()
 
-def get_current_missions() -> list[Card]:
-    #TODO: Reference campaign tracker for active missions
+
+from .models import Mission
+def get_current_missions(active_missions: list[Mission]) -> list[Card]:
     from .cards import BiscuitDelivery
-    return [BiscuitDelivery()]
+
+    mission_registry = {
+        "Biscuit Delivery": BiscuitDelivery
+    }
+
+    result = []
+    for mission in active_missions:
+        if mission.name in mission_registry:
+            result.append(mission_registry[mission.name]())
+        else:
+            raise RuntimeError("Mission not found!")
+        
+    return result

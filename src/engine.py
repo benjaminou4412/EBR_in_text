@@ -1047,7 +1047,7 @@ class GameEngine:
             self.state.weather.enters_play(self, Area.SURROUNDINGS, None)
             self.add_message(f"Step 7: Set up mission cards")
             #TODO: Set up mission cards based on Campaign Tracker information
-            self.state.missions = get_current_missions()
+            self.state.missions = get_current_missions(self.state.campaign_tracker.active_missions)
             self.state.areas[Area.SURROUNDINGS].extend(self.state.missions)
             for card in self.state.missions:
                 card.enters_play(self, Area.SURROUNDINGS, None)

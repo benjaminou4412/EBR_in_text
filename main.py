@@ -290,7 +290,7 @@ def _build_phase2_actions(engine: GameEngine) -> list[Action]:
     ))
     actions.append(Action(
         id="system-end-day",
-        name="END DAY",
+        name="[End Day]",
         verb="END DAY",
         aspect="",
         approach="",
@@ -411,7 +411,7 @@ def run_game_loop(engine: GameEngine, with_ui: bool = True, resume_phase2: bool 
                 clear_screen()
             engine.phase1_draw_paths(count=1)
             if with_ui:
-                render_state(engine, phase_header=f"Round {engine.state.round_number} — Phase 1: Draw Path Cards")
+                render_state(engine, phase_header=f"Day {engine.state.campaign_tracker.day_number} — Round {engine.state.round_number} — Phase 1: Draw Path Cards")
                 print("")
                 print("==== Event log ====")
                 display_and_clear_messages(engine)
@@ -423,7 +423,7 @@ def run_game_loop(engine: GameEngine, with_ui: bool = True, resume_phase2: bool 
         while True:
             if with_ui:
                 clear_screen()
-                render_state(engine, phase_header=f"Round {engine.state.round_number} — Phase 2: Ranger Turns")
+                render_state(engine, phase_header=f"Day {engine.state.campaign_tracker.day_number} — Round {engine.state.round_number} — Phase 2: Ranger Turns")
                 print("")
                 print("==== Event log and choices ====")
 
@@ -477,7 +477,7 @@ def run_game_loop(engine: GameEngine, with_ui: bool = True, resume_phase2: bool 
         # Phase 3: Travel
         if with_ui:
             clear_screen()
-            render_state(engine, phase_header=f"Round {engine.state.round_number} — Phase 3: Travel")
+            render_state(engine, phase_header=f"Day {engine.state.campaign_tracker.day_number} — Round {engine.state.round_number} — Phase 3: Travel")
             print("")
             print("==== Event log ====")
         camped = engine.phase3_travel()
@@ -503,7 +503,7 @@ def run_game_loop(engine: GameEngine, with_ui: bool = True, resume_phase2: bool 
             clear_screen()
         engine.phase4_refresh()
         if with_ui:
-            render_state(engine, phase_header=f"Round {engine.state.round_number} — Phase 4: Refresh")
+            render_state(engine, phase_header=f"Day {engine.state.campaign_tracker.day_number} — Round {engine.state.round_number} — Phase 4: Refresh")
             print("")
             print("==== Event log ====")
             display_and_clear_messages(engine)
@@ -576,6 +576,7 @@ def start_new_day(campaign_tracker, role_card: Card) -> GameEngine:
             card, _ = state.ranger.draw_card(engine)
             if card is None:
                 raise RuntimeError(f"Deck should not run out during setup!")
+        #TODO: implement mulligan
 
         engine.add_message(f"Step 3: Elect lead Ranger (only one ranger; automatically chosen)")
         engine.add_message(f"Step 4: Shuffle challenge deck")
@@ -654,7 +655,7 @@ def main() -> None:
                 ranger_aspects={Aspect.AWA: 99, Aspect.FIT: 99, Aspect.SPI: 99, Aspect.FOC: 99},
                 current_location_id="Lone Tree Station",
                 current_terrain_type="Woods",
-                active_missions=[Mission("Biscuit Delivery")]
+                active_missions=[]
             )
 
             # Role card stays the same throughout campaign
