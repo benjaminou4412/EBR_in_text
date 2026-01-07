@@ -488,5 +488,133 @@ class RangerTokenLocationTests(unittest.TestCase):
         self.assertEqual(loaded_engine.state.ranger.ranger_token_location, doe.id)
 
 
+class DayRegistryTests(unittest.TestCase):
+    """Tests for day_registry serialization and deserialization."""
+
+    def setUp(self):
+        self.temp_dir = tempfile.mkdtemp()
+        self.save_path = os.path.join(self.temp_dir, "test_save.json")
+
+    def tearDown(self):
+        if os.path.exists(self.save_path):
+            os.remove(self.save_path)
+        os.rmdir(self.temp_dir)
+
+    def test_day_registry_basic_roundtrip(self):
+        """Test that day_registry survives a basic save/load cycle."""
+        state = make_test_state()
+        engine = GameEngine(state)
+
+        # Check initial registry has expected data
+        self.assertEqual(state.campaign_tracker.day_registry[1].weather, "A Perfect Day")
+        self.assertEqual(state.campaign_tracker.day_registry[4].weather, "Downpour")
+
+        save_game(engine, self.save_path)
+        loaded_engine = load_game(self.save_path)
+
+        # Verify day_registry is preserved
+        loaded_registry = loaded_engine.state.campaign_tracker.day_registry
+        self.assertEqual(loaded_registry[1].weather, "A Perfect Day")
+        self.assertEqual(loaded_registry[4].weather, "Downpour")
+        self.assertEqual(loaded_registry[13].weather, "Howling Winds")
+
+    def test_day_registry_added_entries_preserved(self):
+        """Test that dynamically added entries to a day survive save/load."""
+        state = make_test_state()
+        engine = GameEngine(state)
+
+        # Add entries to various days (simulating game effects)
+        state.campaign_tracker.day_registry[5].entries.append("test_entry_1")
+        state.campaign_tracker.day_registry[5].entries.append("test_entry_2")
+        state.campaign_tracker.day_registry[10].entries.append("another_entry")
+
+        save_game(engine, self.save_path)
+        loaded_engine = load_game(self.save_path)
+
+        # Verify added entries are preserved
+        loaded_registry = loaded_engine.state.campaign_tracker.day_registry
+        self.assertIn("test_entry_1", loaded_registry[5].entries)
+        self.assertIn("test_entry_2", loaded_registry[5].entries)
+        self.assertIn("another_entry", loaded_registry[10].entries)
+
+    def test_day_registry_modified_weather_preserved(self):
+        """Test that modified weather for a day survives save/load."""
+        state = make_test_state()
+        engine = GameEngine(state)
+
+        # Modify weather for a day (hypothetical game effect)
+        state.campaign_tracker.day_registry[8].weather = "Howling Winds"
+
+        save_game(engine, self.save_path)
+        loaded_engine = load_game(self.save_path)
+
+        # Verify modified weather is preserved
+        loaded_registry = loaded_engine.state.campaign_tracker.day_registry
+        self.assertEqual(loaded_registry[8].weather, "Howling Winds")
+        # Other days should be unchanged
+        self.assertEqual(loaded_registry[7].weather, "Downpour")
+        self.assertEqual(loaded_registry[9].weather, "A Perfect Day")
+
+    def test_day_registry_all_30_days_preserved(self):
+        """Test that all 30 days of the registry survive save/load."""
+        state = make_test_state()
+        engine = GameEngine(state)
+
+        # Capture original registry
+        original_registry = {
+            day: (content.weather, list(content.entries))
+            for day, content in state.campaign_tracker.day_registry.items()
+        }
+
+        save_game(engine, self.save_path)
+        loaded_engine = load_game(self.save_path)
+
+        loaded_registry = loaded_engine.state.campaign_tracker.day_registry
+
+        # Verify all 30 days are present and correct
+        self.assertEqual(len(loaded_registry), 30)
+        for day in range(1, 31):
+            self.assertIn(day, loaded_registry)
+            self.assertEqual(loaded_registry[day].weather, original_registry[day][0])
+            self.assertEqual(loaded_registry[day].entries, original_registry[day][1])
+
+    def test_day_registry_backwards_compatibility(self):
+        """Test that loading an old save without day_registry uses defaults."""
+        state = make_test_state()
+        engine = GameEngine(state)
+
+        # Save normally
+        save_game(engine, self.save_path)
+
+        # Manually remove day_registry from the save file
+        with open(self.save_path, 'r') as f:
+            save_data = json.load(f)
+
+        del save_data['campaign_tracker']['day_registry']
+
+        with open(self.save_path, 'w') as f:
+            json.dump(save_data, f)
+
+        # Load should work and use default registry
+        loaded_engine = load_game(self.save_path)
+
+        # Should have default day_registry
+        loaded_registry = loaded_engine.state.campaign_tracker.day_registry
+        self.assertEqual(len(loaded_registry), 30)
+        self.assertEqual(loaded_registry[1].weather, "A Perfect Day")
+        self.assertEqual(loaded_registry[4].weather, "Downpour")
+
+    def test_day_registry_instances_are_independent(self):
+        """Test that each CampaignTracker has its own day_registry instance."""
+        tracker1 = CampaignTracker()
+        tracker2 = CampaignTracker()
+
+        # Modify tracker1's registry
+        tracker1.day_registry[5].entries.append("only_in_tracker1")
+
+        # tracker2 should not be affected
+        self.assertNotIn("only_in_tracker1", tracker2.day_registry[5].entries)
+
+
 if __name__ == '__main__':
     unittest.main()

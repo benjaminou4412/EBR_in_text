@@ -173,6 +173,50 @@ def display_campaign_tracker(engine: GameEngine) -> None:
     else:
         print("    (none)")
 
+    # Weather forecast - group consecutive days with same weather
+    print("\n  Weather Forecast:")
+    if tracker.day_registry:
+        sorted_days = sorted(tracker.day_registry.keys())
+        if sorted_days:
+            ranges = []
+            start_day = sorted_days[0]
+            current_weather = tracker.day_registry[start_day].weather
+            end_day = start_day
+
+            for day in sorted_days[1:]:
+                day_weather = tracker.day_registry[day].weather
+                if day_weather == current_weather and day == end_day + 1:
+                    end_day = day
+                else:
+                    ranges.append((start_day, end_day, current_weather))
+                    start_day = day
+                    end_day = day
+                    current_weather = day_weather
+
+            ranges.append((start_day, end_day, current_weather))
+
+            for start, end, weather in ranges:
+                if start == end:
+                    print(f"    Day {start}: {weather}")
+                else:
+                    print(f"    Days {start}-{end}: {weather}")
+    else:
+        print("    (none)")
+
+    # Days with campaign guide entries
+    print("\n  Scheduled Campaign Entries:")
+    days_with_entries = [
+        (day, content.entries)
+        for day, content in sorted(tracker.day_registry.items())
+        if content.entries
+    ]
+    if days_with_entries:
+        for day, entries in days_with_entries:
+            entries_str = ", ".join(entries)
+            print(f"    Day {day}: {entries_str}")
+    else:
+        print("    (none)")
+
     print("\n" + "=" * 50)
     input("Press Enter to continue...")
 

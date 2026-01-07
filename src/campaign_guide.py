@@ -30,7 +30,9 @@ class CampaignGuide:
             "91.5": self.resolve_entry_91_5,
             "91.6": self.resolve_entry_91_6,
             "91.7": self.resolve_entry_91_7,
-            "91.8": self.resolve_entry_91_8
+            "91.8": self.resolve_entry_91_8,
+            "94.1": self.resolve_entry_94_1, #start-of-day entry for day 3
+            "1.04": self.resolve_entry_1_04, #start-of-day entry for day 4
             }
     
     """
@@ -669,3 +671,15 @@ class CampaignGuide:
         engine.state.ranger.soothe(engine, 2)
         engine.add_message(source_card.discard_from_play(engine))
         return True
+
+    def resolve_entry_94_1(self, _source_card: 'Card | None', engine: 'GameEngine', _clear_type: str | None) -> bool:
+        engine.add_message("")
+        engine.add_message("")
+        engine.add_message("=== Campaign Guide Entry 94.1: Start of Day 3 (PLACEHOLDER) ===")
+        return False
+
+    def resolve_entry_1_04(self, _source_card: 'Card | None', engine: 'GameEngine', _clear_type: str | None) -> bool:
+        engine.add_message("")
+        engine.add_message("")
+        engine.add_message("=== Campaign Guide Entry 1.04: Start of Day 4 (PLACEHOLDER) ===")
+        return False

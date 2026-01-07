@@ -1046,12 +1046,16 @@ class GameEngine:
             self.state.location = get_location_by_id(self.state.campaign_tracker.current_location_id)
             self.state.areas[Area.SURROUNDINGS].append(self.state.location)
             self.state.location.enters_play(self, Area.SURROUNDINGS, None)
-            self.add_message(f"Step 6: Set up the weather card")
-            self.state.weather = get_current_weather()
+            self.add_message(f"Step 6: Set up the weather card and read campaign guide entries")
+            current_day = self.state.campaign_tracker.day_number
+            self.state.weather = get_current_weather(self.state.campaign_tracker.day_registry[current_day].weather)
             self.state.areas[Area.SURROUNDINGS].insert(0, self.state.weather)
             self.state.weather.enters_play(self, Area.SURROUNDINGS, None)
+            #resolve campaign guide entries
+            entries = self.state.campaign_tracker.day_registry[current_day].entries
+            for entry in entries:
+                self.campaign_guide.resolve_entry(entry, None, self, None)
             self.add_message(f"Step 7: Set up mission cards")
-            #TODO: Set up mission cards based on Campaign Tracker information
             self.state.missions = get_current_missions(self.state.campaign_tracker.active_missions)
             self.state.areas[Area.SURROUNDINGS].extend(self.state.missions)
             for card in self.state.missions:

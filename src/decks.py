@@ -65,10 +65,18 @@ def get_location_by_id(location_id: str) -> Card:
         # Default to Lone Tree Station for unknown locations (campaign start)
         return LoneTreeStation()
 
-def get_current_weather() -> Card:
-    #TODO: Reference campaign tracker for today's weather
-    from .cards import APerfectDay
-    return APerfectDay()
+def get_current_weather(weather_title: str) -> Card:
+    from .cards import APerfectDay, Downpour, HowlingWinds
+
+    weather_registry = {
+        "A Perfect Day": APerfectDay,
+        "Downpour": Downpour,
+        "Howling Winds": HowlingWinds,
+    }
+    if weather_title in weather_registry:
+        return weather_registry[weather_title]()
+    else:
+        raise RuntimeError(f"Weather not found: {weather_title}")
 
 
 from .models import Mission

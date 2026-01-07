@@ -120,9 +120,86 @@ class MiddaySun(Card):
         if self.get_unique_token_count("Cloud") >= 3:
             self.flip(engine)
         return 0 #doesn't involve effort
-    
+
     def flip(self, engine: GameEngine) -> None:
         super().flip(engine)
         if self.backside is None:
             raise RuntimeError(f"Weather should always have a backside!")
         engine.state.weather = self.backside
+
+
+class Downpour(Card):
+    """Downpour weather card - has Inclement trait, uses rain tokens"""
+    def __init__(self, fresh: bool = True):
+        super().__init__(**load_card_fields("Downpour", "Weather")) #type:ignore
+        self.art_description = "" #TODO
+        if fresh:
+            self.backside = GatheringStorm(fresh=False)
+            self.backside.backside = self
+
+    def flip(self, engine: GameEngine) -> None:
+        super().flip(engine)
+        if self.backside is None:
+            raise RuntimeError(f"Weather should always have a backside!")
+        engine.state.weather = self.backside
+
+    #TODO: Challenge (Sun) effect - discard rain, fatigue, flip if no rain
+
+
+class GatheringStorm(Card):
+    """Gathering Storm - backside of Downpour, uses rain tokens"""
+    def __init__(self, fresh: bool = True):
+        super().__init__(**load_card_fields("Gathering Storm", "Weather")) #type:ignore
+        self.art_description = "" #TODO
+        if fresh:
+            self.backside = Downpour(fresh=False)
+            self.backside.backside = self
+
+    def flip(self, engine: GameEngine) -> None:
+        super().flip(engine)
+        if self.backside is None:
+            raise RuntimeError(f"Weather should always have a backside!")
+        engine.state.weather = self.backside
+
+    #TODO: Test - FOC + Reason: Shelter
+    #TODO: Refresh - add 2 rain, flip at 4+, move prey, exhaust role
+
+
+class HowlingWinds(Card):
+    """Howling Winds weather card - has Inclement trait, uses wind tokens"""
+    def __init__(self, fresh: bool = True):
+        super().__init__(**load_card_fields("Howling Winds", "Weather")) #type:ignore
+        self.art_description = "" #TODO
+        if fresh:
+            self.backside = Thunderhead(fresh=False)
+            self.backside.backside = self
+
+    def flip(self, engine: GameEngine) -> None:
+        super().flip(engine)
+        if self.backside is None:
+            raise RuntimeError(f"Weather should always have a backside!")
+        engine.state.weather = self.backside
+
+    #TODO: Arrival Setup - shuffle Cerberusian Cyclone into path deck
+    #TODO: Refresh - at 3R+ wind, remove wind, draw extra path, flip
+    #TODO: Challenge (Sun) effect - add 2 wind, optional fatigue to reduce
+
+
+class Thunderhead(Card):
+    """Thunderhead - backside of Howling Winds, has Inclement trait"""
+    def __init__(self, fresh: bool = True):
+        super().__init__(**load_card_fields("Thunderhead", "Weather")) #type:ignore
+        self.art_description = "" #TODO
+        if fresh:
+            self.backside = HowlingWinds(fresh=False)
+            self.backside.backside = self
+
+    def flip(self, engine: GameEngine) -> None:
+        super().flip(engine)
+        if self.backside is None:
+            raise RuntimeError(f"Weather should always have a backside!")
+        engine.state.weather = self.backside
+
+    #TODO: Refresh - flip into Howling Winds
+    #TODO: Challenge (Sun) - remove 1 progress from each path and location
+    #TODO: Challenge (Crest) - ready 1 predator or prey

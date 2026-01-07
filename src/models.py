@@ -149,6 +149,48 @@ class DayEndException(Exception):
 # Campaign persistence
 
 @dataclass
+class DayContent:
+    weather: str
+    entries: list[str] = field(default_factory=list)
+
+
+def _default_day_registry() -> dict[int, DayContent]:
+    """Factory function to create a fresh day registry with default content."""
+    return {
+        1: DayContent("A Perfect Day"),
+        2: DayContent("A Perfect Day"),
+        3: DayContent("A Perfect Day", ["94.1"]),
+        4: DayContent("Downpour", ["1.04"]),
+        5: DayContent("Downpour"),
+        6: DayContent("Downpour"),
+        7: DayContent("Downpour"),
+        8: DayContent("A Perfect Day"),
+        9: DayContent("A Perfect Day"),
+        10: DayContent("Downpour"),
+        11: DayContent("Downpour"),
+        12: DayContent("Downpour"),
+        13: DayContent("Howling Winds"),
+        14: DayContent("Howling Winds"),
+        15: DayContent("Downpour"),
+        16: DayContent("Downpour"),
+        17: DayContent("Downpour"),
+        18: DayContent("Howling Winds"),
+        19: DayContent("Howling Winds"),
+        20: DayContent("Howling Winds"),
+        21: DayContent("A Perfect Day"),
+        22: DayContent("A Perfect Day"),
+        23: DayContent("Downpour"),
+        24: DayContent("Downpour"),
+        25: DayContent("Downpour"),
+        26: DayContent("Howling Winds"),
+        27: DayContent("Howling Winds"),
+        28: DayContent("Howling Winds"),
+        29: DayContent("A Perfect Day"),
+        30: DayContent("A Perfect Day"),
+    }
+
+
+@dataclass
 class CampaignTracker:
     """State that persists between days"""
     day_number: int = 1
@@ -165,6 +207,11 @@ class CampaignTracker:
     # Location and terrain persist between days
     current_location_id: str = "Lone Tree Station"  # Default starting location
     current_terrain_type: str = "Woods"  # Hardcoded for now, will be swappable later
+
+    # Registry for each day's start-of-day campaign guide entries and weather
+    # This is mutable per-instance so game effects can add entries to future days
+    day_registry: dict[int, DayContent] = field(default_factory=_default_day_registry)
+
 
 
 # Challenge deck classes

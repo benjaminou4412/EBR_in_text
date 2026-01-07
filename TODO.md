@@ -32,6 +32,7 @@ API-ish notes:
 Features with a lot of AI-written code I haven't carefully reviewed that might pop up issues in the future:
 - General game loop structure in main.py
 - Save/load/title
+- UI
 
 A living checklist. Roughly prioritized.
 

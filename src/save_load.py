@@ -97,6 +97,13 @@ class RangerData:
 
 
 @dataclass
+class DayContentData:
+    """Serializable representation of DayContent"""
+    weather: str
+    entries: list[str] = field(default_factory=list)
+
+
+@dataclass
 class CampaignTrackerData:
     """Serializable representation of CampaignTracker"""
     day_number: int
@@ -109,6 +116,7 @@ class CampaignTrackerData:
     ranger_aspects: dict[str, int] = field(default_factory=dict)
     current_location_id: str = "Lone Tree Station"
     current_terrain_type: str = "Woods"
+    day_registry: dict[str, DayContentData] = field(default_factory=dict)  # str keys for JSON compatibility
 
 
 @dataclass
@@ -278,6 +286,10 @@ def serialize_game_state(engine: GameEngine) -> SaveData:
     )
 
     # Serialize campaign tracker
+    day_registry_data = {
+        str(day_num): DayContentData(weather=content.weather, entries=list(content.entries))
+        for day_num, content in state.campaign_tracker.day_registry.items()
+    }
     campaign_data = CampaignTrackerData(
         day_number=state.campaign_tracker.day_number,
         notable_events=list(state.campaign_tracker.notable_events),
@@ -288,7 +300,8 @@ def serialize_game_state(engine: GameEngine) -> SaveData:
         ranger_name=state.campaign_tracker.ranger_name,
         ranger_aspects={aspect.value: val for aspect, val in state.campaign_tracker.ranger_aspects.items()},
         current_location_id=state.campaign_tracker.current_location_id,
-        current_terrain_type=state.campaign_tracker.current_terrain_type
+        current_terrain_type=state.campaign_tracker.current_terrain_type,
+        day_registry=day_registry_data
     )
 
     # Serialize challenge deck
@@ -604,6 +617,17 @@ def load_game(filepath: str | Path) -> GameEngine:
 
     # Deserialize campaign tracker
     ct_data = save_dict['campaign_tracker']
+
+    # Deserialize day_registry if present, otherwise use default
+    from .models import DayContent, _default_day_registry
+    if 'day_registry' in ct_data and ct_data['day_registry']:
+        day_registry = {
+            int(day_str): DayContent(weather=content['weather'], entries=list(content.get('entries', [])))
+            for day_str, content in ct_data['day_registry'].items()
+        }
+    else:
+        day_registry = _default_day_registry()
+
     campaign_tracker = CampaignTracker(
         day_number=ct_data['day_number'],
         notable_events=list(ct_data.get('notable_events', [])),
@@ -614,7 +638,8 @@ def load_game(filepath: str | Path) -> GameEngine:
         ranger_name=ct_data.get('ranger_name', ''),
         ranger_aspects={Aspect(k): v for k, v in ct_data.get('ranger_aspects', {}).items()},
         current_location_id=ct_data.get('current_location_id', 'Lone Tree Station'),
-        current_terrain_type=ct_data.get('current_terrain_type', 'Woods')
+        current_terrain_type=ct_data.get('current_terrain_type', 'Woods'),
+        day_registry=day_registry
     )
 
     # Create RangerState

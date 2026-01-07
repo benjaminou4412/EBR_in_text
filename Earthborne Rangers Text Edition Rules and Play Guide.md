@@ -9,6 +9,7 @@ CORE PRINCIPLES
 - Timing keywords: “Setup” = during setup only. “Start of Day” = once at the beginning of a day. “Refresh:” = during Phase 4. “Response:” = when the stated trigger happens; must resolve if it can, except for "response" on moments, which specifies the point in time in which they optionally can be played.
 - The letter "R": A capital R should be read as "per ranger". Typically it accompanies an integer quantity, so "2R" should be read as "2 per ranger". For solo play, R=1.
 - This guide is written to taken into account the possibility of multiple rangers, but for now this implementation of the game only allows for a solo ranger.
+- This guide is a summary of the game's rules and is not comprehensive. Feel free to use the internet to look up more specific rules.
 
 THE PLAY AREA (ZONES)
 - Player Area (one per Ranger): your role card, aspect card, equipped gear, Ranger deck, and discard pile.
