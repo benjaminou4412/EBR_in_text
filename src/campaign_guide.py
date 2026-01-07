@@ -311,9 +311,8 @@ class CampaignGuide:
         'complete. Take your time. You will be called upon if there’s an emergency. Now, you may end the day or ' \
         'continue playing. If you end the day, you are considered to have camped.')
         will_camp = engine.response_decider(engine, f"Will you end the day by camping? (y/n):")
-        if will_camp:
-            #TODO: take into account ending-day-by-camping to allow reward card swaps
-            engine.end_day()
+        engine.end_day(will_camp)
+            
         return True
         
     def resolve_entry_47(self, source_card: 'Card | None', engine: 'GameEngine', clear_type: str | None) -> bool:
@@ -456,7 +455,7 @@ class CampaignGuide:
         engine.add_message("")
         engine.add_message("--- Results ---")
         engine.add_message('End the day.')
-        engine.end_day()
+        engine.end_day(False)
         return True
     
     def resolve_entry_85(self, source_card: 'Card | None', engine: 'GameEngine', clear_type: str | None) -> bool:

@@ -35,7 +35,6 @@ Features with a lot of AI-written code I haven't carefully reviewed that might p
 
 A living checklist. Roughly prioritized.
 
-- Pass whether or not camping happened to end_day method
 - Implement "view campaign tracker" option. 
 - Implement start-of-day campaign entry resolution
   - Probably a dict of in-game day numbers as keys mapped to strings referring to campaign guide entries 
@@ -52,7 +51,9 @@ A living checklist. Roughly prioritized.
 - implement multi-target tests
   - need to have interaction/obstacle rules consider multiple interaction targets
     (the farthest target is the one true interaction target)
-- Autosave every turn
+- Autosave every turn overwriting a single autosave
+  - "LLM mode" that autosaves but disallows loading saves
+- Implement deck editing menu used at start of campaign and when camping
 - Implement...the entire rest of the game.
 - "AI Mode" (saves, but no loading available to player; metrics tracked)
 

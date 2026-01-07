@@ -1112,7 +1112,7 @@ class RangerState:
             # Can't fatigue more than remaining deck - end the day
             engine.add_message(f"Ranger needs to suffer {amount} fatigue, but only {len(self.deck)} cards remain in deck.")
             engine.add_message("Cannot fatigue from empty deck - the day must end!")
-            engine.end_day()
+            engine.end_day(False)
             return
 
         for _ in range(amount):
@@ -1157,7 +1157,7 @@ class RangerState:
         if self.injury >= 3:
             engine.add_message("Ranger has taken 3 injuries - the day must end!")
             # TODO: Add "Lingering Injury" card to ranger's deck permanently
-            engine.end_day()
+            engine.end_day(False)
 
 @dataclass
 class Mission:

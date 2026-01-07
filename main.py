@@ -505,10 +505,9 @@ def run_game_loop(engine: GameEngine, with_ui: bool = True, resume_phase2: bool 
                 if act is not None and act.id == "system-end-day":
                     yes = engine.response_decider(engine, "Are you sure?")
                     if yes:
-                        engine.end_day()
+                        engine.end_day(False)
                         if with_ui:
                             display_and_clear_messages(engine)
-                            print("\nThe day has ended. Demo complete!")
                             input("Press Enter to exit...")
                         return 'normal'
                     else:

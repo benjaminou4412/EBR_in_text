@@ -728,7 +728,7 @@ class GameEngine:
         if total_equip <= MAX_EQUIP:
             self.add_message(f"Total equip value is now {total_equip}/{MAX_EQUIP}.")
 
-    def end_day(self) -> None:
+    def end_day(self, camped: bool) -> None:
         """
         End the current day immediately.
 
@@ -746,8 +746,15 @@ class GameEngine:
         old_day = self.state.campaign_tracker.day_number
         self.state.campaign_tracker.day_number += 1
 
+        
         self.add_message(f"Day {old_day} has ended after {self.state.round_number} rounds.")
-        self.add_message(f"You camp at {self.state.location.title} for the night.")
+
+        if camped:
+            self.add_message(f"You camp at {self.state.location.title} for the night. You may modify your deck and access Reward cards.")
+        else:
+            self.add_message(f"You sleep rough at {self.state.location.title} for the night. Without properly camping and resting, you can't modify your deck.")
+
+        #TODO: take into account ending-day-by-camping to allow reward card swaps
 
         raise DayEndException()
 
@@ -1025,8 +1032,7 @@ class GameEngine:
         #Step 3: Decide to camp
         will_camp = self.response_decider(self, f"Will you end the day by camping? (y/n):")
         if will_camp:
-            #TODO: take into account ending-day-by-camping to allow reward card swaps
-            self.end_day()
+            self.end_day(will_camp)
             return True
         #Step 4 and 5: Build path deck, arrival setup
         self.arrival_setup(start_of_day=False)
@@ -1084,7 +1090,7 @@ class GameEngine:
         #Step 2: Draw 1 Ranger Card
         card, should_end_day = self.state.ranger.draw_card(self)
         if should_end_day:
-            self.end_day()
+            self.end_day(False)
             return
         #Step 3: Refill energy
         self.state.ranger.refresh_all_energy()

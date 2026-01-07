@@ -438,7 +438,7 @@ class DayTransitionTests(unittest.TestCase):
 
         # End the day
         with self.assertRaises(DayEndException):
-            engine.end_day()
+            engine.end_day(False)
 
         # Verify location was saved (uses title, not id)
         self.assertEqual(campaign_tracker.current_location_id, "Boulder Field",
