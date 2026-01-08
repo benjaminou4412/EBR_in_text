@@ -190,9 +190,18 @@ def _default_day_registry() -> dict[int, DayContent]:
     }
 
 
+def _generate_campaign_id() -> str:
+    """Generate a short unique campaign ID."""
+    return uuid.uuid4().hex[:8]
+
+
 @dataclass
 class CampaignTracker:
     """State that persists between days"""
+    # Campaign identification for autosave
+    campaign_id: str = field(default_factory=_generate_campaign_id)
+    campaign_name: str = ""  # Optional user-provided name
+
     day_number: int = 1
     notable_events: list[str] = field(default_factory=list)
     unlocked_rewards: list[str] = field(default_factory=list)

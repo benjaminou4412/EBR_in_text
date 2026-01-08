@@ -27,6 +27,28 @@ from src.cards import (
 SAVE_DIR = Path("saves")
 
 
+def autosave(engine: GameEngine) -> None:
+    """
+    Automatically save the game to a campaign-specific autosave slot.
+    Called at the start of each Phase 2 turn.
+    """
+    SAVE_DIR.mkdir(parents=True, exist_ok=True)
+
+    tracker = engine.state.campaign_tracker
+    # Build filename: autosave_{name}_{id}.json or autosave_{id}.json if no name
+    if tracker.campaign_name:
+        filename = f"autosave_{tracker.campaign_name}_{tracker.campaign_id}.json"
+    else:
+        filename = f"autosave_{tracker.campaign_id}.json"
+
+    save_path = SAVE_DIR / filename
+    try:
+        save_game(engine, save_path)
+    except Exception:
+        # Silently fail autosave - don't interrupt gameplay
+        pass
+
+
 def pick_demo_cards() -> list[Card]:
     """Build a demo ranger deck using actual implemented cards."""
     # Top of deck - specific cards we want available early
@@ -530,6 +552,9 @@ def run_game_loop(engine: GameEngine, with_ui: bool = True, resume_phase2: bool 
 
         # Phase 2: Actions until Rest
         while True:
+            # Autosave at the start of each Phase 2 turn
+            autosave(engine)
+
             if with_ui:
                 clear_screen()
                 render_state(engine, phase_header=f"Day {engine.state.campaign_tracker.day_number} — Round {engine.state.round_number} — Phase 2: Ranger Turns")
@@ -757,13 +782,19 @@ def main() -> None:
         if engine is None:
             # Start a new campaign
             from src.models import CampaignTracker, Mission
+
+            # Prompt for campaign name
+            print("\nEnter a name for this campaign (or press Enter to skip):")
+            campaign_name = input("> ").strip()
+
             campaign_tracker = CampaignTracker(
                 day_number=1,
                 ranger_name="Demo Ranger",
                 ranger_aspects={Aspect.AWA: 99, Aspect.FIT: 99, Aspect.SPI: 99, Aspect.FOC: 99},
                 current_location_id="Lone Tree Station",
                 current_terrain_type="Woods",
-                active_missions=[]
+                active_missions=[],
+                campaign_name=campaign_name
             )
 
             # Role card stays the same throughout campaign

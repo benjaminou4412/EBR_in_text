@@ -107,6 +107,8 @@ class DayContentData:
 class CampaignTrackerData:
     """Serializable representation of CampaignTracker"""
     day_number: int
+    campaign_id: str = ""
+    campaign_name: str = ""
     notable_events: list[str] = field(default_factory=list)
     unlocked_rewards: list[str] = field(default_factory=list)
     active_missions: list[MissionData] = field(default_factory=list)
@@ -292,6 +294,8 @@ def serialize_game_state(engine: GameEngine) -> SaveData:
     }
     campaign_data = CampaignTrackerData(
         day_number=state.campaign_tracker.day_number,
+        campaign_id=state.campaign_tracker.campaign_id,
+        campaign_name=state.campaign_tracker.campaign_name,
         notable_events=list(state.campaign_tracker.notable_events),
         unlocked_rewards=list(state.campaign_tracker.unlocked_rewards),
         active_missions=[serialize_mission(m) for m in state.campaign_tracker.active_missions],
@@ -619,7 +623,7 @@ def load_game(filepath: str | Path) -> GameEngine:
     ct_data = save_dict['campaign_tracker']
 
     # Deserialize day_registry if present, otherwise use default
-    from .models import DayContent, _default_day_registry
+    from .models import DayContent, _default_day_registry, _generate_campaign_id
     if 'day_registry' in ct_data and ct_data['day_registry']:
         day_registry = {
             int(day_str): DayContent(weather=content['weather'], entries=list(content.get('entries', [])))
@@ -628,8 +632,15 @@ def load_game(filepath: str | Path) -> GameEngine:
     else:
         day_registry = _default_day_registry()
 
+    # Handle campaign_id - generate one for old saves that don't have it
+    campaign_id = ct_data.get('campaign_id', '')
+    if not campaign_id:
+        campaign_id = _generate_campaign_id()
+
     campaign_tracker = CampaignTracker(
         day_number=ct_data['day_number'],
+        campaign_id=campaign_id,
+        campaign_name=ct_data.get('campaign_name', ''),
         notable_events=list(ct_data.get('notable_events', [])),
         unlocked_rewards=list(ct_data.get('unlocked_rewards', [])),
         active_missions=[deserialize_mission(m) for m in ct_data.get('active_missions', [])],

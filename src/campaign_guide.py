@@ -339,7 +339,8 @@ class CampaignGuide:
         'complete. Take your time. You will be called upon if there’s an emergency. Now, you may end the day or ' \
         'continue playing. If you end the day, you are considered to have camped.')
         will_camp = engine.response_decider(engine, f"Will you end the day by camping? (y/n):")
-        engine.end_day(will_camp)
+        if will_camp:
+            engine.end_day(will_camp)
             
         return True
         
