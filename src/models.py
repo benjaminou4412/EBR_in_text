@@ -788,7 +788,8 @@ class Card:
             engine.register_listeners(event_listeners)
 
         #Campaign Guide Entry
-        if self.on_enter_log is not None:
+        if self.on_enter_log is not None and not self.has_type(CardType.LOCATION): 
+            #locations resolve their Campaign Log Entries in Step 5 of Travel, not when they enter play
             engine.campaign_guide.resolve_entry(
                 entry_number=self.on_enter_log,
                 source_card=self,

@@ -13,7 +13,8 @@
         "challenge_symbol": "sun",
         "text": "Choose a card from your ranger discard. Place it on top of your fatigue stack."
       }
-    ]
+    ],
+    "campaign_log_entry": "15"
   },
   {
     "id": "location-07-boulder-field",
@@ -29,7 +30,8 @@
         "challenge_symbol": "sun",
         "text": "Reduce the presence of all beings in play by 1."
       }
-    ]
+    ],
+    "campaign_log_entry": "14"
   },
   {
     "id": "location-06-mount-nim",
@@ -119,7 +121,8 @@
         "challenge_symbol": null,
         "text": "AWA + [connection]: Search beneath the comforting shade of your Giga-Redwood home to scout path cards equal to your effort, then draw 1 path card."
       }
-    ]
+    ],
+    "campaign_log_entry": "2"
   },
   {
     "id": "location-01-white-sky",

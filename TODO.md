@@ -36,11 +36,7 @@ Features with a lot of AI-written code I haven't carefully reviewed that might p
 
 A living checklist. Roughly prioritized.
 
-- Implement start-of-day campaign entry resolution
-  - Probably a dict of in-game day numbers as keys mapped to strings referring to campaign guide entries 
-  - That way, the start-of-day sequence can simply check for entries and resolve them in sequence, and the strings are serializable for easy saving
-  - Plus, in-game effects, including other campaign guide entries, can modify the campaign tracker to append more campaign guide entry strings to specific day numbers
-- Add campaign log entries to Arrival Setup for each location card
+- Autosave every turn overwriting a single autosave
 - Add campaign log entries for all other already-implemented cards that don't already have them
 - Implement full Travel map
 - Implement fully rules-compliant faceup/facedown cards
@@ -51,8 +47,7 @@ A living checklist. Roughly prioritized.
 - implement multi-target tests
   - need to have interaction/obstacle rules consider multiple interaction targets
     (the farthest target is the one true interaction target)
-- Autosave every turn overwriting a single autosave
-  - "LLM mode" that autosaves but disallows loading saves
+- "LLM mode" that autosaves but disallows loading saves
 - Implement deck editing menu used at start of campaign and when camping
 - Implement...the entire rest of the game.
 - "AI Mode" (saves, but no loading available to player; metrics tracked)

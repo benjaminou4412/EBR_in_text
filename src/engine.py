@@ -1079,7 +1079,14 @@ class GameEngine:
         self.state.path_deck = woods_set + location_set_or_valley
         random.shuffle(self.state.path_deck)
 
-        #TODO: display campaign log entry and resolve decisions; may be overridden by missions
+        #display location's campaign log entry
+        self.campaign_guide.resolve_entry(
+            entry_number=self.state.location.on_enter_log,
+            source_card=self.state.location,
+            engine=self,
+            clear_type=None
+        )
+
         #TODO: resolve missions to "arrive at" the new location
         self.add_message(f"--- Arrival Setup ---")
         self.state.location.do_arrival_setup(self)

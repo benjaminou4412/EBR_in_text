@@ -8,13 +8,15 @@ class CampaignGuide:
     def __init__(self):
         self.entries : dict[str, Callable[['CampaignGuide', 'Card | None', 'GameEngine', str | None], bool]] = {
             "1": self.resolve_entry_1,
-            "2": self.resolve_entry_2,
             "1.01": self.resolve_entry_1_01,
             "1.02": self.resolve_entry_1_02,
             "1.02A": self.resolve_entry_1_02_A,
             "1.03": self.resolve_entry_1_03,
+            "2": self.resolve_entry_2, #Lone Tree Station
+            "14": self.resolve_entry_14, #Boulder Field
+            "15": self.resolve_entry_15, #Ancestor's Grove
             "47": self.resolve_entry_47, #placeholder to prevent crashing when Hy Pimpot enters play
-            "80": self.resolve_entry_80,
+            "80": self.resolve_entry_80, #Quisi
             "80.1": self.resolve_entry_80_1,
             "80.2": self.resolve_entry_80_2,
             "80.3": self.resolve_entry_80_3,
@@ -22,7 +24,7 @@ class CampaignGuide:
             "80.6": self.resolve_entry_80_6,
             "85": self.resolve_entry_85, #placeholder to prevent crashing when Calypsa enters play
             "86": self.resolve_entry_86, #placeholder to prevent crashing when The Fundamentalist enters play
-            "91": self.resolve_entry_91,
+            "91": self.resolve_entry_91, #Biscuit Delivery
             "91.1": self.resolve_entry_91_1,
             "91.2": self.resolve_entry_91_2,
             "91.3": self.resolve_entry_91_3,
@@ -198,6 +200,30 @@ class CampaignGuide:
         "the people came to the Valley. And ever since you became a Ranger, it’s been your home.")
         return False
 
+    def resolve_entry_14(self, _source_card: 'Card | None', engine: 'GameEngine', _clear_type: str | None) -> bool:
+        engine.add_message("")
+        engine.add_message("")
+        engine.add_message("== Campaign Guide Entry 14: Boulder Field ==")
+        engine.add_message("")
+        engine.add_message("--- Story ---")
+        engine.add_message("    Long ago, a great mountain once stood here, but as the millenniums passed, it " \
+        "steadily split and crumbled. At the edges of the boulder field, the ground is littered with round rocks " \
+        "the size of apples. As you head deeper in, however, the boulders grow larger until you find yourself " \
+        "weaving between what you imagine to be the bones of the lost mountain, pillars of rock that reach toward the sky.")
+        return False
+    
+    def resolve_entry_15(self, _source_card: 'Card | None', engine: 'GameEngine', _clear_type: str | None) -> bool:
+        engine.add_message("")
+        engine.add_message("")
+        engine.add_message("== Campaign Guide Entry 15: Ancestor's Grove ==")
+        engine.add_message("")
+        engine.add_message("--- Story ---")
+        engine.add_message("A reverent calm suffuses your being as you step into the Ancestor’s Grove. Each of the " \
+        "trees, from the smallest sapling to the towering giants at the grove’s center, has been planted over the " \
+        "final resting place of a loved one. You move with care through the grove. You see several people, some " \
+        "keeping to themselves, some speaking softly, some bearing gifts, all here to commune with those who have " \
+        "passed. You pause and give thought to your ancestors.")
+        return False
 
     
     def resolve_entry_1_01(self, source_card: 'Card | None', engine: 'GameEngine', clear_type: str | None) -> bool:
