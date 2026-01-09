@@ -36,7 +36,6 @@ Features with a lot of AI-written code I haven't carefully reviewed that might p
 
 A living checklist. Roughly prioritized.
 
-- Autosave every turn overwriting a single autosave
 - Add campaign log entries for all other already-implemented cards that don't already have them
 - Implement full Travel map
 - Implement fully rules-compliant faceup/facedown cards

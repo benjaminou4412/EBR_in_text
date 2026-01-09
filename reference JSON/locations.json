@@ -50,7 +50,8 @@
         "challenge_symbol": null,
         "text": "FOC + [exploration]: Overlook [3] the surrounding valley to choose a nearby location. Attach 1 card from that location's set facedown to this location. After you travel, if you traveled to that location, put the attached card into play. Otherwise, return it to the collection."
       }
-    ]
+    ],
+    "campaign_log_entry": "13"
   },
   {
     "id": "location-05-golden-shore",
@@ -66,7 +67,8 @@
         "challenge_symbol": null,
         "text": "SPI + [reason]: Contemplate [2] the rhythmic waves as they lap the glittering shoreline to soothe 1 fatigue for every 2 effort."
       }
-    ]
+    ],
+    "campaign_log_entry": "12"
   },
   {
     "id": "location-04-atrox-mountain",
@@ -85,7 +87,8 @@
         "challenge_symbol": null,
         "text": "FIT + [reason]: Climb the steep and perilous route to add 2 [progress] to this location for every effort. Then, it fatigues you."
       }
-    ]
+    ],
+    "campaign_log_entry": "11"
   },
   {
     "id": "location-03-northern-outpost",
@@ -105,7 +108,8 @@
         "challenge_symbol": null,
         "text": "FOC + [reason]: Tidy the remote outpost to discard 1 neglect from this location. If you fail, it fatigues you. When there is no neglect on this location: [Campaign Log Entry] 4.1"
       }
-    ]
+    ],
+    "campaign_log_entry": "4"
   },
   {
     "id": "location-02-lone-tree-station",
@@ -138,7 +142,8 @@
         "challenge_symbol": null,
         "text": "AWA + [connection]: Search the shores beside the towering parasols of White Sky to scout path cards equal to your effort, then draw 1 path card."
       }
-    ]
+    ],
+    "campaign_log_entry": "3"
   },
   {
     "id": "location-16-the-furrow",
@@ -154,7 +159,8 @@
         "challenge_symbol": null,
         "text": "When you perform a Traverse test that interacts with this location, reduce the [progress] added by 1."
       }
-    ]
+    ],
+    "campaign_log_entry": "21"
   },
   {
     "id": "location-15-branch",
@@ -170,7 +176,8 @@
         "challenge_symbol": null,
         "text": "AWA + [connection]: Search the treetop settlement to scout path cards equal to your effort, then draw 1 path card."
       }
-    ]
+    ],
+    "campaign_log_entry": "6"
   },
   {
     "id": "location-14-the-high-basin",
@@ -186,7 +193,8 @@
         "challenge_symbol": null,
         "text": "FIT + [connection]: Swim in the crystal-clear waters of the high lake to soothe fatigue equal to your effort."
       }
-    ]
+    ],
+    "campaign_log_entry": "18"
   },
   {
     "id": "location-13-the-philosophers-garden",
@@ -207,7 +215,8 @@
         "challenge_symbol": null,
         "text": "AWA + [reason]: Identify the true nature of the manifestation before you to flip this card faceup."
       }
-    ]
+    ],
+    "campaign_log_entry": "17"
   },
   {
     "id": "location-12-the-fractured-wall",
@@ -233,7 +242,8 @@
         "challenge_symbol": "mountain",
         "text": "Ready the feature with the highest presence."
       }
-    ]
+    ],
+    "campaign_log_entry": "7"
   },
   {
     "id": "location-11-stoneweaver-bridge",
@@ -249,7 +259,8 @@
         "challenge_symbol": null,
         "text": "Refresh: You may choose a path card to remain exhausted."
       }
-    ]
+    ],
+    "campaign_log_entry": "26"
   },
   {
     "id": "location-10-kobos-market",
@@ -265,7 +276,8 @@
         "challenge_symbol": null,
         "text": "FOC + [connection]: Haggle [3] with the vendors of the market to return a gear from your hand to your collection. Choose a starting gear from your collection that you meet the aspect requirement for and add it to your hand. (This alteration to your deck is permanent.)"
       }
-    ]
+    ],
+    "campaign_log_entry": "16"
   },
   {
     "id": "location-09-spire",
@@ -286,7 +298,8 @@
         "challenge_symbol": null,
         "text": "When you would draw 1 path card, if your [Ranger Token] is on this location and there are cards remaining in the Spire deck, you may draw 1 card from the Spire deck instead."
       }
-    ]
+    ],
+    "campaign_log_entry": "5"
   },
   {
     "id": "location-24-rings-of-the-moon",
@@ -302,7 +315,8 @@
         "challenge_symbol": null,
         "text": "AWA + [exploration]: Peer [3] through the ancient guideposts to search the Valley set for a feature and shuffle it into the path deck."
       }
-    ]
+    ],
+    "campaign_log_entry": "35"
   },
   {
     "id": "location-23-crossroads-station",
@@ -318,7 +332,8 @@
         "challenge_symbol": null,
         "text": "FOC + [connection]: Describe who you're looking for to the villagers at the station to search the Valley set for a human and shuffle them into the path deck."
       }
-    ]
+    ],
+    "campaign_log_entry": "20"
   },
   {
     "id": "location-22-the-concordant-ziggurats",
@@ -334,7 +349,8 @@
         "challenge_symbol": null,
         "text": "AWA + [reason]: Avoid [3] the unnerving energy emitting from the ziggurats to move your [Ranger Token] to this location. You may discard up to 2 [progress] from this location to commit an equal amount of effort."
       }
-    ]
+    ],
+    "campaign_log_entry": "25"
   },
   {
     "id": "location-21-meadow",
@@ -350,7 +366,8 @@
         "challenge_symbol": null,
         "text": "AWA + [connection]: Search the pastoral community to scout path cards equal to your effort, then draw 1 path card."
       }
-    ]
+    ],
+    "campaign_log_entry": "8"
   },
   {
     "id": "location-20-headwaters-station",
@@ -366,7 +383,8 @@
         "challenge_symbol": null,
         "text": "FIT + [connection]: Dive [2] into the healing waters to heal all of your injuries and soothe all of your fatigue. You may discard any number of [progress] from this location to commit an equal amount of effort. If your resulting effort is 8 or more: [Campaign Log Entry] 23.1"
       }
-    ]
+    ],
+    "campaign_log_entry": "23"
   },
   {
     "id": "location-19-greenbriar-knoll",
@@ -382,7 +400,8 @@
         "challenge_symbol": "crest",
         "text": "Scout 1 challenge card. If it has a [crest] icon, troubling visions fill your mind. >> Suffer 2 fatigue."
       }
-    ]
+    ],
+    "campaign_log_entry": "24"
   },
   {
     "id": "location-18-the-plummet",
@@ -403,7 +422,8 @@
         "challenge_symbol": null,
         "text": "Response: When you travel, if all [Ranger Tokens] are on this location, you may travel to a location up to two paths away. Use the terrain of the second path when building the path deck."
       }
-    ]
+    ],
+    "campaign_log_entry": "19"
   },
   {
     "id": "location-17-biological-outpost",
@@ -419,7 +439,8 @@
         "challenge_symbol": "mountain",
         "text": "If there is no active predator or prey, a nearby animal is drawn to the biologists' lures. >> Search the path deck for the next predator or prey and put it into play."
       }
-    ]
+    ],
+    "campaign_log_entry": "22"
   },
   {
     "id": "location-32-marsh-of-rebirth",
@@ -438,7 +459,8 @@
         "challenge_symbol": null,
         "text": "Response: When you travel, travel to any location connected to a swamp path. Use the swamp terrain when building the path deck."
       }
-    ]
+    ],
+    "campaign_log_entry": "9"
   },
   {
     "id": "location-31-the-frowning-gate",
@@ -457,7 +479,8 @@
         "challenge_symbol": "mountain",
         "text": "Remove 1 [progress] from a path card. If you cannot, suffer 1 injury."
       }
-    ]
+    ],
+    "campaign_log_entry": "32"
   },
   {
     "id": "location-30-the-cypress-citadel",
@@ -476,7 +499,8 @@
         "challenge_symbol": "sun",
         "text": "Ready a path card."
       }
-    ]
+    ],
+    "campaign_log_entry": "31"
   },
   {
     "id": "location-29-michaels-bog",
@@ -498,7 +522,8 @@
         "challenge_symbol": "mountain",
         "text": "Add 1 toxin. If there are more toxins than rangers, swamp gas fills the air. >> Discard all toxins and add an equal number of [harm] to a being."
       }
-    ]
+    ],
+    "campaign_log_entry": "30"
   },
   {
     "id": "location-28-the-greenbridge",
@@ -521,7 +546,8 @@
         "challenge_symbol": "crest",
         "text": "Discard 1 strut. If there are no struts on this location, your section collapses. >> Each Ranger suffers 1 injury. Proceed to the travel phase and travel to the Cypress Citadel."
       }
-    ]
+    ],
+    "campaign_log_entry": "29"
   },
   {
     "id": "location-27-terravore",
@@ -544,7 +570,8 @@
         "challenge_symbol": null,
         "text": "Response: When the attached feature is cleared you continue into the depths of Terravore: [Campaign Log Entry] 28.1"
       }
-    ]
+    ],
+    "campaign_log_entry": "28"
   },
   {
     "id": "location-26-mound-of-the-navigator",
@@ -572,7 +599,8 @@
         "challenge_symbol": null,
         "text": "Response: When you travel, add 2 [progress] to your destination for each route on this location."
       }
-    ]
+    ],
+    "campaign_log_entry": "27"
   },
   {
     "id": "location-25-archaeological-outpost",
@@ -591,7 +619,8 @@
         "challenge_symbol": null,
         "text": "AWA + [reason]: Study [3] the archaeological records. [Campaign Log Entry] 34.1"
       }
-    ]
+    ],
+    "campaign_log_entry": "34"
   },
   {
     "id": "location-37-tumbledown",
@@ -612,7 +641,8 @@
         "challenge_symbol": null,
         "text": "AWA + [connection]: Explore the cliffside community to scout path cards equal to your effort, then draw 1 path card."
       }
-    ]
+    ],
+    "campaign_log_entry": "10"
   },
   {
     "id": "location-36-watchers-rock",
@@ -631,7 +661,8 @@
         "challenge_symbol": null,
         "text": "AWA + [conflict]: Watch [3] for approaching threats to shuffle each predator in play into the path deck."
       }
-    ]
+    ],
+    "campaign_log_entry": "38"
   },
   {
     "id": "location-35-bowl-of-the-sun",
@@ -650,7 +681,8 @@
         "challenge_symbol": null,
         "text": "FOC + [connection]: Meditate in the cultivated garden to soothe fatigue equal to your effort."
       }
-    ]
+    ],
+    "campaign_log_entry": "37"
   },
   {
     "id": "location-34-alluvial-ruins",
@@ -669,7 +701,8 @@
         "challenge_symbol": "mountain",
         "text": "If you are interacting with a water feature, you see something from upriver. >> Place the top card of the detritus deck on top of the path deck."
       }
-    ]
+    ],
+    "campaign_log_entry": "36"
   },
   {
     "id": "location-33-sunken-outpost",
@@ -702,6 +735,7 @@
         "challenge_symbol": "mountain",
         "text": "Add 1 water to this location."
       }
-    ]
+    ],
+    "campaign_log_entry": "33"
   }
 ]
