@@ -11,7 +11,7 @@ from .woods_cards import SitkaBuck, OvergrownThicket, SunberryBramble, SitkaDoe,
 from .valley_cards import CalypsaRangerMentor, QuisiVosRascal, TheFundamentalist
 from .location_cards import BoulderField, AncestorsGrove, LoneTreeStation
 from .weather_cards import APerfectDay, MiddaySun, Downpour, GatheringStorm, HowlingWinds, Thunderhead
-from .mission_cards import BiscuitBasket, BiscuitDelivery
+from .mission_cards import BiscuitBasket, BiscuitDelivery, HelpingHand
 from .lone_tree_station_cards import HyPimpotChef
 
 __all__ = ["WalkWithMe",
@@ -42,5 +42,6 @@ __all__ = ["WalkWithMe",
             "AffordedByNature",
             "BiscuitBasket",
             "BiscuitDelivery",
+            "HelpingHand",
             "HyPimpotChef",
             "LoneTreeStation"]

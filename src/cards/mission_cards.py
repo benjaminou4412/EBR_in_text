@@ -77,6 +77,18 @@ class BiscuitDelivery(Card):
                 engine.add_message(f"Quisi not found in Valley set; Challenge(Sun) on {self.title} does not resolve.")
                 return False
     
+class HelpingHand(Card):
+    def __init__(self):
+        super().__init__(**load_card_fields("Helping Hand", "Mission")) #type:ignore
+
+    def enters_play(self, engine: GameEngine, area: Area, action_target: Card | None = None) -> None:
+        super().enters_play(engine, area, action_target)
+        # Attach to the target being and grant it Persistent
+        if action_target is not None:
+            engine.attach(self, action_target)
+            action_target.keywords.add(Keyword.PERSISTENT)
+            engine.add_message(f"{action_target.title} gains Persistent from Helping Hand.")
+
 class BiscuitBasket(Card):
     def __init__(self, fresh: bool = True): #"fresh" flag to prevent infinite recursion
         # Load all common PathCard fields from JSON
