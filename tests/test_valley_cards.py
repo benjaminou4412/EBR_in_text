@@ -1094,7 +1094,7 @@ class QuisiCampaignGuideTests(unittest.TestCase):
         eng2 = GameEngine(state2)
 
         # Entry 80.5 should return True (card discarded by entry)
-        result_80_5 = eng.campaign_guide.resolve_entry("80.5", quisi, eng2, None)
+        result_80_5 = eng2.campaign_guide.resolve_entry("80.5", quisi2, eng2, None)
         self.assertTrue(result_80_5, "Entry 80.5 should return True (card discarded)")
 
     def test_quisi_campaign_log_fields_loaded_from_json(self):

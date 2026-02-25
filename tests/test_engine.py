@@ -306,7 +306,7 @@ class CommonTestsTests(unittest.TestCase):
         self.assertEqual(state.ranger.injury, 0)  # No injury on success
 
     def test_traverse_failure(self):
-        """Test failed Traverse test causes injury"""
+        """Test failed Traverse test calls injure(), which discards fatigue and increments injury"""
         feature = Card(
             title="Test Feature",
             id="test-feature",
@@ -314,9 +314,12 @@ class CommonTestsTests(unittest.TestCase):
             presence=2,  # Difficulty is 2
             progress_threshold=3
         )
+        # Put some cards in fatigue stack so we can verify injure() discards them
+        fatigue_cards = [Card(id=f"fat{i}", title=f"Fatigue {i}") for i in range(3)]
         ranger = RangerState(
             name="Ranger",
             hand=[],  # No cards to commit
+            fatigue_stack=fatigue_cards,
             aspects={Aspect.AWA: 3, Aspect.FIT: 2, Aspect.SPI: 2, Aspect.FOC: 1}
         )
         state = GameState(
@@ -343,6 +346,9 @@ class CommonTestsTests(unittest.TestCase):
         self.assertEqual(feature.progress, 0)  # No progress on failure
         self.assertEqual(state.ranger.energy[Aspect.FIT], 1)
         self.assertEqual(state.ranger.injury, 1)  # Injury on failure
+        # injure() should have discarded the entire fatigue stack
+        self.assertEqual(len(state.ranger.fatigue_stack), 0, "Fatigue stack should be cleared by injure()")
+        self.assertEqual(len(state.ranger.discard), 3, "Fatigue cards should move to discard")
 
     def test_connect_success(self):
         """Test successful Connect test adds progress to being"""

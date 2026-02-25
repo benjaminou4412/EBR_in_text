@@ -782,11 +782,7 @@ class BoundarySensorTests(unittest.TestCase):
             }
         )
         engine = GameEngine(state)
-
-        # Register the listener manually (since it's already in play)
-        listeners = sensor.get_listeners()
-        if listeners:
-            engine.register_listeners(listeners)
+        # reconstruct() in GameEngine.__init__ registers listeners for cards in play
 
         # This should never be called since sensor is exhausted
         def should_not_be_called(eng: GameEngine, prompt: str) -> bool:
@@ -833,14 +829,10 @@ class BoundarySensorTests(unittest.TestCase):
             }
         )
         engine = GameEngine(state)
-        
+        # reconstruct() in GameEngine.__init__ registers listeners for cards in play
+
         # Remove all sensor tokens
         sensor.remove_unique_tokens(engine, "sensor", 4)  # Starts with 4, remove all
-
-        # Register the listener
-        listeners = sensor.get_listeners()
-        if listeners:
-            engine.register_listeners(listeners)
 
         # This should never be called since sensor has no tokens
         def should_not_be_called(eng: GameEngine, prompt: str) -> bool:
@@ -893,14 +885,7 @@ class MultipleBoundarySensorsTests(unittest.TestCase):
             }
         )
         engine = GameEngine(state)
-
-        # Register both listeners
-        listeners1 = sensor1.get_listeners()
-        listeners2 = sensor2.get_listeners()
-        if listeners1:
-            engine.register_listeners(listeners1)
-        if listeners2:
-            engine.register_listeners(listeners2)
+        # reconstruct() in GameEngine.__init__ registers listeners for cards in play
 
         # Track number of prompts shown
         prompt_count = 0

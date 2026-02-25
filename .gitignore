@@ -28,3 +28,6 @@ tests/__pycache__/test_engine.cpython-313.pyc
 __pycache__/main.cpython-313.pyc
 .claude/settings.local.json
 __pycache__/main.cpython-313.pyc
+
+# Autosaves (manual saves in saves/ should stay tracked)
+saves/autosave_*.json

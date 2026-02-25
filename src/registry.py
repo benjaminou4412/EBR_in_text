@@ -13,8 +13,8 @@ def provide_common_tests(state: GameState) -> list[Action]:
             msg = card.add_progress(eff)
             e.add_message(msg)
 
-    def traverse_fail(e: GameEngine, eff: int, card: Card | None) -> None:  # noqa: ARG001
-        e.state.ranger.injury += 1
+    def traverse_fail(e: GameEngine, eff: int, card: Card | None) -> None: 
+        e.state.ranger.injure(e)
 
     def get_traverse_difficulty(e: GameEngine, card: Card | None) -> int:
         if card:
