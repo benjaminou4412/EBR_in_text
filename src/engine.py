@@ -887,6 +887,12 @@ class GameEngine:
         self.add_message(f"Scout complete: {len(top_pile)} cards on top, {len(bottom_pile)} cards on bottom.")
 
     def attach(self, to_attach: Card, attachment_target: Card) -> None:
+        """
+        Attaches card to_attach to attachment_target.
+        to_attach moves to the area of attachment_target.
+        to_attach can be a card in play or a card from hand.
+        Attachments can be recursive.
+        """
         if to_attach.id == attachment_target.id:
             raise RuntimeError(f"Cannot attach a card to itself!")
         attachment_target.attached_card_ids.append(to_attach.id)
@@ -907,6 +913,7 @@ class GameEngine:
         to_attach_display = get_display_id(self.state.all_cards_in_play(), to_attach)
         attachment_target_display = get_display_id(self.state.all_cards_in_play(), attachment_target)
         self.add_message(f"{to_attach_display} becomes attached to {attachment_target_display}.")
+        #TODO: a card "attached facedown" loses all tokens from itself
         
     
     def unattach(self, to_unattach: Card) -> None:

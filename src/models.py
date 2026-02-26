@@ -1022,6 +1022,13 @@ class Card:
         
     
     def flip(self, engine: GameEngine) -> Card:
+        """
+        Flip this card, transforming it into the Card pointed to by its "backside" field. 
+        Tokens and attachments are retained.
+
+        Returns:
+            The new card, pointed to by the old card's backside.
+        """
         current_area = engine.state.get_card_area_by_id(self.id)
         if current_area is None:
             raise RuntimeError(f"Any card that flips should be in an area!")
@@ -1045,6 +1052,7 @@ class Card:
         else:
             engine.add_message(f"{self.title} flips over into {self.backside.title}")
             #can't use enters_play because flipping a card faceup technically doesn't have it enter play
+            #TODO: if a card enters play facedown, then the first time it flips up should invokes its enters_play() method and effects
             constant_abilities = self.backside.get_constant_abilities()
             event_listeners = self.backside.get_listeners()
             if constant_abilities:

@@ -15,7 +15,13 @@ class CampaignGuide:
             "2": self.resolve_entry_2, #Lone Tree Station
             "14": self.resolve_entry_14, #Boulder Field
             "15": self.resolve_entry_15, #Ancestor's Grove
-            "47": self.resolve_entry_47, #placeholder to prevent crashing when Hy Pimpot enters play
+            "47": self.resolve_entry_47, #Hy Pimpot, Chef
+            "47.1": self.resolve_entry_47_1,
+            "47.2": self.resolve_entry_47_2,
+            "47.3": self.resolve_entry_47_3,
+            "47.4": self.resolve_entry_47_4,
+            "47.5": self.resolve_entry_47_5,
+            "47.6": self.resolve_entry_47_6,
             "80": self.resolve_entry_80, #Quisi
             "80.1": self.resolve_entry_80_1,
             "80.2": self.resolve_entry_80_2,
@@ -347,8 +353,219 @@ class CampaignGuide:
     def resolve_entry_47(self, source_card: 'Card | None', engine: 'GameEngine', clear_type: str | None) -> bool:
         engine.add_message("")
         engine.add_message("")
-        engine.add_message("=== Campaign Guide Entry 47: Hy Pimpot, Chef (PLACEHOLDER) ===")
+        engine.add_message("=== Campaign Guide Entry 47: Hy Pimpot, Chef ===")
+        engine.add_message("")
+        engine.add_message("--- Checking conditionals ---")
+        if clear_type is None:
+            engine.add_message("Hy Pimpot entered play:")
+            engine.add_message("    Go to 47.1")
+            engine.add_message("")
+            engine.add_message("")
+            return self.resolve_entry("47.1", source_card, engine, clear_type)
+        elif clear_type.casefold() == "progress".casefold():
+            engine.add_message("Hy Pimpot was cleared by Progress:")
+            # Check if Helping Hand is attached
+            has_helping_hand = False
+            for attached_id in source_card.attached_card_ids:
+                attached_card = engine.state.get_card_by_id(attached_id)
+                if attached_card and attached_card.title == "Helping Hand":
+                    has_helping_hand = True
+                    break
+            if has_helping_hand:
+                engine.add_message("    Helping Hand is attached. Go to 47.2")
+                engine.add_message("")
+                engine.add_message("")
+                return self.resolve_entry("47.2", source_card, engine, clear_type)
+            else:
+                engine.add_message("    Helping Hand is not attached. Go to 47.3")
+                engine.add_message("")
+                engine.add_message("")
+                return self.resolve_entry("47.3", source_card, engine, clear_type)
+        elif clear_type.casefold() == "harm".casefold():
+            engine.add_message("Hy Pimpot was cleared by Harm:")
+            engine.add_message("    Go to 47.6")
+            engine.add_message("")
+            engine.add_message("")
+            return self.resolve_entry("47.6", source_card, engine, clear_type)
+        else:
+            raise RuntimeError("Campaign guide entry resolving with invalid clear type!")
+
+    def resolve_entry_47_1(self, _source_card: 'Card | None', engine: 'GameEngine', _clear_type: str | None) -> bool:
+        engine.add_message("== Campaign Guide Entry 47.1 ==")
+        engine.add_message("")
+        engine.add_message("--- Story ---")
+        engine.add_message("You hear Hy's shrill whistling long before you see him. It's said that every Ranger "
+        "in the Valley has tried to teach Hy Pimpot a new song to whistle, but none of them have succeeded.")
+        engine.add_message("Eventually you spot the stout little gnome of a man intently chopping and mixing "
+        "vinegary-smelling herbs and vegetables into a large bowl. \"Good, good, you're here,\" he says "
+        "without looking at you. \"Try this stew. I need to know if I've hit the right balance between "
+        "'pleasant heat' and 'tongue searing.' What does it need? Kelpweed? Mourning Root?\"")
+        engine.add_message("")
+        engine.add_message("--- Guidance ---")
+        engine.add_message("You can help Hy Pimpot by gathering ingredients for the stew, or you can clear him "
+        "with [Progress] to ask him how to make the stew as good as possible.")
         return False
+
+    def resolve_entry_47_2(self, source_card: 'Card | None', engine: 'GameEngine', _clear_type: str | None) -> bool:
+        engine.add_message("== Campaign Guide Entry 47.2 ==")
+        engine.add_message("")
+        engine.add_message("--- Story ---")
+        engine.add_message('"Ah!" Hy Pimpot waves at you. "What else have you brought me? Surely not just more '
+        "ricegrass and chikorish leaves? I can get those here! You've got to get away from Lone Tree "
+        'to forage, or this soup will be left simply...bland! You still willing to help, or should '
+        'I head home?"')
+        engine.add_message("")
+        engine.add_message("--- RANGERS CHOOSE: ---")
+        engine.add_message('A. Agree to keep helping. Discard all [Progress] from Hy Pimpot.')
+        engine.add_message('B. Not today, Hy can head home. Discard Hy Pimpot and return HELPING HAND '
+        'to your collection. Each Ranger soothes 1 fatigue.')
+        is_A = engine.response_decider(engine, "Input 'y' for option A, 'n' for option B:")
+        if is_A:
+            engine.add_message("")
+            engine.add_message("--- Results (A) ---")
+            engine.add_message('Discard all [Progress] from Hy Pimpot.')
+            _, msg = source_card.remove_progress(source_card.progress)
+            engine.add_message(msg)
+            return False
+        else:
+            engine.add_message("")
+            engine.add_message("--- Results (B) ---")
+            engine.add_message('Discard Hy Pimpot and return HELPING HAND to your collection. Each Ranger soothes 1 fatigue.')
+            source_card.discard_from_play(engine)
+            engine.state.ranger.soothe(engine, 1)
+            return True
+
+    def resolve_entry_47_3(self, source_card: 'Card | None', engine: 'GameEngine', _clear_type: str | None) -> bool:
+        engine.add_message("== Campaign Guide Entry 47.3 ==")
+        engine.add_message("")
+        engine.add_message("--- Story ---")
+        engine.add_message('"Well..." Hy says in a way that makes it very clear that he was waiting for you to '
+        "ask. \"I'm tired of making my soup with the same pepper-pods and northern potatoes that grow "
+        "around these parts. I just remember how good it can be when someone gets some of the herbs and "
+        'tubers from elsewhere in the Valley." He stares at you intently. "I could use someone. Someone '
+        'young, hardy, and already hiking around the Valley to help me venture out..."')
+        engine.add_message("")
+        engine.add_message("Hy would like to accompany you and have you help complete his stew using flora "
+        "cards gathered while not at Lone Tree.")
+        engine.add_message("")
+        engine.add_message("--- RANGERS CHOOSE: ---")
+        engine.add_message('A. Agree to help gather ingredients. Discard all [Progress] from Hy, and attach '
+        'the HELPING HAND mission to him.')
+        engine.add_message('B. Not today. Discard Hy. Each Ranger soothes 1 fatigue.')
+        is_A = engine.response_decider(engine, "Input 'y' for option A, 'n' for option B:")
+        if is_A:
+            engine.add_message("")
+            engine.add_message("--- Results (A) ---")
+            engine.add_message('Discard all [Progress] from Hy Pimpot, and attach the HELPING HAND mission to him.')
+            _, msg = source_card.remove_progress(source_card.progress)
+            engine.add_message(msg)
+            from .cards import HelpingHand
+            from .models import Area
+            helping_hand = HelpingHand()
+            engine.state.areas[Area.SURROUNDINGS].append(helping_hand)
+            helping_hand.enters_play(engine, Area.SURROUNDINGS, source_card)
+            return False
+        else:
+            engine.add_message("")
+            engine.add_message("--- Results (B) ---")
+            engine.add_message('Discard Hy Pimpot. Each Ranger soothes 1 fatigue.')
+            source_card.discard_from_play(engine)
+            engine.state.ranger.soothe(engine, 1)
+            return True
+
+    def _discard_flora_from(self, source_card: 'Card', engine: 'GameEngine') -> None:
+        """Helper: discard each flora attached facedown to a card."""
+        from .models import FacedownCard
+        for attached_id in list(source_card.attached_card_ids):
+            attached_card = engine.state.get_card_by_id(attached_id)
+            if (attached_card and 
+                isinstance(attached_card, FacedownCard) and
+                attached_card.backside is not None and
+                attached_card.backside.has_trait("Flora")):
+                    engine.unattach(attached_card)
+                    attached_card.discard_from_play(engine)
+
+    def resolve_entry_47_4(self, source_card: 'Card | None', engine: 'GameEngine', clear_type: str | None) -> bool:
+        engine.add_message("== Campaign Guide Entry 47.4 ==")
+        engine.add_message("")
+        engine.add_message("--- Checking conditionals ---")
+        if engine.state.location.title != "Lone Tree Station":
+            engine.add_message("    Not at Lone Tree Station. Go to 47.5")
+            engine.add_message("")
+            engine.add_message("")
+            return self.resolve_entry("47.5", source_card, engine, clear_type)
+        engine.add_message("    At Lone Tree Station. Reading...")
+        engine.add_message("")
+        engine.add_message("--- Story ---")
+        engine.add_message("Hy Pimpot starts dicing, mashing, crushing, and even sauteing the various "
+        "ingredients you've found, including a couple of plants you're fairly sure your "
+        "Ranger training told you were only used for stilt-horse food. All of it goes "
+        "into his large pot, which he sets to boiling with the biggest Sol coil you've ever seen.")
+        engine.add_message("After an hour, he emerges from his kitchen with a platter of wooden bowls, each "
+        "steaming with a fragrant aroma. He passes one to each of you. You taste it gingerly, "
+        "then start taking bigger and bigger spoonfuls. The soup is amazing! Fresh and light, "
+        "but also hearty and filling all at once! You clamber for seconds as you heap effusive "
+        "praise on the master chef.")
+        engine.add_message('Hy nods and smiles, but he seems distracted. "Thank you, thank you," he says. '
+        '"But you know..." He thinks for a while. "Some of those ingredients just '
+        "aren't as fresh as they could be. The gloomcaps, for example, I can tell they "
+        'were in your pack for at least five hours. And the moss cherries...ah!" His eyes '
+        'brighten. "Imagine how good it would be if I traveled with you, and cooked in the '
+        'field, with herbs and spices picked right off the stem!"')
+        engine.add_message("")
+        engine.add_message("--- Results ---")
+        engine.add_message("Discard each flora attached to Hy. Each Ranger soothes 4 fatigue.")
+        self._discard_flora_from(source_card, engine)
+        engine.state.ranger.soothe(engine, 4)
+        return False
+
+    def resolve_entry_47_5(self, source_card: 'Card | None', engine: 'GameEngine', _clear_type: str | None) -> bool:
+        engine.add_message("== Campaign Guide Entry 47.5 ==")
+        engine.add_message("")
+        engine.add_message("--- Story ---")
+        engine.add_message("You're heading along the trail when Hy Pimpot suddenly shouts, \"Stop!\"")
+        engine.add_message("You look around, worried you're about to stumble into a puffercrawler. But instead "
+        "you see Hy scrambling with his oversized pack, pulling out his portable Sol coil and pot. "
+        "\"Get me water,\" he shouts as he pulls some leaves from a bush along the trail. \"This "
+        "needs to go into the pot immediately, and the rest of the ingredients have aged..."
+        "perfectly!\"")
+        engine.add_message("You watch in bemused amusement as he dashes around the impromptu outdoor kitchen, "
+        "dicing, slicing, mashing, frying, and at one point, smoking, the varied ingredients you "
+        "and he worked so hard to gather. Finally, he raises his head from the steaming pot. "
+        "\"It's... \" he says, his voice quavering. \"...just try it.\"")
+        engine.add_message("You gather around the pot, dipping your spoons into the fragrant broth. It is quite "
+        "simply the best soup, and possibly the best food, you've ever had. The complex flavors "
+        "blend perfectly, rich but not overpowering, fresh but hearty, warm and soothing yet light "
+        "and effervescent. Your only regret, as you set down your spoon and realize the pot is "
+        "empty, is that you may never taste something quite that good again.")
+        engine.add_message("Hy has a beatific smile on his face. \"The best it's ever been,\" he says.")
+        engine.add_message("You all sit in contented silence for a while, before you get up the courage to ask "
+        "Hy exactly how he made the soup. The master chef nods. \"I'll tell you the recipe,\" he "
+        "says. \"As long as you promise to remember it, and practice it. Someday, I want you to "
+        "serve me something even better than this!\"")
+        engine.add_message("")
+        engine.add_message("--- Results ---")
+        engine.add_message("Discard each flora attached to Hy. Each Ranger soothes 4 fatigue. "
+        "Gain the Hy Pimpot's Secret Recipe reward card. "
+        "Discard Hy Pimpot and return HELPING HAND to the collection.")
+        self._discard_flora_from(source_card, engine)
+        engine.state.ranger.soothe(engine, 4)
+        engine.state.unlock_reward("Hy Pimpot's Secret Recipe")
+        source_card.discard_from_play(engine)
+        return True
+
+    def resolve_entry_47_6(self, _source_card: 'Card | None', engine: 'GameEngine', _clear_type: str | None) -> bool:
+        engine.add_message("== Campaign Guide Entry 47.6 ==")
+        engine.add_message("")
+        engine.add_message("--- Story ---")
+        engine.add_message("Hy Pimpot yelps, holding his hands tightly against his injury. \"That \u2026 hurts "
+        "\u2026 so \u2026 bad!\" he gasps. \"Oh my, oh my, oh my.\" His face seems to be graying and "
+        "you're worried he might faint.")
+        engine.add_message("")
+        engine.add_message("--- Results ---")
+        engine.add_message('End the day.')
+        engine.end_day(False)
+        return True
 
     def resolve_entry_80(self, source_card: 'Card | None', engine: 'GameEngine', clear_type: str | None) -> bool: #clear_type of None indicates non-clear resolution
         engine.add_message("")
