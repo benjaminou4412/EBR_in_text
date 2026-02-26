@@ -1,7 +1,7 @@
 """
 Personality card implementations
 """
-from src.engine import GameEngine
+from ebr.engine import GameEngine
 from ..models import Card, Action, EventListener, EventType, TimingType
 from ..json_loader import load_card_fields #type:ignore
 

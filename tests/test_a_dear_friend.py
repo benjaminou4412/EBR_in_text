@@ -1,8 +1,8 @@
 #type:ignore
 import unittest
-from src.models import *
-from src.engine import GameEngine
-from src.cards import ADearFriend
+from ebr.models import *
+from ebr.engine import GameEngine
+from ebr.cards import ADearFriend
 
 
 class ADearFriendTests(unittest.TestCase):

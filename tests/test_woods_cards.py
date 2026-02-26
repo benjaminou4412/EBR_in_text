@@ -5,10 +5,10 @@ Comprehensive tests for Woods terrain set card behaviors
 
 
 import unittest
-from src.models import *
-from src.engine import GameEngine
+from ebr.models import *
+from ebr.engine import GameEngine
 from tests.test_utils import MockChallengeDeck, make_challenge_card
-from src.cards.woods_cards import *
+from ebr.cards.woods_cards import *
 
 
 def fixed_draw(mod: int, sym: ChallengeIcon):

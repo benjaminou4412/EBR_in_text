@@ -1,8 +1,8 @@
 import unittest
-from src.models import *
-from src.engine import GameEngine
-from src.cards import *
-from src.registry import *
+from ebr.models import *
+from ebr.engine import GameEngine
+from ebr.cards import *
+from ebr.registry import *
 from tests.test_utils import MockChallengeDeck, make_challenge_card
 
 
@@ -292,7 +292,7 @@ class CommonTestsTests(unittest.TestCase):
         eng = GameEngine(state)
 
         # Traverse: FIT + Exploration
-        from src.registry import provide_common_tests
+        from ebr.registry import provide_common_tests
         actions = provide_common_tests(state)
         traverse = next(a for a in actions if a.id == "common-traverse")
 
@@ -335,7 +335,7 @@ class CommonTestsTests(unittest.TestCase):
 
         eng = GameEngine(state)  # Negative modifier
 
-        from src.registry import provide_common_tests
+        from ebr.registry import provide_common_tests
         actions = provide_common_tests(state)
         traverse = next(a for a in actions if a.id == "common-traverse")
 
@@ -378,7 +378,7 @@ class CommonTestsTests(unittest.TestCase):
         eng = GameEngine(state)
 
         # Connect: SPI + Connection
-        from src.registry import provide_common_tests
+        from ebr.registry import provide_common_tests
         actions = provide_common_tests(state)
         connect = next(a for a in actions if a.id == "common-connect")
 
@@ -417,7 +417,7 @@ class CommonTestsTests(unittest.TestCase):
 
         eng = GameEngine(state)
 
-        from src.registry import provide_common_tests
+        from ebr.registry import provide_common_tests
         actions = provide_common_tests(state)
         connect = next(a for a in actions if a.id == "common-connect")
 
@@ -457,7 +457,7 @@ class CommonTestsTests(unittest.TestCase):
         eng = GameEngine(state)
 
         # Avoid: AWA + Conflict
-        from src.registry import provide_common_tests
+        from ebr.registry import provide_common_tests
         actions = provide_common_tests(state)
         avoid = next(a for a in actions if a.id == "common-avoid")
 
@@ -496,7 +496,7 @@ class CommonTestsTests(unittest.TestCase):
 
         eng = GameEngine(state)
 
-        from src.registry import provide_common_tests
+        from ebr.registry import provide_common_tests
         actions = provide_common_tests(state)
         avoid = next(a for a in actions if a.id == "common-avoid")
 
@@ -510,7 +510,7 @@ class CommonTestsTests(unittest.TestCase):
 
     def test_sitka_doe_spook_success_moves_to_along_the_way(self):
         """Test that Sitka Doe's Spook test moves it from Within Reach to Along the Way on success"""
-        from src.cards import SitkaDoe
+        from ebr.cards import SitkaDoe
         doe = SitkaDoe()
         ranger = RangerState(
             name="Ranger",
@@ -531,7 +531,7 @@ class CommonTestsTests(unittest.TestCase):
         eng = GameEngine(state)
 
         # Get the Sitka Doe spook action from registry
-        from src.registry import provide_card_tests
+        from ebr.registry import provide_card_tests
         actions = provide_card_tests(eng)
         spook = next(a for a in actions if a.verb == "Spook" and "Sitka Doe" in a.name)
 
@@ -549,7 +549,7 @@ class CommonTestsTests(unittest.TestCase):
 
     def test_sitka_doe_spook_failure_does_not_move(self):
         """Test that failing Sitka Doe's Spook test does not move it"""
-        from src.cards import SitkaDoe
+        from ebr.cards import SitkaDoe
         doe = SitkaDoe()
         ranger = RangerState(
             name="Ranger",
@@ -570,7 +570,7 @@ class CommonTestsTests(unittest.TestCase):
         eng = GameEngine(state)  # Negative modifier to ensure failure
 
         # Get the Sitka Doe spook action from registry
-        from src.registry import provide_card_tests
+        from ebr.registry import provide_card_tests
         actions = provide_card_tests(eng)
         spook = next(a for a in actions if a.verb == "Spook" and "Sitka Doe" in a.name)
 
@@ -588,7 +588,7 @@ class CommonTestsTests(unittest.TestCase):
 
     def test_sitka_doe_sun_effect_moves_bucks_to_within_reach(self):
         """Test that Sitka Doe's sun challenge effect moves all Sitka Bucks within reach"""
-        from src.cards import SitkaDoe, SitkaBuck
+        from ebr.cards import SitkaDoe, SitkaBuck
         doe = SitkaDoe()
         buck_a = SitkaBuck()
         buck_b = SitkaBuck()
@@ -637,7 +637,7 @@ class CommonTestsTests(unittest.TestCase):
 
     def test_sitka_doe_mountain_effect_harms_doe_with_predator_presence(self):
         """Test that Sitka Doe's mountain effect exhausts a predator and adds harm equal to its presence"""
-        from src.cards import SitkaDoe, ProwlingWolhund
+        from ebr.cards import SitkaDoe, ProwlingWolhund
         doe = SitkaDoe()
         wolhund = ProwlingWolhund()
 
@@ -682,7 +682,7 @@ class CommonTestsTests(unittest.TestCase):
 
     def test_sitka_doe_mountain_effect_no_active_predators(self):
         """Test that Sitka Doe's mountain effect does nothing when no active predators exist"""
-        from src.cards import SitkaDoe, ProwlingWolhund
+        from ebr.cards import SitkaDoe, ProwlingWolhund
         doe = SitkaDoe()
         wolhund = ProwlingWolhund()
         wolhund.exhausted = True  # Predator is exhausted
@@ -730,7 +730,7 @@ class WalkWithMeTests(unittest.TestCase):
 
     def test_walk_with_me_standard_play(self):
         """Test Walk With Me triggers after successful Traverse, player says yes, and has energy"""
-        from src.cards import WalkWithMe
+        from ebr.cards import WalkWithMe
         wwm = WalkWithMe()
 
         feature = Card(
@@ -782,7 +782,7 @@ class WalkWithMeTests(unittest.TestCase):
 
 
         # Perform Traverse test (3 effort = 1 FIT energy + 2 Exploration icons)
-        from src.registry import provide_common_tests
+        from ebr.registry import provide_common_tests
         actions = provide_common_tests(state)
         traverse = next(a for a in actions if a.id == "common-traverse")
 
@@ -810,7 +810,7 @@ class WalkWithMeTests(unittest.TestCase):
 
     def test_walk_with_me_player_declines(self):
         """Test Walk With Me when player chooses not to play it"""
-        from src.cards import WalkWithMe
+        from ebr.cards import WalkWithMe
         wwm = WalkWithMe()
 
         feature = Card(
@@ -858,7 +858,7 @@ class WalkWithMeTests(unittest.TestCase):
         
 
         # Perform Traverse test
-        from src.registry import provide_common_tests
+        from ebr.registry import provide_common_tests
         actions = provide_common_tests(state)
         traverse = next(a for a in actions if a.id == "common-traverse")
 
@@ -883,7 +883,7 @@ class WalkWithMeTests(unittest.TestCase):
 
     def test_walk_with_me_insufficient_energy(self):
         """Test Walk With Me when player has insufficient SPI"""
-        from src.cards import WalkWithMe
+        from ebr.cards import WalkWithMe
         wwm = WalkWithMe()
 
         feature = Card(
@@ -931,7 +931,7 @@ class WalkWithMeTests(unittest.TestCase):
         
 
         # Perform Traverse test
-        from src.registry import provide_common_tests
+        from ebr.registry import provide_common_tests
         actions = provide_common_tests(state)
         traverse = next(a for a in actions if a.id == "common-traverse")
 
@@ -956,7 +956,7 @@ class WalkWithMeTests(unittest.TestCase):
 
     def test_walk_with_me_no_valid_targets(self):
         """Test Walk With Me when there are no Beings in play to target"""
-        from src.cards import WalkWithMe
+        from ebr.cards import WalkWithMe
         wwm = WalkWithMe()
 
         feature = Card(
@@ -997,7 +997,7 @@ class WalkWithMeTests(unittest.TestCase):
         
 
         # Perform Traverse test
-        from src.registry import provide_common_tests
+        from ebr.registry import provide_common_tests
         actions = provide_common_tests(state)
         traverse = next(a for a in actions if a.id == "common-traverse")
 
@@ -1019,7 +1019,7 @@ class WalkWithMeTests(unittest.TestCase):
 
     def test_walk_with_me_only_triggers_on_traverse(self):
         """Test that Walk With Me only triggers on Traverse tests, not Connect tests"""
-        from src.cards import WalkWithMe
+        from ebr.cards import WalkWithMe
         wwm = WalkWithMe()
 
         being = Card(
@@ -1058,7 +1058,7 @@ class WalkWithMeTests(unittest.TestCase):
                         response_decider=always_yes)
 
         # Perform CONNECT test (not Traverse!)
-        from src.registry import provide_common_tests
+        from ebr.registry import provide_common_tests
         actions = provide_common_tests(state)
         connect = next(a for a in actions if a.id == "common-connect")
 
@@ -1083,7 +1083,7 @@ class WalkWithMeTests(unittest.TestCase):
 
     def test_walk_with_me_chooses_correct_being(self):
         """Test that Walk With Me targets the Being chosen by card_chooser"""
-        from src.cards import WalkWithMe
+        from ebr.cards import WalkWithMe
         wwm = WalkWithMe()
 
         feature = Card(
@@ -1141,7 +1141,7 @@ class WalkWithMeTests(unittest.TestCase):
 
 
         # Perform Traverse test with 5 effort
-        from src.registry import provide_common_tests
+        from ebr.registry import provide_common_tests
         actions = provide_common_tests(state)
         traverse = next(a for a in actions if a.id == "common-traverse")
 
@@ -1164,7 +1164,7 @@ class WalkWithMeTests(unittest.TestCase):
 
     def test_walk_with_me_listener_created_on_enters_hand(self):
         """Test that Walk With Me creates the correct listener when entering hand"""
-        from src.cards import WalkWithMe
+        from ebr.cards import WalkWithMe
         wwm = WalkWithMe()
 
         # Create minimal engine for testing
@@ -1192,7 +1192,7 @@ class CalypsaRangerMentorTests(unittest.TestCase):
 
     def test_calypsa_mountain_effect_adds_progress(self):
         """Test that Calypsa's Mountain effect adds 1 progress to chosen path card"""
-        from src.cards import CalypsaRangerMentor
+        from ebr.cards import CalypsaRangerMentor
         calypsa = CalypsaRangerMentor()
 
         # Add another being/feature to give choices
@@ -1250,7 +1250,7 @@ class CalypsaRangerMentorTests(unittest.TestCase):
 
     def test_calypsa_mountain_effect_can_target_self(self):
         """Test that Calypsa can add progress to herself"""
-        from src.cards import CalypsaRangerMentor
+        from ebr.cards import CalypsaRangerMentor
         calypsa = CalypsaRangerMentor()
 
         ranger = RangerState(
@@ -1294,7 +1294,7 @@ class CalypsaRangerMentorTests(unittest.TestCase):
 
     def test_calypsa_crest_effect_harms_from_predator(self):
         """Test that Calypsa's Crest effect uses harm_from_predator (same as Sitka Doe)"""
-        from src.cards import CalypsaRangerMentor, ProwlingWolhund
+        from ebr.cards import CalypsaRangerMentor, ProwlingWolhund
         calypsa = CalypsaRangerMentor()
         wolhund = ProwlingWolhund()
 
@@ -1344,7 +1344,7 @@ class CalypsaRangerMentorTests(unittest.TestCase):
 
     def test_calypsa_crest_effect_no_predators(self):
         """Test that Calypsa's Crest effect does nothing when no predators are in play"""
-        from src.cards import CalypsaRangerMentor
+        from ebr.cards import CalypsaRangerMentor
         calypsa = CalypsaRangerMentor()
 
         ranger = RangerState(
@@ -1390,7 +1390,7 @@ class CalypsaRangerMentorTests(unittest.TestCase):
 class KeywordTests(unittest.TestCase):
     def test_friendly_keyword_prevents_interaction_fatigue(self):
         """Test that cards with Friendly keyword don't cause interaction fatigue"""
-        from src.cards import CalypsaRangerMentor, SitkaDoe
+        from ebr.cards import CalypsaRangerMentor, SitkaDoe
 
         calypsa = CalypsaRangerMentor()
         doe = SitkaDoe()
@@ -1442,7 +1442,7 @@ class KeywordTests(unittest.TestCase):
 
     def test_obstacle_keyword_blocks_targeting(self):
         """Test that Obstacle keyword prevents targeting cards beyond it"""
-        from src.cards import OvergrownThicket, SitkaDoe, ProwlingWolhund
+        from ebr.cards import OvergrownThicket, SitkaDoe, ProwlingWolhund
 
         thicket = OvergrownThicket()
         doe = SitkaDoe()
@@ -1489,7 +1489,7 @@ class KeywordTests(unittest.TestCase):
 
     def test_exhausted_obstacle_does_not_block(self):
         """Test that exhausted Obstacles don't block targeting"""
-        from src.cards import OvergrownThicket, SitkaDoe
+        from ebr.cards import OvergrownThicket, SitkaDoe
 
         thicket = OvergrownThicket()
         thicket.exhausted = True  # Exhausted obstacle
@@ -1534,7 +1534,7 @@ class ChallengeRetriggerPreventionTests(unittest.TestCase):
 
     def test_challenge_effect_does_not_retrigger_when_card_moves_to_challenge_area(self):
         """Test that a challenge effect doesn't trigger twice when a card moves into a challenge area during resolution"""
-        from src.cards import SitkaDoe, SitkaBuck
+        from ebr.cards import SitkaDoe, SitkaBuck
 
         doe = SitkaDoe()
         buck = SitkaBuck()
@@ -1584,7 +1584,7 @@ class ChallengeRetriggerPreventionTests(unittest.TestCase):
 
     def test_non_resolvable_effects_dont_execute(self):
         """Test that multiple cards with the same challenge symbol will not execute if the wouldn't resolve"""
-        from src.cards import SitkaDoe
+        from ebr.cards import SitkaDoe
 
         doe_a = SitkaDoe()
         doe_b = SitkaDoe()
@@ -1629,7 +1629,7 @@ class ChallengeRetriggerPreventionTests(unittest.TestCase):
 
     def test_challenge_effect_can_trigger_again_on_next_test(self):
         """Test that challenge effects can trigger again on a subsequent test (not permanently blocked)"""
-        from src.cards import SitkaDoe, SitkaBuck
+        from ebr.cards import SitkaDoe, SitkaBuck
 
         doe = SitkaDoe()
         buck_a = SitkaBuck()

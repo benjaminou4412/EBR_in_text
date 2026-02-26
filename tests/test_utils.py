@@ -1,6 +1,6 @@
 """Test utilities for Earthborne Rangers tests."""
 
-from src.models import ChallengeCard, ChallengeDeck, ChallengeIcon, Aspect
+from ebr.models import ChallengeCard, ChallengeDeck, ChallengeIcon, Aspect
 
 
 class MockChallengeDeck(ChallengeDeck):

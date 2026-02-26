@@ -1,8 +1,8 @@
 #type:ignore
 import unittest
-from src.models import *
-from src.engine import GameEngine
-from src.cards import ShareintheValleysSecrets, CradledbytheEarth, AffordedByNature
+from ebr.models import *
+from ebr.engine import GameEngine
+from ebr.cards import ShareintheValleysSecrets, CradledbytheEarth, AffordedByNature
 from tests.test_utils import MockChallengeDeck, make_challenge_card
 
 

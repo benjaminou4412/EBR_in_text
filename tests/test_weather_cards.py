@@ -1,8 +1,8 @@
 #type: ignore
 import unittest
-from src.models import *
-from src.engine import GameEngine
-from src.cards import APerfectDay, MiddaySun
+from ebr.models import *
+from ebr.engine import GameEngine
+from ebr.cards import APerfectDay, MiddaySun
 from tests.test_utils import make_challenge_card
 
 
@@ -58,7 +58,7 @@ class APerfectDayTests(unittest.TestCase):
         # Note: reconstruct() registers listeners for cards already in play
 
         # Create a test that adds progress
-        from src.registry import provide_common_tests
+        from ebr.registry import provide_common_tests
         tests = provide_common_tests(state)
         traverse_action = next(t for t in tests if "Traverse" in t.name)
 
@@ -100,7 +100,7 @@ class APerfectDayTests(unittest.TestCase):
         eng = GameEngine(state)
 
         # Create a test that does NOT add progress (e.g., Search doesn't add progress to target)
-        from src.registry import provide_common_tests
+        from ebr.registry import provide_common_tests
         tests = provide_common_tests(state)
         search_action = next(t for t in tests if "Remember" in t.name)
 

@@ -3,9 +3,9 @@
 Tests for Location cards
 """
 import unittest
-from src.models import *
-from src.engine import GameEngine
-from src.cards import AncestorsGrove, BoulderField
+from ebr.models import *
+from ebr.engine import GameEngine
+from ebr.cards import AncestorsGrove, BoulderField
 
 
 def make_test_ranger():

@@ -3,9 +3,9 @@
 Tests for exhaust abilities, ranger tokens, and Peerless Pathfinder role card
 """
 import unittest
-from src.models import *
-from src.engine import GameEngine
-from src.cards import PeerlessPathfinder, OvergrownThicket, SunberryBramble, BoundarySensor
+from ebr.models import *
+from ebr.engine import GameEngine
+from ebr.cards import PeerlessPathfinder, OvergrownThicket, SunberryBramble, BoundarySensor
 
 
 class RangerTokenTests(unittest.TestCase):
@@ -206,7 +206,7 @@ class ExhaustAbilityTests(unittest.TestCase):
 
     def test_ready_card_provides_exhaust_abilities(self):
         """Ready cards should provide their exhaust abilities"""
-        from src.registry import provide_exhaust_abilities
+        from ebr.registry import provide_exhaust_abilities
 
         role = PeerlessPathfinder()
         ranger = RangerState(
@@ -230,7 +230,7 @@ class ExhaustAbilityTests(unittest.TestCase):
 
     def test_exhausted_card_does_not_provide_exhaust_abilities(self):
         """Exhausted cards should not provide their exhaust abilities"""
-        from src.registry import provide_exhaust_abilities
+        from ebr.registry import provide_exhaust_abilities
 
         role = PeerlessPathfinder()
         role.exhausted = True  # Exhaust the role
@@ -361,7 +361,7 @@ class PeerlessPathfinderTests(unittest.TestCase):
         )
         engine = GameEngine(state)
 
-        from src.registry import provide_exhaust_abilities
+        from ebr.registry import provide_exhaust_abilities
 
         # Should have 1 ability available (role is ready)
         abilities = provide_exhaust_abilities(state)
@@ -687,7 +687,7 @@ class BoundarySensorTests(unittest.TestCase):
         engine.response_decider = accept_exhaust
 
         # Get the common Traverse test action
-        from src.registry import provide_common_tests
+        from ebr.registry import provide_common_tests
         common_tests = provide_common_tests(state)
         traverse_test = next(t for t in common_tests if t.verb == "Traverse")
 
@@ -741,7 +741,7 @@ class BoundarySensorTests(unittest.TestCase):
         engine.response_decider = decline_exhaust
 
         # Get the common Traverse test action
-        from src.registry import provide_common_tests
+        from ebr.registry import provide_common_tests
         common_tests = provide_common_tests(state)
         traverse_test = next(t for t in common_tests if t.verb == "Traverse")
 
@@ -790,7 +790,7 @@ class BoundarySensorTests(unittest.TestCase):
         engine.response_decider = should_not_be_called
 
         # Get the common Traverse test action
-        from src.registry import provide_common_tests
+        from ebr.registry import provide_common_tests
         common_tests = provide_common_tests(state)
         traverse_test = next(t for t in common_tests if t.verb == "Traverse")
 
@@ -840,7 +840,7 @@ class BoundarySensorTests(unittest.TestCase):
         engine.response_decider = should_not_be_called
 
         # Get the common Traverse test action
-        from src.registry import provide_common_tests
+        from ebr.registry import provide_common_tests
         common_tests = provide_common_tests(state)
         traverse_test = next(t for t in common_tests if t.verb == "Traverse")
 
@@ -896,7 +896,7 @@ class MultipleBoundarySensorsTests(unittest.TestCase):
         engine.response_decider = accept_all_exhausts
 
         # Get the common Traverse test action
-        from src.registry import provide_common_tests
+        from ebr.registry import provide_common_tests
         common_tests = provide_common_tests(state)
         traverse_test = next(t for t in common_tests if t.verb == "Traverse")
 
@@ -955,7 +955,7 @@ class MultipleBoundarySensorsTests(unittest.TestCase):
         engine.response_decider = accept_first_decline_second
 
         # Get the common Traverse test action
-        from src.registry import provide_common_tests
+        from ebr.registry import provide_common_tests
         common_tests = provide_common_tests(state)
         traverse_test = next(t for t in common_tests if t.verb == "Traverse")
 

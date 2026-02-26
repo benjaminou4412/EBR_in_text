@@ -3,7 +3,7 @@ Woods terrain set card implementations
 """
 from typing import Callable
 
-from src.models import Area, ConstantAbility
+from ebr.models import Area, ConstantAbility
 from ..models import *
 from ..json_loader import load_card_fields #type:ignore
 from ..engine import GameEngine

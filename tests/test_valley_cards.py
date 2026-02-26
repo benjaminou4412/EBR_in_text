@@ -1,8 +1,8 @@
 #type: ignore
 import unittest
-from src.models import *
-from src.engine import GameEngine
-from src.cards import QuisiVosRascal, TheFundamentalist, ProwlingWolhund
+from ebr.models import *
+from ebr.engine import GameEngine
+from ebr.cards import QuisiVosRascal, TheFundamentalist, ProwlingWolhund
 from tests.test_utils import MockChallengeDeck, make_challenge_card
 
 
@@ -845,7 +845,7 @@ class QuisiCampaignGuideTests(unittest.TestCase):
 
     def test_quisi_cleared_by_harm_ends_day(self):
         """Test that clearing Quisi by harm triggers entry 80 -> 80.6 (ends the day)"""
-        from src.models import DayEndException
+        from ebr.models import DayEndException
 
         quisi = QuisiVosRascal()
         ranger = make_test_ranger()
@@ -1033,7 +1033,7 @@ class QuisiCampaignGuideTests(unittest.TestCase):
 
     def test_quisi_entry_80_6_story_text(self):
         """Test that entry 80.6 (clear by harm) displays correct story text"""
-        from src.models import DayEndException
+        from ebr.models import DayEndException
 
         quisi = QuisiVosRascal()
         ranger = make_test_ranger()

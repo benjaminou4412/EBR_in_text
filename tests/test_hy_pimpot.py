@@ -12,11 +12,11 @@ Covers:
 """
 
 import unittest
-from src.models import *
-from src.engine import GameEngine
-from src.cards import HelpingHand
-from src.cards.lone_tree_station_cards import HyPimpotChef
-from src.cards.woods_cards import ProwlingWolhund, SunberryBramble
+from ebr.models import *
+from ebr.engine import GameEngine
+from ebr.cards import HelpingHand
+from ebr.cards.lone_tree_station_cards import HyPimpotChef
+from ebr.cards.woods_cards import ProwlingWolhund, SunberryBramble
 from tests.test_utils import MockChallengeDeck, make_challenge_card
 
 

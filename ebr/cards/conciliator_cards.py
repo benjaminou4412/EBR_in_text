@@ -1,8 +1,8 @@
 """
 Conciliator card implementations
 """
-from src.engine import GameEngine
-from src.models import Area, EventListener
+from ebr.engine import GameEngine
+from ebr.models import Area, EventListener
 from ..models import GameState, Card, EventType, TimingType
 from ..json_loader import load_card_fields #type:ignore
 

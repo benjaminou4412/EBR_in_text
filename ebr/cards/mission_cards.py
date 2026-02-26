@@ -3,7 +3,7 @@ Location set card implementations
 """
 from typing import Callable
 
-from src.models import ConstantAbility
+from ebr.models import ConstantAbility
 
 
 from ..models import *

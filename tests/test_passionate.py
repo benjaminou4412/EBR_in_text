@@ -1,8 +1,8 @@
 #type:ignore
 import unittest
-from src.models import *
-from src.engine import GameEngine
-from src.cards import Passionate
+from ebr.models import *
+from ebr.engine import GameEngine
+from ebr.cards import Passionate
 from tests.test_utils import MockChallengeDeck, make_challenge_card
 
 
@@ -76,7 +76,7 @@ class PassionateTests(unittest.TestCase):
         eng = GameEngine(state, response_decider=lambda _e, _p: False)
 
         # Create a Connect test action
-        from src.registry import provide_common_tests
+        from ebr.registry import provide_common_tests
         actions = provide_common_tests(state)
         connect = next(a for a in actions if a.id == "common-connect")
 
@@ -132,7 +132,7 @@ class PassionateTests(unittest.TestCase):
         eng = GameEngine(state, response_decider=say_yes)
 
         # Create a Connect test
-        from src.registry import provide_common_tests
+        from ebr.registry import provide_common_tests
         actions = provide_common_tests(state)
         connect = next(a for a in actions if a.id == "common-connect")
 
@@ -197,7 +197,7 @@ class PassionateTests(unittest.TestCase):
         eng = GameEngine(state, response_decider=say_no)
 
         # Create a Connect test
-        from src.registry import provide_common_tests
+        from ebr.registry import provide_common_tests
         actions = provide_common_tests(state)
         connect = next(a for a in actions if a.id == "common-connect")
 
@@ -259,7 +259,7 @@ class PassionateTests(unittest.TestCase):
         eng = GameEngine(state, response_decider=track_response)
 
         # Create a Connect test
-        from src.registry import provide_common_tests
+        from ebr.registry import provide_common_tests
         actions = provide_common_tests(state)
         connect = next(a for a in actions if a.id == "common-connect")
 
@@ -319,7 +319,7 @@ class PassionateTests(unittest.TestCase):
         initial_listener_count = len(eng.listeners)
 
         # Create a Connect test
-        from src.registry import provide_common_tests
+        from ebr.registry import provide_common_tests
         actions = provide_common_tests(state)
         connect = next(a for a in actions if a.id == "common-connect")
 
@@ -368,7 +368,7 @@ class PassionateTests(unittest.TestCase):
         eng = GameEngine(state, response_decider=lambda _e, _p: True)
 
         # Create a Connect test
-        from src.registry import provide_common_tests
+        from ebr.registry import provide_common_tests
         actions = provide_common_tests(state)
         connect = next(a for a in actions if a.id == "common-connect")
 
@@ -428,7 +428,7 @@ class PassionateTests(unittest.TestCase):
         eng = GameEngine(state, response_decider=lambda _e, _p: True)
 
         # Create a Connect test
-        from src.registry import provide_common_tests
+        from ebr.registry import provide_common_tests
         actions = provide_common_tests(state)
         connect = next(a for a in actions if a.id == "common-connect")
 

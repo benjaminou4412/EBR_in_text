@@ -3,20 +3,20 @@ import os
 import random
 import argparse
 from pathlib import Path
-from src.models import (
+from ebr.models import (
     Card, RangerState, GameState, Action, Aspect, Area, CardType,
     DayEndException
 )
-from src.engine import GameEngine
-from src.registry import provide_common_tests, provide_card_tests, provide_exhaust_abilities, provide_play_options, filter_tests_by_targets
-from src.view import (
+from ebr.engine import GameEngine
+from ebr.registry import provide_common_tests, provide_card_tests, provide_exhaust_abilities, provide_play_options, filter_tests_by_targets
+from ebr.view import (
     render_state, choose_action, choose_action_target, choose_commit,
     choose_target, display_and_clear_messages, choose_response, set_show_art_descriptions,
     choose_order, choose_option, choose_amount
 )
-from src.decks import build_woods_path_deck
-from src.save_load import save_game, load_game
-from src.cards import (
+from ebr.decks import build_woods_path_deck
+from ebr.save_load import save_game, load_game
+from ebr.cards import (
     OvergrownThicket, SunberryBramble, SitkaDoe, WalkWithMe, ADearFriend,
     ProwlingWolhund, SitkaBuck, CalypsaRangerMentor, PeerlessPathfinder,
     CausticMulcher, BoulderField, QuisiVosRascal, BoundarySensor, AffordedByNature,
@@ -781,7 +781,7 @@ def main() -> None:
 
         if engine is None:
             # Start a new campaign
-            from src.models import CampaignTracker, Mission
+            from ebr.models import CampaignTracker, Mission
 
             # Prompt for campaign name
             print("\nEnter a name for this campaign (or press Enter to skip):")

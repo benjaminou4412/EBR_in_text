@@ -3,7 +3,7 @@ Location set card implementations
 """
 from typing import Callable
 
-from src.models import EventListener
+from ebr.models import EventListener
 
 from ..models import *
 from ..json_loader import load_card_fields #type:ignore

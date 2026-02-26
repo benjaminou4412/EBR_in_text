@@ -2,12 +2,12 @@
 """Tests for Mission cards, starting with Biscuit Delivery."""
 
 import unittest
-from src.models import (
+from ebr.models import (
     Card, RangerState, GameState, Aspect, Approach, Area, CardType,
     EventType, TimingType, Keyword, Mission, DayEndException
 )
-from src.engine import GameEngine
-from src.cards import BiscuitDelivery, BiscuitBasket, HyPimpotChef, QuisiVosRascal, PeerlessPathfinder
+from ebr.engine import GameEngine
+from ebr.cards import BiscuitDelivery, BiscuitBasket, HyPimpotChef, QuisiVosRascal, PeerlessPathfinder
 
 
 def make_test_ranger() -> RangerState:
@@ -244,7 +244,7 @@ class BiscuitDeliveryCampaignOverrideTests(unittest.TestCase):
 
     def test_biscuit_delivery_has_override_constant_ability(self):
         """Test that Biscuit Delivery defines an OVERRIDE_CAMPAIGN_ENTRY constant ability."""
-        from src.models import ConstantAbilityType
+        from ebr.models import ConstantAbilityType
 
         biscuit = BiscuitDelivery()
         abilities = biscuit.get_constant_abilities()
@@ -383,7 +383,7 @@ class BiscuitDeliveryCampaignOverrideTests(unittest.TestCase):
 
         # Card is already in surroundings and reconstruct() registered its constant abilities
         # Verify override is active (registered by reconstruct() during engine init)
-        from src.models import ConstantAbilityType
+        from ebr.models import ConstantAbilityType
         override_abilities = engine.get_constant_abilities_by_type(
             ConstantAbilityType.OVERRIDE_CAMPAIGN_ENTRY
         )
@@ -421,7 +421,7 @@ class BiscuitDeliveryCampaignOverrideTests(unittest.TestCase):
 
         # Card is already in surroundings and reconstruct() registered its constant abilities
         # Verify override is active (registered by reconstruct() during engine init)
-        from src.models import ConstantAbilityType
+        from ebr.models import ConstantAbilityType
         override_abilities = engine.get_constant_abilities_by_type(
             ConstantAbilityType.OVERRIDE_CAMPAIGN_ENTRY
         )

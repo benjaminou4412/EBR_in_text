@@ -1,12 +1,12 @@
 """Integration tests that run the full game loop autonomously."""
 
 import unittest
-from src.models import (
+from ebr.models import (
     Card, RangerState, GameState, Action, Aspect, Area, CardType,
     DayEndException, Keyword, CampaignTracker
 )
-from src.engine import GameEngine
-from src.cards import PeerlessPathfinder
+from ebr.engine import GameEngine
+from ebr.cards import PeerlessPathfinder
 
 
 def make_minimal_deck(size: int = 10) -> list[Card]:
@@ -392,7 +392,7 @@ class DayTransitionTests(unittest.TestCase):
 
     def test_end_day_saves_location(self):
         """Test that end_day() properly saves the current location to campaign tracker."""
-        from src.cards import BoulderField, AncestorsGrove
+        from ebr.cards import BoulderField, AncestorsGrove
 
         # Set up a game at Ancestor's Grove
         campaign_tracker = CampaignTracker(

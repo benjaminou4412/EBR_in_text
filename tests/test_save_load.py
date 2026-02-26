@@ -7,16 +7,16 @@ import os
 import json
 from pathlib import Path
 
-from src.models import (
+from ebr.models import (
     Card, RangerState, GameState, CampaignTracker, ChallengeDeck,
     Aspect, Area, CardType, Mission, Keyword
 )
-from src.engine import GameEngine
-from src.save_load import (
+from ebr.engine import GameEngine
+from ebr.save_load import (
     save_game, load_game, serialize_card, serialize_game_state,
     instantiate_card, get_card_class, SAVE_VERSION
 )
-from src.cards import (
+from ebr.cards import (
     BiscuitDelivery, BiscuitBasket, PeerlessPathfinder, SitkaDoe,
     HyPimpotChef, LoneTreeStation, APerfectDay
 )

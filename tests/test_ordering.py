@@ -1,9 +1,9 @@
 #type:ignore
 import unittest
-from src.models import *
-from src.engine import GameEngine
-from src.cards import *
-from src.registry import provide_common_tests
+from ebr.models import *
+from ebr.engine import GameEngine
+from ebr.cards import *
+from ebr.registry import provide_common_tests
 from tests.test_utils import MockChallengeDeck, make_challenge_card
 
 
@@ -40,7 +40,7 @@ class ChallengeEffectOrderingTests(unittest.TestCase):
 
     def test_multiple_challenge_effects_use_order_decider(self):
         """Test that multiple challenge effects in same area are passed to order_decider"""
-        from src.cards import SitkaDoe
+        from ebr.cards import SitkaDoe
 
         doe_a = SitkaDoe()
         doe_b = SitkaDoe()
@@ -93,7 +93,7 @@ class ChallengeEffectOrderingTests(unittest.TestCase):
 
     def test_single_challenge_effect_skips_order_decider(self):
         """Test that a single challenge effect doesn't call order_decider"""
-        from src.cards import SitkaDoe
+        from ebr.cards import SitkaDoe
 
         doe = SitkaDoe()
 
@@ -136,7 +136,7 @@ class ChallengeEffectOrderingTests(unittest.TestCase):
 
     def test_challenge_effects_resolve_in_reversed_order(self):
         """Test that challenge effects actually resolve in the order specified by order_decider"""
-        from src.cards import SitkaDoe, SitkaBuck
+        from ebr.cards import SitkaDoe, SitkaBuck
 
         doe = SitkaDoe()
         buck_a = SitkaBuck()
@@ -188,7 +188,7 @@ class ChallengeEffectOrderingTests(unittest.TestCase):
 
     def test_challenge_effects_resolve_in_specified_order(self):
         """Test that challenge effects actually resolve in the order specified by order_decider"""
-        from src.cards import SitkaDoe, SitkaBuck
+        from ebr.cards import SitkaDoe, SitkaBuck
 
         doe = SitkaDoe()
         buck_a = SitkaBuck()
@@ -243,7 +243,7 @@ class EventListenerOrderingTests(unittest.TestCase):
 
     def test_multiple_listeners_use_order_decider(self):
         """Test that multiple listeners triggering simultaneously are passed to order_decider"""
-        from src.cards import WalkWithMe
+        from ebr.cards import WalkWithMe
 
         # Create two Walk With Me cards to create two listeners
         wwm1 = WalkWithMe()
@@ -316,7 +316,7 @@ class EventListenerOrderingTests(unittest.TestCase):
 
     def test_single_listener_skips_order_decider(self):
         """Test that a single listener doesn't call order_decider"""
-        from src.cards import WalkWithMe
+        from ebr.cards import WalkWithMe
 
         wwm = WalkWithMe()
 

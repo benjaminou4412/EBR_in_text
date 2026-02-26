@@ -3,8 +3,8 @@ Tests for card creation and loading
 """
 
 import unittest
-from src.models import *
-from src.cards import *
+from ebr.models import *
+from ebr.cards import *
 
 
 class CardCreationTests(unittest.TestCase):

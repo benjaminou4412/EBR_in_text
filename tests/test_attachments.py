@@ -3,9 +3,9 @@
 Tests for the attachment system and Caustic Mulcher card.
 """
 import unittest
-from src.models import *
-from src.engine import GameEngine
-from src.cards import CausticMulcher, OvergrownThicket, PeerlessPathfinder
+from ebr.models import *
+from ebr.engine import GameEngine
+from ebr.cards import CausticMulcher, OvergrownThicket, PeerlessPathfinder
 
 
 def make_test_ranger():
