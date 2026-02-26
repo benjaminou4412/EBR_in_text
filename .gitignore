@@ -31,3 +31,6 @@ __pycache__/main.cpython-313.pyc
 
 # Autosaves (manual saves in saves/ should stay tracked)
 saves/autosave_*.json
+
+# Mutation testing
+mutants
