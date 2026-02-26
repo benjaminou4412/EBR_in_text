@@ -25,6 +25,12 @@ class ChallengeOutcome:
 
 
 class GameEngine:
+    """Core game engine that resolves tests, manages listeners, and manipulates game state.
+
+    Decision callbacks (card_chooser, response_decider, etc.) are the integration
+    points for human UI or LLM agents. Tests supply deterministic defaults that
+    always accept/choose the first option."""
+
     def __init__(self,
                   state: GameState,
                   card_chooser: Callable[[GameEngine, list[Card]], Card] | None = None,
@@ -165,7 +171,10 @@ class GameEngine:
         return raw_candidates
 
     def filter_by_obstacles(self, candidates: list[Card]) -> list[Card] | None:
-        """Filter candidates to exclude cards past the nearest Obstacle"""
+        """Filter candidates to exclude cards past the nearest ready Obstacle.
+
+        Finds the closest area containing a PREVENT_INTERACTION_PAST ability (from
+        Obstacle keyword), then removes candidates in areas farther from the ranger."""
         # Gather active ConstantAbilities that block interaction
         ability_ids = [ability.source_card_id for ability in self.constant_abilities 
                      if ability.ability_type==ConstantAbilityType.PREVENT_INTERACTION_PAST
@@ -200,7 +209,10 @@ class GameEngine:
                 if self.state.get_card_area_by_id(card.id) in valid_areas]
 
     def interaction_fatigue(self, ranger: RangerState, target: Card) -> None:
-        """Apply fatigue from cards between ranger and target"""
+        """Apply fatigue from each ready, non-Friendly card between the ranger and target.
+
+        Each such card fatigues the ranger by its current presence value.
+        This is Step 1 of test resolution."""
         cards_between = self.state.get_cards_between_ranger_and_target(target)
         target_area : Area | None = self.state.get_card_area_by_id(target.id)
         if target_area is None:
@@ -225,7 +237,11 @@ class GameEngine:
                     raise RuntimeError(f"Something has gone horribly wrong; this card should have a presence.")
                     
     def initiate_test(self, action: Action, state: GameState, target_id: str | None):
-        """Show player relevant information before decisions are made during a test"""
+        """Begin the test sequence: display test info and resolve interaction fatigue (Step 1).
+
+        This is called before the player commits effort. It shows the test's aspect,
+        approach, and difficulty, then applies interaction fatigue from ready non-Friendly
+        cards between the ranger and the target. Untargeted tests skip fatigue."""
         target_card = self.state.get_card_by_id(target_id)
         # Get display strings for aspect/approach
         aspect_str = action.aspect.value if isinstance(action.aspect, Aspect) else action.aspect
@@ -246,6 +262,18 @@ class GameEngine:
         
 
     def perform_test(self, action: Action, decision: CommitDecision, target_id: Optional[str]) -> ChallengeOutcome:
+        """Resolve a test action through the 5-step test sequence.
+
+        Steps:
+          1. (Already done in initiate_test) Interaction fatigue
+          2. Commit effort: spend energy, count approach icons, discard committed cards
+          3. Draw challenge card and apply aspect modifier to effort
+          4. Compare effort vs difficulty; invoke on_success or on_fail; check clears
+          5. Resolve challenge icon effects (Sun/Mountain/Crest) on all ready cards
+             in area order, with player-chosen resolution order within each area
+
+        Non-test actions (e.g. Rest) skip directly to on_success with zero effort.
+        Returns a ChallengeOutcome summarizing the test result."""
         # Non-test actions (e.g., Rest) skip challenge + energy
         target_card: Card | None = self.state.get_card_by_id(target_id)
 
@@ -452,7 +480,10 @@ class GameEngine:
     
     #Ranger Token manipulation
     def move_ranger_token_to_card(self, card: Card) -> bool:
-        """Return whether token actually moved"""
+        """Attempt to move the ranger token to a card. Returns whether it actually moved.
+
+        Movement can be blocked by PREVENT_RANGER_TOKEN_MOVE constant abilities
+        (e.g. Caustic Mulcher). Also returns False if the token is already there."""
         curr_location = self.state.ranger.ranger_token_location
         curr_card = self.state.get_card_by_id(curr_location)
         if curr_card is None:
@@ -492,8 +523,15 @@ class GameEngine:
     # Listener management methods
 
     def trigger_listeners(self, event_type: EventType, timing_type: TimingType, action: Action | None, effort: int, card: Card | None = None) -> int:
-        """Trigger all listeners that are active, pasing in effort and a card for effects that need it (cleared cards, mission objectives, etc.).
-        Returns an integer for effects that involve a variable result amount, such as committed effort."""
+        """Fire all matching listeners for a game event, letting the player order simultaneous triggers.
+
+        Matching criteria: event_type + timing_type must match, and if an action is
+        provided, the listener's test_type must match the action's verb (or be None
+        for wildcard listeners). Each listener's active() check is evaluated at
+        trigger time, not at collection time.
+
+        Returns the cumulative effort modifier from all triggered listeners (used
+        by PERFORM_TEST listeners that add bonus effort; ignored by other callers)."""
         triggered : list[EventListener]= []
         for listener in self.listeners:
                 if listener.event_type == event_type and listener.timing_type == timing_type:
@@ -917,6 +955,11 @@ class GameEngine:
         
     
     def unattach(self, to_unattach: Card) -> None:
+        """Detach a card from whatever it's attached to.
+
+        Clears the attachment link in both directions. If the detached card has
+        the Attachment card type, it is automatically discarded (attachments cannot
+        exist in play unattached). Non-attachment cards remain in their current area."""
         attached_to: Card | None = self.state.get_card_by_id(to_unattach.attached_to_id)
         if attached_to is None:
             raise RuntimeError(f"{to_unattach.id} is attached to nothing!")
@@ -931,6 +974,8 @@ class GameEngine:
             #generally, cards in play should stay in area of the card they were just attached to
 
     def resolve_fatiguing_keyword(self):
+        """During Refresh, each ready card with the Fatiguing keyword fatigues the ranger
+        by its presence value."""
         fatiguing_cards: list[Card] = []
         for area in self.state.areas:
             for card in self.state.areas[area]:
@@ -948,7 +993,14 @@ class GameEngine:
         for _ in range(count):
             self.draw_path_card(None, None)
 
-    def phase3_travel(self) -> bool: #returns whether day ended by camping
+    def phase3_travel(self) -> bool:
+        """Phase 3: Check if travel conditions are met and offer the ranger the choice to travel.
+
+        Travel requires either sufficient progress on the location or the ranger token
+        on the location (for ranger-token-based clearing). Active Obstacle and other
+        PREVENT_TRAVEL abilities block travel entirely.
+
+        Returns True if the day ended by camping during travel, False otherwise."""
         self.add_message(f"Begin Phase 3: Travel")
         location_progress_threshold = self.state.location.get_progress_threshold()
         travel_blockers = [ability for ability in self.constant_abilities 
@@ -983,7 +1035,16 @@ class GameEngine:
                 self.add_message(f"There is insufficient Progress on the Location. You may not yet Travel.")
                 return False
         return False
-    def execute_travel(self) -> bool: #returns whether day ended by camping
+    def execute_travel(self) -> bool:
+        """Execute the 5-step travel sequence.
+
+        1. Clear play area: discard non-Persistent path cards, ranger cards in path
+           areas, and return path deck/discard to collection. Resolve 'travel away' missions.
+        2. Choose and move to a new location from available destinations.
+        3. Offer the ranger the choice to camp (ends the day with deck-editing benefits).
+        4-5. Build new path deck and run arrival setup for the new location.
+
+        Returns True if the day ended by camping, False otherwise."""
         #Step 1: Clear Play Area
 
         self.add_message(f"Step 1: Clear Play Area")
@@ -1047,6 +1108,13 @@ class GameEngine:
         return False
     
     def arrival_setup(self, start_of_day: bool):
+        """Set up the play area for a location, either at start of day or after travel.
+
+        At start of day (Steps 5-10): sets up location, weather, campaign guide entries,
+        and mission cards. After travel (Steps 4-5 only): builds path deck and runs
+        arrival setup. In both cases: assembles path deck from terrain set + location/valley
+        cards, resolves the location's campaign log entry, and calls the location's
+        do_arrival_setup for location-specific effects."""
         if start_of_day:
             self.add_message(f"Step 5: Set up starting location")
             from .decks import get_location_by_id
@@ -1099,6 +1167,13 @@ class GameEngine:
         self.state.location.do_arrival_setup(self)
 
     def phase4_refresh(self):
+        """Phase 4: End-of-round refresh sequence.
+
+        1. Suffer 1 fatigue per injury
+        2. Draw 1 ranger card (empty deck ends the day)
+        3. Refill all energy pools to base aspect values
+        4. Resolve Refresh-timing listeners (e.g. Fatiguing keyword effects)
+        5. Ready all cards in play"""
         self.add_message(f"Begin Phase 4: Refresh")
         #Step 1: Suffer 1 Fatigue per injury
         if (self.state.ranger.injury > 0):

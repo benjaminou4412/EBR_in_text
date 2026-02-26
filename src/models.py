@@ -382,15 +382,32 @@ class Card:
         return f"{self.title}"
     
     def get_challenge_handlers(self) -> dict[ChallengeIcon, Callable[[GameEngine], bool]] | None:
+        """Return handlers for challenge icons (Sun/Mountain/Crest) drawn during tests.
+
+        Each handler receives the engine and returns True if the effect resolved
+        (changed game state), False otherwise. Used by the engine to determine
+        resolution order and whether to prompt the player."""
         return None
-    
+
     def get_tests(self) -> list[Action] | None:
+        """Return test Actions this card provides while in play (e.g. Traverse, Harvest).
+
+        Tests are the primary interaction mechanic: they involve committing effort,
+        drawing a challenge card, and resolving success/failure effects."""
         return None
-    
+
     def get_exhaust_abilities(self) -> list[Action] | None:
+        """Return Actions for this card's 'Exhaust:' abilities.
+
+        Exhaust abilities are proactive actions available during Phase 2 that
+        require exhausting the card (and often spending a unique token) as a cost."""
         return None
-    
+
     def get_listeners(self) -> list[EventListener] | None:
+        """Return EventListeners this card registers while in play (or in hand, for Moments).
+
+        Listeners enable reactive abilities that trigger before/when/after specific
+        game events (e.g. taking fatigue, performing tests, suffering injury)."""
         return None
 
     def has_hand_based_listener(self) -> bool:
@@ -625,6 +642,11 @@ class Card:
         
 
     def get_constant_abilities(self) -> list[ConstantAbility] | None:
+        """Return passive ConstantAbilities this card provides while in play.
+
+        Base implementation generates abilities from keywords (e.g. Obstacle grants
+        PREVENT_INTERACTION_PAST and PREVENT_TRAVEL). Subclasses override to add
+        card-specific constant abilities like presence modification or fatigue prevention."""
         if self.keywords:
             result: list[ConstantAbility] = []
             for keyword in self.keywords:
@@ -671,6 +693,10 @@ class Card:
         return self.harm_threshold
 
     def add_unique_tokens(self, engine: GameEngine, token_type: str, amount: int):
+        """Add unique tokens to this card, then fire HAVE_X_TOKENS listeners.
+
+        Token types are case-insensitive. Triggers listeners used by mission cards
+        to track objectives based on token counts."""
         token_type = token_type.casefold()
         if amount < 0:
             raise ValueError(f"Amount cannot be negative, use remove_unique_tokens instead!")
@@ -688,6 +714,9 @@ class Card:
         )
     
     def remove_unique_tokens(self, engine: GameEngine, token_type: str, amount: int) -> int:
+        """Remove up to 'amount' unique tokens from this card, then fire HAVE_X_TOKENS listeners.
+
+        Returns the number of tokens actually removed (clamped to available count)."""
         token_type = token_type.casefold()
         amount_removed = 0
         if self.has_unique_token_type(token_type):
@@ -734,6 +763,10 @@ class Card:
 
     #ranger card only methods
     def get_current_equip_value(self) -> int | None:
+        """Return the equip value after applying modifiers, or None if card has no equip value.
+
+        Modifiers are applied in order of largest minimum_result first, so that
+        'set to minimum X' effects take priority over flat adjustments."""
         if self.equip_value is not None:
             #first, get just the equip value modifiers
             equip_value_mods = [mod for mod in self.modifiers if mod.target == "equip_value"]
@@ -747,6 +780,10 @@ class Card:
             return None
         
     def get_current_energy_cost(self) -> int | None:
+        """Return the energy cost after applying modifiers, or None if card is unplayable.
+
+        Modifiers are applied in order of largest minimum_result first, so that
+        'set to minimum X' effects take priority over flat adjustments."""
         if self.energy_cost is not None:
             #first, get just the equip value modifiers
             energy_cost_mods = [mod for mod in self.modifiers if mod.target == "energy_cost"]
@@ -808,6 +845,12 @@ class Card:
     
     #path card only methods
     def get_current_presence(self, engine: GameEngine) -> int | None:
+        """Return the card's effective presence after applying all modifiers, or None.
+
+        Presence determines fatigue dealt during interaction and harm dealt by
+        predator/prey challenge effects. Combines card-level ValueModifiers with
+        global ConstantAbility modifiers (e.g. from locations or other cards),
+        applied in order of largest minimum_result first."""
         if self.presence is not None:
             #first, get just the card's own presence modifiers
             presence_mods = [mod for mod in self.modifiers if mod.target == "presence"]
@@ -929,6 +972,8 @@ class Card:
             return f"{self.title} exhausts."
     
     def ready(self, engine: GameEngine) -> str:
+        """Un-exhaust this card, unless blocked by a PREVENT_READYING constant ability
+        from the card it is attached to (e.g. Caustic Mulcher)."""
         blocker_abilities: list[ConstantAbility] = engine.get_constant_abilities_by_type(ConstantAbilityType.PREVENT_READYING)
         blocker_ids = [blocker_ability.source_card_id for blocker_ability in blocker_abilities if blocker_ability.is_active(engine.state, self)]
         if self.is_ready():
@@ -944,6 +989,11 @@ class Card:
             return f"{self.title} readies."
         
     def clear_if_threshold(self, state: GameState) -> str | None:
+        """Check if this card's progress or harm has met its clearing threshold.
+
+        Returns 'progress', 'harm', or None. Also checks ranger-token-based clearing,
+        where presence of the ranger token on this card counts as meeting the threshold.
+        Locations never clear."""
         if self.has_type(CardType.LOCATION):
             return None #locations never clear
         
@@ -1125,6 +1175,10 @@ class RangerState:
         self.energy = dict(self.aspects)
 
     def commit_icons(self, approach: Approach, decision: CommitDecision) -> tuple[int, list[int]]:
+        """Calculate total effort from energy + approach icons on committed hand cards.
+
+        Returns (total_effort, valid_indices) where valid_indices are the hand
+        positions that actually contributed icons to the committed effort."""
         total = decision.energy
         valid_indices : list[int] = []
         for idx in decision.hand_indices:
@@ -1361,8 +1415,11 @@ class GameState:
         return results
 
     def get_cards_between_ranger_and_target(self, target: Card) -> list[Card]:
-        """Get all cards that are 'between' the ranger and a target in the given area.
-        Returns cards in order from closest to farthest."""
+        """Get all cards 'between' the ranger and a target for interaction fatigue.
+
+        'Between' means: cards attached to the role card (always between) plus all
+        cards in areas closer to the ranger than the target's area. The area ordering
+        is: Player Area < Within Reach < Along the Way < Surroundings."""
         between: list[Card] = []
         target_area = self.get_card_area_by_id(target.id)
         
