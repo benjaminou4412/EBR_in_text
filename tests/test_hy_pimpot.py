@@ -743,6 +743,92 @@ class TestEntry47_4And47_5(unittest.TestCase):
         self.assertEqual(len(hy.attached_card_ids), 0)
 
 
+class TestDiscardFloraFrom(unittest.TestCase):
+    """Tests for _discard_flora_from: should only discard FacedownCards whose backside has Flora trait."""
+
+    def _setup_hy_with_mixed_attachments(self):
+        """Set up Hy with a mix of flora facedown, non-flora facedown, and regular attachments."""
+        hy = HyPimpotChef()
+        ranger = make_test_ranger()
+        location = Card(title="Lone Tree Station", id="location",
+                        card_types={CardType.LOCATION}, progress_threshold=4)
+
+        flora = make_flora_card("Test Flora")
+        non_flora = Card(title="Rocky Outcrop", id="rock",
+                         card_types={CardType.PATH, CardType.FEATURE},
+                         traits={"Mineral"}, presence=1,
+                         starting_area=Area.ALONG_THE_WAY)
+        regular_attachment = Card(title="Helping Hand", id="helping",
+                                 card_types={CardType.ATTACHMENT})
+
+        state = GameState(
+            ranger=ranger, location=location,
+            areas={
+                Area.SURROUNDINGS: [location],
+                Area.ALONG_THE_WAY: [flora, non_flora],
+                Area.WITHIN_REACH: [hy, regular_attachment],
+                Area.PLAYER_AREA: [],
+            }
+        )
+        eng = GameEngine(state)
+
+        # Attach a facedown flora
+        facedown_flora = flora.flip(eng)
+        eng.attach(facedown_flora, hy)
+
+        # Attach a facedown non-flora
+        facedown_non_flora = non_flora.flip(eng)
+        eng.attach(facedown_non_flora, hy)
+
+        # Attach a regular (non-facedown) card
+        eng.attach(regular_attachment, hy)
+
+        return hy, eng, state
+
+    def test_discards_only_flora_facedown_cards(self):
+        """_discard_flora_from should discard facedown Flora but leave non-Flora facedown and regular attachments."""
+        hy, eng, state = self._setup_hy_with_mixed_attachments()
+
+        # Hy should have 3 attachments before
+        self.assertEqual(len(hy.attached_card_ids), 3)
+
+        eng.campaign_guide._discard_flora_from(hy, eng)
+
+        # Should have 2 remaining: the non-flora facedown and the regular attachment
+        self.assertEqual(len(hy.attached_card_ids), 2,
+                        "Should keep non-Flora facedown and regular attachment")
+        remaining = [state.get_card_by_id(aid) for aid in hy.attached_card_ids]
+        remaining_backsides = [
+            c.backside.title for c in remaining
+            if c is not None and isinstance(c, FacedownCard) and c.backside is not None
+        ]
+        self.assertIn("Rocky Outcrop", remaining_backsides,
+                      "Non-Flora facedown should remain")
+        self.assertNotIn("Test Flora", remaining_backsides,
+                        "Flora facedown should be gone")
+
+    def test_no_crash_when_no_attachments(self):
+        """_discard_flora_from should handle a card with no attachments gracefully."""
+        hy = HyPimpotChef()
+        ranger = make_test_ranger()
+        location = Card(title="Lone Tree Station", id="location",
+                        card_types={CardType.LOCATION})
+        state = GameState(
+            ranger=ranger, location=location,
+            areas={
+                Area.SURROUNDINGS: [location],
+                Area.ALONG_THE_WAY: [],
+                Area.WITHIN_REACH: [hy],
+                Area.PLAYER_AREA: [],
+            }
+        )
+        eng = GameEngine(state)
+
+        # Should not raise
+        eng.campaign_guide._discard_flora_from(hy, eng)
+        self.assertEqual(len(hy.attached_card_ids), 0)
+
+
 # ============================================================
 # Integration Tests: Entry 47.6 (harm clear, ends day)
 # ============================================================

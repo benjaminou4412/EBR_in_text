@@ -25,8 +25,12 @@ CARD_JSON_FILES = {
 
 def get_project_root() -> Path:
     """Get the project root directory"""
-    # Assumes this file is in src/, so parent is project root
-    return Path(__file__).parent.parent
+    current = Path(__file__).resolve().parent
+    while current != current.parent:
+        if (current / "README.md").exists():
+            return current
+        current = current.parent
+    raise RuntimeError("Could not find project root")
 
 def load_card_fields(title: str, card_set: str) -> dict: # type: ignore
     """

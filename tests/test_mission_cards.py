@@ -556,6 +556,114 @@ class Entry91RoutingTests(unittest.TestCase):
         self.assertTrue(result, "Entry 91.8 should return True (Quisi discarded)")
 
 
+class Entry91SubEntryTests(unittest.TestCase):
+    """Tests for the individual 91.x sub-entries that contain state mutations.
+    Covers Kordo/Nal routing (91.1, 91.2, 91.5, 91.6) and harm routing."""
+
+    def test_entry_91_routes_to_91_1_for_kordo_entering_play(self):
+        """Entry 91 should route to 91.1 when Kordo enters play."""
+        state, biscuit = make_test_state_with_mission()
+        kordo = Card(id="kordo", title="Kordo, Ranger Veteran",
+                     card_types={CardType.PATH, CardType.BEING}, traits={"Human"},
+                     presence=3)
+        engine = GameEngine(state)
+        engine.clear_messages()
+
+        result = engine.campaign_guide.entries["91"](kordo, engine, None)
+
+        messages = " ".join(m.message for m in engine.message_queue)
+        self.assertIn("91.1", messages)
+        self.assertFalse(result, "91.1 should return False (Kordo stays in play)")
+
+    def test_entry_91_routes_to_91_2_for_nal_entering_play(self):
+        """Entry 91 should route to 91.2 when Spirit Speaker Nal enters play."""
+        state, biscuit = make_test_state_with_mission()
+        nal = Card(id="nal", title="Spirit Speaker Nal",
+                   card_types={CardType.PATH, CardType.BEING}, traits={"Human"},
+                   presence=3)
+        engine = GameEngine(state)
+        engine.clear_messages()
+
+        result = engine.campaign_guide.entries["91"](nal, engine, None)
+
+        messages = " ".join(m.message for m in engine.message_queue)
+        self.assertIn("91.2", messages)
+        self.assertFalse(result, "91.2 should return False (Nal stays in play)")
+
+    def test_entry_91_5_kordo_cleared_soothes_and_discards(self):
+        """Entry 91.5 (Kordo cleared by progress) should soothe 2 and discard Kordo."""
+        state, biscuit = make_test_state_with_mission()
+        kordo = Card(id="kordo", title="Kordo, Ranger Veteran",
+                     card_types={CardType.PATH, CardType.BEING}, traits={"Human"},
+                     presence=3)
+        state.areas[Area.ALONG_THE_WAY].append(kordo)
+        state.ranger.fatigue_stack = [
+            Card(id=f"fat{i}", title=f"Fatigue {i}") for i in range(4)
+        ]
+        engine = GameEngine(state)
+        engine.clear_messages()
+
+        result = engine.campaign_guide.entries["91"](kordo, engine, "progress")
+
+        messages = " ".join(m.message for m in engine.message_queue)
+        self.assertIn("91.5", messages)
+        self.assertTrue(result, "91.5 should return True (Kordo discarded)")
+        self.assertEqual(len(state.ranger.fatigue_stack), 2,
+                        "Should soothe 2 fatigue (4 - 2 = 2)")
+        self.assertNotIn(kordo, state.areas[Area.ALONG_THE_WAY],
+                        "Kordo should be removed from play")
+
+    def test_entry_91_6_nal_cleared_soothes_and_discards(self):
+        """Entry 91.6 (Nal cleared by progress) should soothe 2 and discard Nal."""
+        state, biscuit = make_test_state_with_mission()
+        nal = Card(id="nal", title="Spirit Speaker Nal",
+                   card_types={CardType.PATH, CardType.BEING}, traits={"Human"},
+                   presence=3)
+        state.areas[Area.ALONG_THE_WAY].append(nal)
+        state.ranger.fatigue_stack = [
+            Card(id=f"fat{i}", title=f"Fatigue {i}") for i in range(4)
+        ]
+        engine = GameEngine(state)
+        engine.clear_messages()
+
+        result = engine.campaign_guide.entries["91"](nal, engine, "progress")
+
+        messages = " ".join(m.message for m in engine.message_queue)
+        self.assertIn("91.6", messages)
+        self.assertTrue(result, "91.6 should return True (Nal discarded)")
+        self.assertEqual(len(state.ranger.fatigue_stack), 2,
+                        "Should soothe 2 fatigue (4 - 2 = 2)")
+        self.assertNotIn(nal, state.areas[Area.ALONG_THE_WAY],
+                        "Nal should be removed from play")
+
+    def test_entry_91_raises_for_unknown_card_entering_play(self):
+        """Entry 91 should raise RuntimeError for an unexpected source card."""
+        state, biscuit = make_test_state_with_mission()
+        random_card = Card(id="rando", title="Random Card")
+        engine = GameEngine(state)
+
+        with self.assertRaises(RuntimeError):
+            engine.campaign_guide.entries["91"](random_card, engine, None)
+
+    def test_entry_91_raises_for_unknown_card_cleared_by_progress(self):
+        """Entry 91 should raise RuntimeError for an unexpected card cleared by progress."""
+        state, biscuit = make_test_state_with_mission()
+        random_card = Card(id="rando", title="Random Card")
+        engine = GameEngine(state)
+
+        with self.assertRaises(RuntimeError):
+            engine.campaign_guide.entries["91"](random_card, engine, "progress")
+
+    def test_entry_91_raises_for_unknown_card_cleared_by_harm(self):
+        """Entry 91 should raise RuntimeError for an unexpected card cleared by harm."""
+        state, biscuit = make_test_state_with_mission()
+        random_card = Card(id="rando", title="Random Card")
+        engine = GameEngine(state)
+
+        with self.assertRaises(RuntimeError):
+            engine.campaign_guide.entries["91"](random_card, engine, "harm")
+
+
 class BiscuitDeliverySunEffectTests(unittest.TestCase):
     """Tests for Biscuit Delivery's Sun challenge effect that searches for Quisi."""
 

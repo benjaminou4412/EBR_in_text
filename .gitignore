@@ -34,3 +34,4 @@ saves/autosave_*.json
 
 # Mutation testing
 mutants
+.mutmut-cache
