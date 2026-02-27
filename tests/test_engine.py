@@ -261,6 +261,83 @@ class EngineTests(unittest.TestCase):
         self.assertEqual(feature.progress, 1, "Feature should have 1 progress")
 
 
+class NonTestActionTests(unittest.TestCase):
+    """Tests for non-test actions (Rest, Play, Exhaust) routed through perform_test."""
+
+    def _make_engine(self, target: Card | None = None) -> GameEngine:
+        ranger = RangerState(
+            name="Ranger", hand=[],
+            aspects={Aspect.AWA: 3, Aspect.FIT: 2, Aspect.SPI: 2, Aspect.FOC: 1},
+        )
+        areas = {
+            Area.SURROUNDINGS: [],
+            Area.ALONG_THE_WAY: [target] if target else [],
+            Area.WITHIN_REACH: [],
+            Area.PLAYER_AREA: [],
+        }
+        return GameEngine(GameState(ranger=ranger, areas=areas))
+
+    def test_non_test_action_calls_on_success_with_zero_effort(self):
+        """on_success must receive effort=0 for non-test actions."""
+        received: list[tuple] = []
+
+        def track_success(engine, effort, target):
+            received.append((effort, target))
+
+        action = Action(
+            id="rest", name="Rest", aspect="", approach="",
+            is_test=False, on_success=track_success,
+        )
+        eng = self._make_engine()
+        eng.perform_test(action, CommitDecision(), target_id=None)
+
+        self.assertEqual(len(received), 1, "on_success should be called exactly once")
+        self.assertEqual(received[0][0], 0, "effort passed to on_success should be 0")
+        self.assertIsNone(received[0][1], "target should be None when no target_id given")
+
+    def test_non_test_action_returns_correct_outcome(self):
+        """Returned ChallengeOutcome should indicate success with zero effort."""
+        action = Action(
+            id="rest", name="Rest", aspect="", approach="",
+            is_test=False,
+        )
+        eng = self._make_engine()
+        outcome = eng.perform_test(action, CommitDecision(), target_id=None)
+
+        self.assertTrue(outcome.success)
+        self.assertEqual(outcome.resulting_effort, 0)
+        self.assertEqual(outcome.modifier, 0)
+        self.assertEqual(outcome.symbol, ChallengeIcon.SUN)
+
+    def test_non_test_action_passes_target_to_on_success(self):
+        """on_success receives the resolved target card when target_id is provided."""
+        received_target: list = []
+        target = Card(id="t1", title="Target Feature")
+
+        action = Action(
+            id="play", name="Play", aspect="", approach="",
+            is_test=False, is_play=True,
+            on_success=lambda eng, effort, t: received_target.append(t),
+        )
+        eng = self._make_engine(target=target)
+        eng.perform_test(action, CommitDecision(), target_id="t1")
+
+        self.assertEqual(len(received_target), 1)
+        self.assertIs(received_target[0], target)
+
+    def test_non_test_action_does_not_draw_challenge_card(self):
+        """Non-test actions should skip the challenge deck entirely."""
+        action = Action(
+            id="rest", name="Rest", aspect="", approach="",
+            is_test=False,
+        )
+        eng = self._make_engine()
+        # Don't set up a challenge deck at all — if it tries to draw, it'll error
+        eng.state.challenge_deck = None  # type: ignore[assignment]
+        # Should not raise
+        eng.perform_test(action, CommitDecision(), target_id=None)
+
+
 class CommonTestsTests(unittest.TestCase):
     """Tests for the four common tests: Traverse, Connect, Avoid, Remember"""
 

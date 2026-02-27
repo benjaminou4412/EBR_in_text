@@ -14,9 +14,7 @@ from .campaign_guide import CampaignGuide
 
 @dataclass
 class ChallengeOutcome:
-    base_effort: int
     modifier: int
-    difficulty: int
     symbol: ChallengeIcon
     resulting_effort: int
     success: bool
@@ -279,7 +277,7 @@ class GameEngine:
 
         if not action.is_test:
             action.on_success(self, 0, target_card)
-            return ChallengeOutcome(difficulty=0, base_effort=0, modifier=0, symbol=ChallengeIcon.SUN, resulting_effort=0, success=True)
+            return ChallengeOutcome(modifier=0, symbol=ChallengeIcon.SUN, resulting_effort=0, success=True)
 
         r = self.state.ranger        
 
@@ -417,8 +415,6 @@ class GameEngine:
             self.remove_listeners_by_id(listener_id)
 
         return ChallengeOutcome(
-            difficulty=difficulty,
-            base_effort=base_effort,
             modifier=mod, symbol=icon,
             resulting_effort=effort,
             success=success
