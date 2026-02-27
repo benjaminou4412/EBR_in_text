@@ -117,15 +117,14 @@ back values the caller already knew. Removed both fields from the dataclass. Kep
 and `symbol` (challenge deck draw results that may matter for future effects).
 Remaining mutations on `modifier`/`symbol` are acceptable until downstream consumers exist.
 
-**Theme 3: Challenge effect ordering and resolution (~12 mutations)**
-In the Step 5 loop that resolves Sun/Mountain/Crest effects across areas:
-- `and` → `or` in the retrigger guard survives (no test has a card that would retrigger)
-- `len(resolvable_cards) > 1` → `>= 1` or `> 2` survives (no test has exactly 1 vs multiple)
-- `zero_challenge_effects_resolved` flag mutations survive (no test checks the
-  "No challenge effects resolved" message or this state)
-
-**FIX:** Add test with multiple resolvable challenge effects in different areas to verify
-ordering and retrigger prevention. Check the "no effects" message for an empty case.
+**Theme 3: Challenge effect ordering and resolution (~12 mutations) — RESOLVED**
+Added `ChallengeResolutionTests` class (5 tests) with a `_SunEffectCard` helper in test_engine.py:
+- Retrigger guard: card moves from SURROUNDINGS→WITHIN_REACH during resolution, asserts handler
+  fires exactly once (kills `and`→`or` on `already_resolved_ids` check)
+- Order decider boundary: 2 cards in same area → decider called; 1 card → decider NOT called
+  (kills `> 1` → `>= 1` and `> 2`)
+- No-effects message: asserted present when no handlers exist, asserted absent when effects
+  resolve (kills flag init/set/conditional mutations)
 
 **Theme 4: Completely untested phase functions (108 no-tests)**
 `execute_travel` (62) and `phase3_travel` (46) have zero test coverage. These are the travel
@@ -179,7 +178,7 @@ High value / easy fixes:
 - [ ] Test phase4_refresh with injured vs uninjured ranger
 
 Medium value:
-- [ ] Test challenge effect ordering with multiple resolvable cards
+- [x] Test challenge effect ordering with multiple resolvable cards
 - [ ] Test scout_cards boundary conditions and pile ordering
 - [ ] Test move_token type routing (progress vs harm vs unique tokens)
 - [ ] Test move_ranger_token_to_card with PREVENT_RANGER_TOKEN_MOVE blocker

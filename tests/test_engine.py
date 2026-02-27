@@ -1606,6 +1606,146 @@ class KeywordTests(unittest.TestCase):
         self.assertIn(doe, valid_targets)
 
 
+class _SunEffectCard(Card):
+    """Test helper: card with a SUN challenge handler that tracks call count."""
+
+    def __post_init__(self):
+        super().__post_init__()
+        self.call_count = 0
+        self._move_to: Area | None = None
+
+    def get_challenge_handlers(self):
+        return {ChallengeIcon.SUN: self._sun_effect}
+
+    def _sun_effect(self, engine):
+        self.call_count += 1
+        if self._move_to is not None:
+            for area_cards in engine.state.areas.values():
+                if self in area_cards:
+                    area_cards.remove(self)
+                    break
+            engine.state.areas[self._move_to].append(self)
+        return True
+
+
+class ChallengeResolutionTests(unittest.TestCase):
+    """Tests for Step 5 challenge effect ordering, retrigger guards, and the no-effects message."""
+
+    def _make_engine(self, areas: dict[Area, list]) -> GameEngine:
+        ranger = RangerState(
+            name="Ranger", hand=[],
+            aspects={Aspect.AWA: 3, Aspect.FIT: 2, Aspect.SPI: 2, Aspect.FOC: 1},
+        )
+        state = GameState(ranger=ranger, areas=areas)
+        stack_deck(state, Aspect.AWA, 0, ChallengeIcon.SUN)
+        return GameEngine(state)
+
+    def _dummy_action(self) -> Action:
+        return Action(
+            id="dummy", name="dummy",
+            aspect=Aspect.AWA, approach=Approach.EXPLORATION,
+            difficulty_fn=lambda _s, _t: 1,
+            on_success=lambda _e, _eff, _t: None,
+        )
+
+    # --- Retrigger guard (and → or on already_resolved_ids check) ---
+
+    def test_card_moving_to_later_area_does_not_retrigger(self):
+        """A card that resolves in SURROUNDINGS and moves itself to WITHIN_REACH
+        must not resolve again when the loop reaches WITHIN_REACH."""
+        card = _SunEffectCard(id="mover", title="Mover")
+        card._move_to = Area.WITHIN_REACH
+
+        eng = self._make_engine(areas={
+            Area.SURROUNDINGS: [card],
+            Area.ALONG_THE_WAY: [],
+            Area.WITHIN_REACH: [],
+            Area.PLAYER_AREA: [],
+        })
+        eng.perform_test(self._dummy_action(), CommitDecision(energy=1, hand_indices=[]), target_id=None)
+
+        self.assertEqual(card.call_count, 1, "Handler should fire once, not again after moving to a later area")
+        self.assertIn(card, eng.state.areas[Area.WITHIN_REACH], "Card should end up in WITHIN_REACH")
+
+    # --- order_decider invocation (len > 1 boundary) ---
+
+    def test_order_decider_called_for_two_resolvable_cards_in_same_area(self):
+        """When two cards have resolvable effects in the same area, order_decider must be invoked."""
+        card_a = _SunEffectCard(id="a", title="A")
+        card_b = _SunEffectCard(id="b", title="B")
+
+        eng = self._make_engine(areas={
+            Area.SURROUNDINGS: [],
+            Area.ALONG_THE_WAY: [],
+            Area.WITHIN_REACH: [card_a, card_b],
+            Area.PLAYER_AREA: [],
+        })
+
+        order_calls: list[list] = []
+        original_decider = eng.order_decider
+        def tracking_decider(engine, cards, prompt):
+            order_calls.append(list(cards))
+            return original_decider(engine, cards, prompt)
+        eng.order_decider = tracking_decider
+
+        eng.perform_test(self._dummy_action(), CommitDecision(energy=1, hand_indices=[]), target_id=None)
+
+        self.assertEqual(len(order_calls), 1, "order_decider should be called once for the area")
+        self.assertEqual(len(order_calls[0]), 2, "order_decider should receive both cards")
+
+    def test_order_decider_not_called_for_single_resolvable_card(self):
+        """When only one card has a resolvable effect in an area, order_decider must NOT be invoked."""
+        card = _SunEffectCard(id="solo", title="Solo")
+
+        eng = self._make_engine(areas={
+            Area.SURROUNDINGS: [],
+            Area.ALONG_THE_WAY: [],
+            Area.WITHIN_REACH: [card],
+            Area.PLAYER_AREA: [],
+        })
+
+        order_calls: list = []
+        eng.order_decider = lambda engine, cards, prompt: (order_calls.append(1), cards)[1]
+
+        eng.perform_test(self._dummy_action(), CommitDecision(energy=1, hand_indices=[]), target_id=None)
+
+        self.assertEqual(len(order_calls), 0, "order_decider should not be called for a single card")
+        self.assertEqual(card.call_count, 1, "The single card's effect should still resolve")
+
+    # --- zero_challenge_effects_resolved flag ---
+
+    def test_no_effects_message_when_no_handlers_exist(self):
+        """'No challenge effects resolved.' should appear when no cards have handlers for the drawn icon."""
+        plain_card = Card(id="plain", title="Plain Card")
+
+        eng = self._make_engine(areas={
+            Area.SURROUNDINGS: [],
+            Area.ALONG_THE_WAY: [],
+            Area.WITHIN_REACH: [plain_card],
+            Area.PLAYER_AREA: [],
+        })
+        eng.perform_test(self._dummy_action(), CommitDecision(energy=1, hand_indices=[]), target_id=None)
+
+        messages = [msg.message for msg in eng.get_messages()]
+        self.assertIn("No challenge effects resolved.", messages)
+
+    def test_no_effects_message_absent_when_effects_do_resolve(self):
+        """'No challenge effects resolved.' must NOT appear when at least one effect resolved."""
+        card = _SunEffectCard(id="active", title="Active")
+
+        eng = self._make_engine(areas={
+            Area.SURROUNDINGS: [],
+            Area.ALONG_THE_WAY: [],
+            Area.WITHIN_REACH: [card],
+            Area.PLAYER_AREA: [],
+        })
+        eng.perform_test(self._dummy_action(), CommitDecision(energy=1, hand_indices=[]), target_id=None)
+
+        messages = [msg.message for msg in eng.get_messages()]
+        self.assertNotIn("No challenge effects resolved.", messages)
+        self.assertEqual(card.call_count, 1)
+
+
 class ChallengeRetriggerPreventionTests(unittest.TestCase):
     """Tests for preventing challenge effects from retriggering when cards move during challenge resolution"""
 
