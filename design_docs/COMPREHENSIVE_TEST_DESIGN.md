@@ -126,16 +126,14 @@ Added `ChallengeResolutionTests` class (5 tests) with a `_SunEffectCard` helper 
 - No-effects message: asserted present when no handlers exist, asserted absent when effects
   resolve (kills flag init/set/conditional mutations)
 
-**Theme 4: Completely untested phase functions (108 no-tests)**
-`execute_travel` (62) and `phase3_travel` (46) have zero test coverage. These are the travel
-system — checking progress thresholds, travel blockers, clearing the play area, building the
-new path deck, and running arrival setup.
-
-**FIX:** These are complex multi-step flows. Worth testing at least:
-- Travel eligibility check (progress threshold met vs. not met)
-- Travel blocker constant abilities
-- Play area cleanup during travel (non-Persistent cards discarded)
-- Path deck reconstruction after travel
+**Theme 4: Completely untested phase functions (108 no-tests) — RESOLVED**
+Added `Phase3TravelTests` (7 tests) and `ExecuteTravelTests` (9 tests) in test_engine.py.
+Uses real LoneTreeStation/OvergrownThicket cards and prompt-aware response_decider callbacks.
+- phase3_travel: insufficient/sufficient progress, accept/decline, active/exhausted Obstacle
+  blocker, ranger-token-based travel (token on location vs elsewhere)
+- execute_travel: non-persistent path cards discarded, Persistent cards survive, ranger cards
+  in path areas discarded (but PLAYER_AREA preserved), path deck/discard cleared and rebuilt,
+  location changes to destination, camping raises DayEndException, not camping returns False
 
 **Theme 5: `enforce_equip_limit` (34 survived)**
 Tests exercise this function but don't verify the equip limit value (5), the gear filtering,
@@ -184,6 +182,6 @@ Medium value:
 - [ ] Test move_ranger_token_to_card with PREVENT_RANGER_TOKEN_MOVE blocker
 
 Lower priority (complex setup, lower ROI):
-- [ ] Test execute_travel (multi-step, needs full state setup)
-- [ ] Test phase3_travel eligibility and blockers
+- [x] Test execute_travel (multi-step, needs full state setup)
+- [x] Test phase3_travel eligibility and blockers
 - [ ] Test arrival_setup path deck construction

@@ -1905,5 +1905,272 @@ class ChallengeRetriggerPreventionTests(unittest.TestCase):
                         "Doe's Sun effect should trigger again on the second test")
 
 
+class Phase3TravelTests(unittest.TestCase):
+    """Tests for phase3_travel: eligibility checks and travel blockers."""
+
+    def _make_engine(self, location: Card, extra_cards: dict[Area, list] | None = None,
+                     response_decider=None) -> GameEngine:
+        """Build a GameEngine with the given location in SURROUNDINGS."""
+        ranger = RangerState(
+            name="Ranger", hand=[],
+            aspects={Aspect.AWA: 3, Aspect.FIT: 2, Aspect.SPI: 2, Aspect.FOC: 1},
+        )
+        areas = {
+            Area.SURROUNDINGS: [location],
+            Area.ALONG_THE_WAY: [],
+            Area.WITHIN_REACH: [],
+            Area.PLAYER_AREA: [],
+        }
+        if extra_cards:
+            for area, cards in extra_cards.items():
+                areas[area].extend(cards)
+        state = GameState(ranger=ranger, areas=areas, location=location)
+        stack_deck(state, Aspect.AWA, 0, ChallengeIcon.SUN)
+        return GameEngine(state, response_decider=response_decider)
+
+    def test_insufficient_progress_blocks_travel(self):
+        """Location with progress < threshold should not allow travel."""
+        location = LoneTreeStation()  # progress_threshold = 3
+        location.progress = 2
+        eng = self._make_engine(location)
+        result = eng.phase3_travel()
+
+        self.assertFalse(result)
+        messages = [m.message for m in eng.get_messages()]
+        self.assertTrue(any("insufficient" in m.lower() for m in messages))
+
+    def test_sufficient_progress_allows_travel_when_accepted(self):
+        """Location with progress >= threshold should offer travel; accepting triggers execute_travel."""
+        location = LoneTreeStation()
+        location.progress = 3
+
+        # Say yes to "travel?" but no to "camp?"
+        eng = self._make_engine(location,
+                                response_decider=lambda _e, p: "camp" not in p.lower())
+        result = eng.phase3_travel()
+
+        self.assertFalse(result, "Should return False when not camping")
+        self.assertNotEqual(eng.state.location.title, "Lone Tree Station",
+                            "Location should have changed after travel")
+
+    def test_sufficient_progress_declined_does_not_travel(self):
+        """If ranger declines to travel, nothing happens."""
+        location = LoneTreeStation()
+        location.progress = 3
+        eng = self._make_engine(location, response_decider=lambda _e, _p: False)
+        result = eng.phase3_travel()
+
+        self.assertFalse(result)
+        self.assertEqual(eng.state.location.title, "Lone Tree Station",
+                         "Location should remain unchanged when travel declined")
+
+    def test_active_obstacle_blocks_travel(self):
+        """A ready Obstacle card should prevent travel even with enough progress."""
+        location = LoneTreeStation()
+        location.progress = 5  # well above threshold
+
+        thicket = OvergrownThicket()  # has Obstacle keyword → PREVENT_TRAVEL when ready
+        eng = self._make_engine(location,
+                                extra_cards={Area.WITHIN_REACH: [thicket]})
+        result = eng.phase3_travel()
+
+        self.assertFalse(result)
+        messages = [m.message for m in eng.get_messages()]
+        self.assertTrue(any("cannot travel" in m.lower() for m in messages))
+
+    def test_exhausted_obstacle_does_not_block_travel(self):
+        """An exhausted Obstacle should not prevent travel."""
+        location = LoneTreeStation()
+        location.progress = 3
+
+        thicket = OvergrownThicket()
+        thicket.exhausted = True
+        eng = self._make_engine(location,
+                                extra_cards={Area.WITHIN_REACH: [thicket]},
+                                response_decider=lambda _e, p: "camp" not in p.lower())
+        result = eng.phase3_travel()
+
+        # Travel should proceed (not blocked)
+        self.assertNotEqual(eng.state.location.title, "Lone Tree Station",
+                            "Should have traveled despite exhausted obstacle")
+
+    def test_ranger_token_travel_allowed_when_token_on_location(self):
+        """Locations with ranger-token clearing allow travel when token is there."""
+        location = Card(id="token-loc", title="Token Location",
+                        progress_clears_by_ranger_tokens=True)
+        eng = self._make_engine(location, response_decider=lambda _e, _p: True)
+        eng.state.ranger.ranger_token_location = location.id
+
+        # execute_travel will fail (no real destinations), but we can check the path
+        # by mocking execute_travel instead — or just verify the prompt gets called
+        prompts: list[str] = []
+        def tracking_decider(_e, prompt):
+            prompts.append(prompt)
+            return False  # decline travel to avoid execute_travel complexity
+        eng.response_decider = tracking_decider
+
+        eng.phase3_travel()
+        self.assertTrue(any("Ranger Token" in p for p in prompts),
+                        "Should offer ranger-token-based travel")
+
+    def test_ranger_token_travel_blocked_when_token_elsewhere(self):
+        """Locations with ranger-token clearing block travel when token is on another card."""
+        location = Card(id="token-loc", title="Token Location",
+                        progress_clears_by_ranger_tokens=True)
+        eng = self._make_engine(location)
+        eng.state.ranger.ranger_token_location = "some-other-card"
+
+        result = eng.phase3_travel()
+        self.assertFalse(result)
+        messages = [m.message for m in eng.get_messages()]
+        self.assertTrue(any("not yet on the location" in m.lower() for m in messages))
+
+
+class ExecuteTravelTests(unittest.TestCase):
+    """Tests for execute_travel: play area cleanup, destination change, and camping."""
+
+    def _make_travel_engine(self, extra_path_cards: list[Card] | None = None,
+                            extra_ranger_cards: dict[Area, list[Card]] | None = None,
+                            response_decider=None) -> GameEngine:
+        """Build an engine ready for execute_travel with LoneTreeStation as current location."""
+        location = LoneTreeStation()
+        ranger = RangerState(
+            name="Ranger", hand=[],
+            aspects={Aspect.AWA: 3, Aspect.FIT: 2, Aspect.SPI: 2, Aspect.FOC: 1},
+        )
+        areas: dict[Area, list] = {
+            Area.SURROUNDINGS: [location],
+            Area.ALONG_THE_WAY: [],
+            Area.WITHIN_REACH: [],
+            Area.PLAYER_AREA: [],
+        }
+        if extra_path_cards:
+            areas[Area.WITHIN_REACH].extend(extra_path_cards)
+        if extra_ranger_cards:
+            for area, cards in extra_ranger_cards.items():
+                areas[area].extend(cards)
+
+        state = GameState(ranger=ranger, areas=areas, location=location,
+                          path_deck=[Card(id="pd1", title="Deck Card")],
+                          path_discard=[Card(id="pd2", title="Discard Card")])
+        stack_deck(state, Aspect.AWA, 0, ChallengeIcon.SUN)
+        return GameEngine(state, response_decider=response_decider)
+
+    def test_non_persistent_path_cards_discarded_during_travel(self):
+        """Non-persistent path cards should be removed from play areas during travel."""
+        doe = SitkaDoe()
+        thicket = OvergrownThicket()
+        thicket.exhausted = True  # exhaust so it doesn't block travel via phase3
+
+        eng = self._make_travel_engine(
+            extra_path_cards=[doe, thicket],
+            response_decider=lambda _e, _p: False,  # decline camping
+        )
+        eng.execute_travel()
+
+        all_in_play = eng.state.all_cards_in_play()
+        self.assertNotIn(doe, all_in_play, "Non-persistent path card should be discarded")
+        self.assertNotIn(thicket, all_in_play, "Non-persistent path card should be discarded")
+
+    def test_persistent_path_card_survives_travel(self):
+        """Path cards with the Persistent keyword should stay in play after travel."""
+        persistent_card = Card(id="persist", title="Persistent Feature",
+                               card_types={CardType.PATH},
+                               keywords={Keyword.PERSISTENT})
+
+        eng = self._make_travel_engine(
+            extra_path_cards=[persistent_card],
+            response_decider=lambda _e, _p: False,
+        )
+        eng.execute_travel()
+
+        all_in_play = eng.state.all_cards_in_play()
+        self.assertIn(persistent_card, all_in_play,
+                      "Persistent path card should remain in play after travel")
+
+    def test_ranger_cards_in_path_areas_discarded(self):
+        """Non-persistent ranger cards in path areas (not PLAYER_AREA) should be discarded."""
+        ranger_card = Card(id="rc1", title="Ranger Gear",
+                           card_types={CardType.RANGER, CardType.GEAR})
+
+        eng = self._make_travel_engine(
+            extra_ranger_cards={Area.ALONG_THE_WAY: [ranger_card]},
+            response_decider=lambda _e, _p: False,
+        )
+        eng.execute_travel()
+
+        all_in_play = eng.state.all_cards_in_play()
+        self.assertNotIn(ranger_card, all_in_play,
+                         "Ranger card in path area should be discarded during travel")
+        self.assertIn(ranger_card, eng.state.ranger.discard,
+                      "Ranger card should go to ranger discard pile")
+
+    def test_ranger_cards_in_player_area_not_discarded(self):
+        """Ranger cards in PLAYER_AREA should NOT be discarded during travel."""
+        player_card = Card(id="pc1", title="Player Gear",
+                           card_types={CardType.RANGER, CardType.GEAR})
+
+        eng = self._make_travel_engine(response_decider=lambda _e, _p: False)
+        eng.state.areas[Area.PLAYER_AREA].append(player_card)
+        eng.execute_travel()
+
+        all_in_play = eng.state.all_cards_in_play()
+        self.assertIn(player_card, all_in_play,
+                      "Ranger card in PLAYER_AREA should survive travel")
+
+    def test_path_deck_and_discard_cleared(self):
+        """Path deck and path discard should be emptied during travel cleanup."""
+        eng = self._make_travel_engine(response_decider=lambda _e, _p: False)
+
+        self.assertTrue(len(eng.state.path_deck) > 0, "Precondition: path deck not empty")
+        self.assertTrue(len(eng.state.path_discard) > 0, "Precondition: path discard not empty")
+
+        eng.execute_travel()
+
+        # After travel, arrival_setup rebuilds path_deck, so check that OLD cards are gone
+        old_ids = {"pd1", "pd2"}
+        current_ids = {c.id for c in eng.state.path_deck}
+        self.assertTrue(old_ids.isdisjoint(current_ids),
+                        "Old path deck/discard contents should be gone after travel")
+
+    def test_location_changes_to_destination(self):
+        """After travel, the engine's location should be a different location."""
+        eng = self._make_travel_engine(response_decider=lambda _e, _p: False)
+        old_title = eng.state.location.title
+
+        eng.execute_travel()
+
+        self.assertNotEqual(eng.state.location.title, old_title,
+                            "Location should change after travel")
+        self.assertIn(eng.state.location, eng.state.areas[Area.SURROUNDINGS],
+                      "New location should be in SURROUNDINGS")
+
+    def test_path_deck_rebuilt_after_travel(self):
+        """After travel (without camping), arrival_setup should rebuild the path deck."""
+        eng = self._make_travel_engine(response_decider=lambda _e, _p: False)
+        eng.execute_travel()
+
+        self.assertTrue(len(eng.state.path_deck) > 0,
+                        "Path deck should be rebuilt by arrival_setup after travel")
+
+    def test_camping_ends_day(self):
+        """Choosing to camp during travel should raise DayEndException."""
+        # response_decider returns True for both "travel?" and "camp?" prompts
+        eng = self._make_travel_engine(response_decider=lambda _e, _p: True)
+
+        with self.assertRaises(DayEndException):
+            eng.execute_travel()
+
+        messages = [m.message for m in eng.get_messages()]
+        self.assertTrue(any("camp" in m.lower() for m in messages))
+
+    def test_not_camping_returns_false(self):
+        """Declining to camp should return False and continue to arrival setup."""
+        eng = self._make_travel_engine(response_decider=lambda _e, _p: False)
+
+        result = eng.execute_travel()
+        self.assertFalse(result)
+
+
 if __name__ == '__main__':
     unittest.main()
