@@ -139,14 +139,12 @@ Uses real LoneTreeStation/OvergrownThicket cards and prompt-aware response_decid
 Added `EnforceEquipLimitTests` (4 tests): at-limit (5, no discard), over-limit (6, triggers
 discard), non-gear cards not counted, and multiple discards until within limit.
 
-**Theme 6: `interaction_fatigue` (21 survived)**
-This calculates fatigue from ready non-Friendly cards between the ranger and the target.
-Mutations survive on: the card filtering logic, the area traversal, the display ID generation,
-and error messages. The existing Friendly keyword test verifies the SKIP case but doesn't
-verify the fatigue-APPLIED case deeply enough.
-
-**FIX:** Test that interaction fatigue actually fatigues the correct number of cards, and that
-exhausted cards between ranger and target don't cause fatigue.
+**Theme 6: `interaction_fatigue` (21 survived) — RESOLVED**
+Added `InteractionFatigueTests` (6 tests): ready card fatigues by presence value, exhausted
+card skipped, Friendly card skipped, target in SURROUNDINGS includes both inner areas, target
+in WITHIN_REACH excludes same-area cards, and no-cards-between message check.
+NOTE: rules mention "Within Reach (another Ranger)" should include WR cards as between — this
+is a multiplayer concern not yet implemented. Existing single-player behavior is correct.
 
 **Theme 7: `phase4_refresh` (24 survived)**
 The refresh phase (injury fatigue, draw card, refill energy, ready cards) is exercised
@@ -169,7 +167,7 @@ High value / easy fixes:
 - [x] Trim dead fields from ChallengeOutcome (removed `difficulty`, `base_effort`)
 - [x] Add non-test action (Rest) test through perform_test
 - [x] Test enforce_equip_limit boundary (5 vs 6 equip value)
-- [ ] Test interaction_fatigue actually applying fatigue (not just Friendly skip)
+- [x] Test interaction_fatigue actually applying fatigue (not just Friendly skip)
 - [ ] Test phase4_refresh with injured vs uninjured ranger
 
 Medium value:

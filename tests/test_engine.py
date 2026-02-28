@@ -2249,5 +2249,124 @@ class EnforceEquipLimitTests(unittest.TestCase):
         self.assertEqual(len(in_play), 1, "Two gear should have been discarded")
 
 
+class InteractionFatigueTests(unittest.TestCase):
+    """Tests for interaction_fatigue: fatigue from ready non-Friendly cards between ranger and target."""
+
+    def _make_engine(self, areas: dict[Area, list], deck_size: int = 10) -> GameEngine:
+        ranger = RangerState(
+            name="Ranger",
+            hand=[],
+            deck=[Card(id=f"deck{i}", title=f"Deck {i}") for i in range(deck_size)],
+            aspects={Aspect.AWA: 3, Aspect.FIT: 2, Aspect.SPI: 2, Aspect.FOC: 1},
+        )
+        state = GameState(ranger=ranger, areas=areas)
+        return GameEngine(state)
+
+    def test_ready_card_fatigues_by_presence(self):
+        """A ready non-Friendly card between ranger and target should fatigue by its presence."""
+        blocker = Card(id="blocker", title="Blocker", presence=2,
+                       card_types={CardType.PATH, CardType.BEING})
+        target = Card(id="target", title="Target", presence=1,
+                      card_types={CardType.PATH, CardType.FEATURE})
+        eng = self._make_engine(areas={
+            Area.SURROUNDINGS: [],
+            Area.ALONG_THE_WAY: [target],
+            Area.WITHIN_REACH: [blocker],
+            Area.PLAYER_AREA: [],
+        })
+        initial_deck = len(eng.state.ranger.deck)
+        eng.interaction_fatigue(eng.state.ranger, target)
+
+        self.assertEqual(len(eng.state.ranger.fatigue_stack), 2,
+                         "Should fatigue by blocker's presence (2)")
+        self.assertEqual(len(eng.state.ranger.deck), initial_deck - 2)
+
+    def test_exhausted_card_does_not_fatigue(self):
+        """An exhausted card between ranger and target should NOT cause fatigue."""
+        blocker = Card(id="blocker", title="Blocker", presence=2,
+                       card_types={CardType.PATH, CardType.BEING}, exhausted=True)
+        target = Card(id="target", title="Target", presence=1,
+                      card_types={CardType.PATH, CardType.FEATURE})
+        eng = self._make_engine(areas={
+            Area.SURROUNDINGS: [],
+            Area.ALONG_THE_WAY: [target],
+            Area.WITHIN_REACH: [blocker],
+            Area.PLAYER_AREA: [],
+        })
+        eng.interaction_fatigue(eng.state.ranger, target)
+
+        self.assertEqual(len(eng.state.ranger.fatigue_stack), 0,
+                         "Exhausted card should not cause fatigue")
+
+    def test_friendly_card_does_not_fatigue(self):
+        """A Friendly card between ranger and target should NOT cause fatigue."""
+        friendly = Card(id="friend", title="Friendly Being", presence=3,
+                        card_types={CardType.PATH, CardType.BEING},
+                        keywords={Keyword.FRIENDLY})
+        target = Card(id="target", title="Target", presence=1,
+                      card_types={CardType.PATH, CardType.FEATURE})
+        eng = self._make_engine(areas={
+            Area.SURROUNDINGS: [],
+            Area.ALONG_THE_WAY: [target],
+            Area.WITHIN_REACH: [friendly],
+            Area.PLAYER_AREA: [],
+        })
+        eng.interaction_fatigue(eng.state.ranger, target)
+
+        self.assertEqual(len(eng.state.ranger.fatigue_stack), 0,
+                         "Friendly card should not cause fatigue")
+
+    def test_target_in_surroundings_includes_both_inner_areas(self):
+        """Targeting SURROUNDINGS should fatigue from cards in Within Reach AND Along the Way."""
+        wr_card = Card(id="wr", title="WR Being", presence=1,
+                       card_types={CardType.PATH, CardType.BEING})
+        atw_card = Card(id="atw", title="ATW Being", presence=1,
+                        card_types={CardType.PATH, CardType.BEING})
+        target = Card(id="target", title="Target", presence=1,
+                      card_types={CardType.PATH, CardType.FEATURE})
+        eng = self._make_engine(areas={
+            Area.SURROUNDINGS: [target],
+            Area.ALONG_THE_WAY: [atw_card],
+            Area.WITHIN_REACH: [wr_card],
+            Area.PLAYER_AREA: [],
+        })
+        eng.interaction_fatigue(eng.state.ranger, target)
+
+        self.assertEqual(len(eng.state.ranger.fatigue_stack), 2,
+                         "Both WR and ATW cards should fatigue (1+1=2)")
+
+    def test_target_in_within_reach_no_fatigue_from_same_area(self):
+        """Targeting Within Reach should NOT include other Within Reach cards as 'between'."""
+        bystander = Card(id="bystander", title="Bystander", presence=2,
+                         card_types={CardType.PATH, CardType.BEING})
+        target = Card(id="target", title="Target", presence=1,
+                      card_types={CardType.PATH, CardType.FEATURE})
+        eng = self._make_engine(areas={
+            Area.SURROUNDINGS: [],
+            Area.ALONG_THE_WAY: [],
+            Area.WITHIN_REACH: [bystander, target],
+            Area.PLAYER_AREA: [],
+        })
+        eng.interaction_fatigue(eng.state.ranger, target)
+
+        self.assertEqual(len(eng.state.ranger.fatigue_stack), 0,
+                         "Cards in same area as target should not be 'between'")
+
+    def test_no_cards_between_message(self):
+        """When no cards are between ranger and target, a 'no interaction fatigue' message appears."""
+        target = Card(id="target", title="Target", presence=1,
+                      card_types={CardType.PATH, CardType.FEATURE})
+        eng = self._make_engine(areas={
+            Area.SURROUNDINGS: [],
+            Area.ALONG_THE_WAY: [target],
+            Area.WITHIN_REACH: [],
+            Area.PLAYER_AREA: [],
+        })
+        eng.interaction_fatigue(eng.state.ranger, target)
+
+        messages = [m.message for m in eng.get_messages()]
+        self.assertTrue(any("no interaction fatigue" in m.lower() for m in messages))
+
+
 if __name__ == '__main__':
     unittest.main()
