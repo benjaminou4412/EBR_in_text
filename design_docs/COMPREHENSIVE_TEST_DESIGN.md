@@ -135,12 +135,9 @@ Uses real LoneTreeStation/OvergrownThicket cards and prompt-aware response_decid
   in path areas discarded (but PLAYER_AREA preserved), path deck/discard cleared and rebuilt,
   location changes to destination, camping raises DayEndException, not camping returns False
 
-**Theme 5: `enforce_equip_limit` (34 survived)**
-Tests exercise this function but don't verify the equip limit value (5), the gear filtering,
-or the discard prompting. Mutations to `MAX_EQUIP = 5` → `6`, equip value fallback
-`or 0` → `or 1`, and the `has_type(CardType.GEAR)` filter all survive.
-
-**FIX:** Test with gear totaling exactly 5 (passes) vs. 6 (triggers discard prompt).
+**Theme 5: `enforce_equip_limit` (34 survived) — RESOLVED**
+Added `EnforceEquipLimitTests` (4 tests): at-limit (5, no discard), over-limit (6, triggers
+discard), non-gear cards not counted, and multiple discards until within limit.
 
 **Theme 6: `interaction_fatigue` (21 survived)**
 This calculates fatigue from ready non-Friendly cards between the ranger and the target.
@@ -171,7 +168,7 @@ appear in the correct deck positions.
 High value / easy fixes:
 - [x] Trim dead fields from ChallengeOutcome (removed `difficulty`, `base_effort`)
 - [x] Add non-test action (Rest) test through perform_test
-- [ ] Test enforce_equip_limit boundary (5 vs 6 equip value)
+- [x] Test enforce_equip_limit boundary (5 vs 6 equip value)
 - [ ] Test interaction_fatigue actually applying fatigue (not just Friendly skip)
 - [ ] Test phase4_refresh with injured vs uninjured ranger
 

@@ -2172,5 +2172,82 @@ class ExecuteTravelTests(unittest.TestCase):
         self.assertFalse(result)
 
 
+class EnforceEquipLimitTests(unittest.TestCase):
+    """Tests for enforce_equip_limit: the 5-equip-value cap on gear in Player Area."""
+
+    def _make_engine(self, gear_cards: list[Card],
+                     non_gear_cards: list[Card] | None = None) -> GameEngine:
+        ranger = RangerState(
+            name="Ranger", hand=[],
+            aspects={Aspect.AWA: 3, Aspect.FIT: 2, Aspect.SPI: 2, Aspect.FOC: 1},
+        )
+        state = GameState(ranger=ranger, areas={
+            Area.SURROUNDINGS: [],
+            Area.ALONG_THE_WAY: [],
+            Area.WITHIN_REACH: [],
+            Area.PLAYER_AREA: list(gear_cards) + (non_gear_cards or []),
+        })
+        return GameEngine(state, skip_reconstruct=True)
+
+    @staticmethod
+    def _gear(id: str, equip: int) -> Card:
+        return Card(id=id, title=f"Gear{id}", card_types={CardType.RANGER, CardType.GEAR},
+                    equip_value=equip)
+
+    def test_at_limit_no_discard(self):
+        """Total equip value exactly 5 should not trigger any discard prompt."""
+        gear = [self._gear("a", 3), self._gear("b", 2)]  # total = 5
+        eng = self._make_engine(gear)
+        eng.enforce_equip_limit()
+
+        # All gear should still be in play (+ auto-added role card)
+        gear_in_play = [c for c in eng.state.areas[Area.PLAYER_AREA]
+                        if c.has_type(CardType.GEAR)]
+        self.assertEqual(len(gear_in_play), 2)
+        messages = [m.message for m in eng.get_messages()]
+        self.assertFalse(any("must discard" in m.lower() for m in messages))
+
+    def test_over_limit_triggers_discard(self):
+        """Total equip value 6 should trigger a discard prompt."""
+        gear = [self._gear("a", 3), self._gear("b", 3)]  # total = 6
+        eng = self._make_engine(gear)
+        # card_chooser picks first card by default → discards gear "a" (equip 3)
+        eng.enforce_equip_limit()
+
+        in_play = eng.state.areas[Area.PLAYER_AREA]
+        total_after = sum(g.get_current_equip_value() or 0 for g in in_play)
+        self.assertLessEqual(total_after, 5, "Equip total should be within limit after discard")
+        messages = [m.message for m in eng.get_messages()]
+        self.assertTrue(any("must discard" in m.lower() for m in messages))
+
+    def test_non_gear_cards_not_counted(self):
+        """Non-gear cards in PLAYER_AREA should not contribute to equip total."""
+        gear = [self._gear("a", 5)]  # exactly at limit
+        non_gear = [Card(id="moment", title="Moment Card",
+                         card_types={CardType.RANGER, CardType.MOMENT})]
+        eng = self._make_engine(gear, non_gear_cards=non_gear)
+        eng.enforce_equip_limit()
+
+        # No discard should happen — non-gear doesn't push us over
+        gear_in_play = [c for c in eng.state.areas[Area.PLAYER_AREA]
+                        if c.has_type(CardType.GEAR)]
+        self.assertEqual(len(gear_in_play), 1, "Gear card should remain")
+        self.assertIn(non_gear[0], eng.state.areas[Area.PLAYER_AREA],
+                      "Non-gear card should remain")
+
+    def test_multiple_discards_until_within_limit(self):
+        """If far over the limit, multiple rounds of discard should occur."""
+        gear = [self._gear("a", 3), self._gear("b", 3), self._gear("c", 3)]  # total = 9
+        eng = self._make_engine(gear)
+        # default chooser picks first each time: discard a(3)→6, discard b(3)→3
+        eng.enforce_equip_limit()
+
+        in_play = [c for c in eng.state.areas[Area.PLAYER_AREA]
+                   if c.has_type(CardType.GEAR)]
+        total_after = sum(g.get_current_equip_value() or 0 for g in in_play)
+        self.assertLessEqual(total_after, 5)
+        self.assertEqual(len(in_play), 1, "Two gear should have been discarded")
+
+
 if __name__ == '__main__':
     unittest.main()
