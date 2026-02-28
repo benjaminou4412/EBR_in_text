@@ -2368,5 +2368,138 @@ class InteractionFatigueTests(unittest.TestCase):
         self.assertTrue(any("no interaction fatigue" in m.lower() for m in messages))
 
 
+class Phase4RefreshTests(unittest.TestCase):
+    """Tests for phase4_refresh: injury fatigue, card draw, energy refill, and readying."""
+
+    def _make_engine(self, injury: int = 0, deck_size: int = 10,
+                     exhausted_cards: list[Card] | None = None) -> GameEngine:
+        ranger = RangerState(
+            name="Ranger",
+            hand=[],
+            deck=[Card(id=f"deck{i}", title=f"Deck {i}") for i in range(deck_size)],
+            aspects={Aspect.AWA: 3, Aspect.FIT: 2, Aspect.SPI: 2, Aspect.FOC: 1},
+            injury=injury,
+        )
+        areas: dict[Area, list] = {
+            Area.SURROUNDINGS: [],
+            Area.ALONG_THE_WAY: exhausted_cards or [],
+            Area.WITHIN_REACH: [],
+            Area.PLAYER_AREA: [],
+        }
+        state = GameState(ranger=ranger, areas=areas)
+        return GameEngine(state)
+
+    def test_injured_ranger_suffers_fatigue_equal_to_injury(self):
+        """A ranger with 2 injuries should suffer 2 fatigue during refresh."""
+        eng = self._make_engine(injury=2)
+        initial_deck = len(eng.state.ranger.deck)
+
+        eng.phase4_refresh()
+
+        # 2 fatigue + 1 draw = 3 cards removed from deck
+        self.assertEqual(len(eng.state.ranger.fatigue_stack), 2,
+                         "Should fatigue exactly equal to injury count")
+        self.assertEqual(len(eng.state.ranger.deck), initial_deck - 3,
+                         "Deck should lose 2 (fatigue) + 1 (draw)")
+
+    def test_uninjured_ranger_no_fatigue(self):
+        """A ranger with 0 injuries should suffer no fatigue during refresh."""
+        eng = self._make_engine(injury=0)
+        eng.phase4_refresh()
+
+        self.assertEqual(len(eng.state.ranger.fatigue_stack), 0,
+                         "Uninjured ranger should not fatigue")
+        # Should still draw 1 card
+        self.assertEqual(len(eng.state.ranger.hand), 1,
+                         "Should draw 1 card during refresh")
+
+    def test_energy_refilled_after_refresh(self):
+        """Energy pools should be restored to base aspect values after refresh."""
+        eng = self._make_engine()
+        # Drain energy before refresh
+        eng.state.ranger.energy[Aspect.AWA] = 0
+        eng.state.ranger.energy[Aspect.FIT] = 0
+
+        eng.phase4_refresh()
+
+        self.assertEqual(eng.state.ranger.energy[Aspect.AWA], 3)
+        self.assertEqual(eng.state.ranger.energy[Aspect.FIT], 2)
+
+    def test_exhausted_cards_readied_after_refresh(self):
+        """All exhausted cards in play should be readied during refresh."""
+        exhausted = Card(id="ex", title="Exhausted Card",
+                         card_types={CardType.PATH, CardType.FEATURE}, exhausted=True)
+        eng = self._make_engine(exhausted_cards=[exhausted])
+
+        self.assertTrue(exhausted.exhausted, "Precondition: card is exhausted")
+        eng.phase4_refresh()
+        self.assertFalse(exhausted.exhausted, "Card should be readied after refresh")
+
+
+class ScoutCardsTests(unittest.TestCase):
+    """Tests for scout_cards: boundary conditions and top/bottom pile placement."""
+
+    def _make_engine(self, response_decider=None) -> GameEngine:
+        ranger = RangerState(
+            name="Ranger", hand=[],
+            aspects={Aspect.AWA: 3, Aspect.FIT: 2, Aspect.SPI: 2, Aspect.FOC: 1},
+        )
+        state = GameState(ranger=ranger)
+        return GameEngine(state, response_decider=response_decider, skip_reconstruct=True)
+
+    def test_scout_zero_is_noop(self):
+        """Scout with count=0 should not modify the deck at all."""
+        eng = self._make_engine()
+        deck = [Card(id="a", title="A"), Card(id="b", title="B")]
+        original_order = list(deck)
+
+        eng.scout_cards(deck, 0)
+
+        self.assertEqual(deck, original_order, "Deck should be unchanged after scout 0")
+
+    def test_scout_empty_deck_is_noop(self):
+        """Scout from an empty deck should not crash and should report no cards."""
+        eng = self._make_engine()
+        deck: list[Card] = []
+
+        eng.scout_cards(deck, 3)
+
+        self.assertEqual(len(deck), 0)
+        messages = [m.message for m in eng.get_messages()]
+        self.assertTrue(any("no cards" in m.lower() for m in messages))
+
+    def test_cards_placed_on_top_appear_at_front(self):
+        """Cards placed on top during scout should end up at the front of the deck."""
+        # response_decider=True → all cards go to top pile
+        eng = self._make_engine(response_decider=lambda _e, _p: True)
+        card_a = Card(id="a", title="A")
+        card_b = Card(id="b", title="B")
+        card_c = Card(id="c", title="Unscouted")
+        deck = [card_a, card_b, card_c]
+
+        eng.scout_cards(deck, 2)
+
+        # A and B should be on top (before C), in original order (default order_decider)
+        self.assertIs(deck[0], card_a, "First scouted card should be on top")
+        self.assertIs(deck[1], card_b, "Second scouted card should be next")
+        self.assertIs(deck[2], card_c, "Unscouted card should be at bottom")
+
+    def test_cards_placed_on_bottom_appear_at_end(self):
+        """Cards placed on bottom during scout should end up at the end of the deck."""
+        # response_decider=False → all cards go to bottom pile
+        eng = self._make_engine(response_decider=lambda _e, _p: False)
+        card_a = Card(id="a", title="A")
+        card_b = Card(id="b", title="B")
+        card_c = Card(id="c", title="Unscouted")
+        deck = [card_a, card_b, card_c]
+
+        eng.scout_cards(deck, 2)
+
+        # C should remain on top, A and B at the bottom
+        self.assertIs(deck[0], card_c, "Unscouted card should be on top")
+        self.assertIs(deck[1], card_a, "First bottom card should follow remaining")
+        self.assertIs(deck[2], card_b, "Second bottom card should be last")
+
+
 if __name__ == '__main__':
     unittest.main()

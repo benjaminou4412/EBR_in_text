@@ -146,20 +146,13 @@ in WITHIN_REACH excludes same-area cards, and no-cards-between message check.
 NOTE: rules mention "Within Reach (another Ranger)" should include WR cards as between — this
 is a multiplayer concern not yet implemented. Existing single-player behavior is correct.
 
-**Theme 7: `phase4_refresh` (24 survived)**
-The refresh phase (injury fatigue, draw card, refill energy, ready cards) is exercised
-indirectly by integration tests but assertions don't catch mutations to the injury threshold
-(`> 0` → `>= 0` or `> 1`), the fatigue amount, or the energy refill logic.
+**Theme 7: `phase4_refresh` (24 survived) — RESOLVED**
+Added `Phase4RefreshTests` (4 tests): injured ranger fatigues by injury count, uninjured ranger
+no fatigue, energy refilled to base aspects, and exhausted cards readied.
 
-**FIX:** Test refresh with injured ranger (verify fatigue amount matches injury count) and
-uninjured ranger (verify no fatigue).
-
-**Theme 8: `scout_cards` (25 survived)**
-Scout is exercised but assertions don't verify the boundary conditions (`count <= 0` → `< 0`,
-`actual_count == 0` → `== 1`) or the correct top/bottom pile ordering.
-
-**FIX:** Test scout with 0 count (no-op), test that cards placed on top vs. bottom actually
-appear in the correct deck positions.
+**Theme 8: `scout_cards` (25 survived) — RESOLVED**
+Added `ScoutCardsTests` (4 tests): scout 0 is no-op, scout empty deck is no-op with message,
+cards placed on top appear at deck front, cards placed on bottom appear at deck end.
 
 #### Recommendations (prioritized)
 
@@ -168,11 +161,11 @@ High value / easy fixes:
 - [x] Add non-test action (Rest) test through perform_test
 - [x] Test enforce_equip_limit boundary (5 vs 6 equip value)
 - [x] Test interaction_fatigue actually applying fatigue (not just Friendly skip)
-- [ ] Test phase4_refresh with injured vs uninjured ranger
+- [x] Test phase4_refresh with injured vs uninjured ranger
 
 Medium value:
 - [x] Test challenge effect ordering with multiple resolvable cards
-- [ ] Test scout_cards boundary conditions and pile ordering
+- [x] Test scout_cards boundary conditions and pile ordering
 - [ ] Test move_token type routing (progress vs harm vs unique tokens)
 - [ ] Test move_ranger_token_to_card with PREVENT_RANGER_TOKEN_MOVE blocker
 
