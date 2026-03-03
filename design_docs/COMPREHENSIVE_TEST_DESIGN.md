@@ -211,13 +211,11 @@ separately in an area (which is the normal case after a card is flipped facedown
 instantiating the frontside from its class name (stored in the `backside_class` field) when it's
 not already in the card registry.
 
-**Theme 2: Modifier serialization has zero coverage (16 no-tests + ~15 survived)**
-`serialize_modifier` has 16 mutants with no tests at all. `deserialize_modifier` is exercised
-only via `_apply_mutable_state` during round-trips, but no test card has modifiers, so the
-`card_data.get('modifiers', [])` always gets an empty list and the loop body never runs.
-
-**FIX:** Add a round-trip test with a card that has ValueModifiers. Verify all four fields
-(`target`, `amount`, `source_id`, `minimum_result`) survive the trip.
+**Theme 2: Modifier serialization has zero coverage (16 no-tests + ~15 survived) — RESOLVED**
+Added `ModifierSerializationTests` (4 tests): serialize_modifier field check, deserialize_modifier
+field check, card-level round-trip (serialize_card → instantiate_card with modifiers list), and
+full save/load round-trip with a card bearing a ValueModifier in an area. All four modifier
+fields (`target`, `amount`, `source_id`, `minimum_result`) are now verified at every level.
 
 **Theme 3: Mission bubble fields never verified (~27 survived in `deserialize_mission`) — RESOLVED**
 Added `MissionBubbleTests` (2 tests): direct `serialize_mission` field check, and full round-trip
@@ -260,29 +258,25 @@ in `load_game` but not checked by the validator — corrupted saves would produc
 instead of descriptive `ValueError`. Updated `LoadGameFailLoudTests` and
 `test_missing_day_registry_raises` from `KeyError` to `ValueError` to match.
 
-**Theme 7: `_build_card_class_registry` filter conditions (~24 survived)**
-The auto-discovery loop filters with `inspect.isclass`, `issubclass(obj, Card)`,
-`obj is not Card`, and `obj is not FacedownCard`. Since `get_card_class` works in other tests
-(implicitly building the registry), the registry IS constructed, but the filter mutations
-survive because no test checks what's in the registry vs. what's excluded.
-
-**FIX:** Low priority — these are mostly equivalent mutations (the filters work correctly and
-changing them would either break other tests or produce the same result). Could add a direct
-test verifying known classes are present and non-Card classes are absent.
+**Theme 7: `_build_card_class_registry` filter conditions (~24 survived) — RESOLVED**
+Added `CardClassRegistryContentsTests` (4 tests): every card class exported from `ebr.cards`
+is present (via `subTest` over all 30 card classes), base `Card` and `FacedownCard` are
+accessible by name, and non-Card names are rejected. This exercises all four filter conditions
+in the auto-discovery loop.
 
 #### Recommendations (prioritized)
 
 High value / easy fixes:
 - [x] Round-trip test with FacedownCard attachment (+ bugfix in `process_facedown_cards`)
-- [ ] Round-trip test with card that has ValueModifiers
+- [x] Round-trip test with card that has ValueModifiers
 - [x] Round-trip test with mission bubble states (left/middle/right)
 - [x] Removed dead generic Card branch; serialize_card now rejects bare Cards
 - [x] Fail-loud on missing keys + tests (replaced backwards-compat defaults)
 
 Medium value:
 - [x] Direct `_validate_save_structure` tests with malformed saves (+ fixed 14 missing keys)
-- [ ] Verify weather and mission IDs resolve correctly after load
+- [x] Verify weather and mission IDs resolve correctly after load
 
 Lower priority:
-- [ ] Direct `_build_card_class_registry` contents test
+- [x] Direct `_build_card_class_registry` contents test
 - [ ] `serialize_card` field-level assertions (separate from round-trip)

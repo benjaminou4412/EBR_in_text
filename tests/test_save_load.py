@@ -9,11 +9,12 @@ from pathlib import Path
 
 from ebr.models import (
     Card, RangerState, GameState, CampaignTracker, ChallengeDeck,
-    Aspect, Area, Mission, Keyword, FacedownCard
+    Aspect, Area, Mission, Keyword, FacedownCard, ValueModifier
 )
 from ebr.engine import GameEngine
 from ebr.save_load import (
     save_game, load_game, serialize_card, serialize_game_state,
+    serialize_modifier, deserialize_modifier,
     instantiate_card, get_card_class, SAVE_VERSION
 )
 from ebr.cards import (
@@ -668,6 +669,92 @@ class BareCardSerializationTests(unittest.TestCase):
         self.assertIn("bare Card", str(ctx.exception))
 
 
+class ModifierSerializationTests(unittest.TestCase):
+    """Tests for ValueModifier serialization round-trip."""
+
+    def test_serialize_modifier_fields(self):
+        """serialize_modifier preserves all four fields."""
+        mod = ValueModifier(target="presence", amount=2, source_id="card-1", minimum_result=1)
+        data = serialize_modifier(mod)
+
+        self.assertEqual(data.target, "presence")
+        self.assertEqual(data.amount, 2)
+        self.assertEqual(data.source_id, "card-1")
+        self.assertEqual(data.minimum_result, 1)
+
+    def test_deserialize_modifier_fields(self):
+        """deserialize_modifier restores all four fields from a dict."""
+        raw = {'target': 'energy_cost', 'amount': -1, 'source_id': 'src-99', 'minimum_result': 0}
+        mod = deserialize_modifier(raw)
+
+        self.assertIsInstance(mod, ValueModifier)
+        self.assertEqual(mod.target, 'energy_cost')
+        self.assertEqual(mod.amount, -1)
+        self.assertEqual(mod.source_id, 'src-99')
+        self.assertEqual(mod.minimum_result, 0)
+
+    def test_modifier_roundtrip_on_card(self):
+        """Modifiers on a card survive serialize_card → instantiate_card → _apply_mutable_state."""
+        card = SitkaDoe()
+        card.modifiers = [
+            ValueModifier(target="presence", amount=2, source_id="buff-1", minimum_result=0),
+            ValueModifier(target="equip_slots", amount=-1, source_id="nerf-2", minimum_result=1),
+        ]
+
+        card_data = serialize_card(card)
+        card_dict = {
+            'card_class': card_data.card_class,
+            'id': card_data.id,
+            'exhausted': card_data.exhausted,
+            'progress': card_data.progress,
+            'harm': card_data.harm,
+            'unique_tokens': card_data.unique_tokens,
+            'modifiers': [
+                {'target': m.target, 'amount': m.amount,
+                 'source_id': m.source_id, 'minimum_result': m.minimum_result}
+                for m in card_data.modifiers
+            ],
+            'attached_to_id': card_data.attached_to_id,
+            'attached_card_ids': card_data.attached_card_ids,
+        }
+
+        restored = instantiate_card(card_dict)
+
+        self.assertEqual(len(restored.modifiers), 2)
+        self.assertEqual(restored.modifiers[0].target, "presence")
+        self.assertEqual(restored.modifiers[0].amount, 2)
+        self.assertEqual(restored.modifiers[0].source_id, "buff-1")
+        self.assertEqual(restored.modifiers[1].target, "equip_slots")
+        self.assertEqual(restored.modifiers[1].amount, -1)
+        self.assertEqual(restored.modifiers[1].minimum_result, 1)
+
+    def test_modifier_full_save_load_roundtrip(self):
+        """Modifiers on a card in an area survive a full save/load cycle."""
+        state = make_test_state()
+        doe = SitkaDoe()
+        doe.modifiers = [
+            ValueModifier(target="presence", amount=3, source_id="x", minimum_result=0),
+        ]
+        state.areas[Area.ALONG_THE_WAY].append(doe)
+        engine = GameEngine(state)
+
+        with tempfile.TemporaryDirectory() as tmp:
+            path = os.path.join(tmp, "save.json")
+            save_game(engine, path)
+            loaded = load_game(path)
+
+        atw = loaded.state.areas[Area.ALONG_THE_WAY]
+        doe_cards = [c for c in atw if c.title == "Sitka Doe"]
+        self.assertEqual(len(doe_cards), 1)
+        self.assertEqual(len(doe_cards[0].modifiers), 1)
+
+        mod = doe_cards[0].modifiers[0]
+        self.assertEqual(mod.target, "presence")
+        self.assertEqual(mod.amount, 3)
+        self.assertEqual(mod.source_id, "x")
+        self.assertEqual(mod.minimum_result, 0)
+
+
 class ValidateSaveStructureTests(unittest.TestCase):
     """Tests for _validate_save_structure catching corrupted/incomplete saves.
 
@@ -932,6 +1019,90 @@ class FacedownCardTests(unittest.TestCase):
         self.assertEqual(len(facedown_cards), 1)
         self.assertEqual(facedown_cards[0].progress, 2)
         self.assertTrue(facedown_cards[0].exhausted)
+
+
+class CardClassRegistryContentsTests(unittest.TestCase):
+    """Tests that _build_card_class_registry includes the right classes."""
+
+    def test_known_subclasses_present(self):
+        """Every card class exported from ebr.cards is in the registry."""
+        from ebr import cards as cards_module
+        import inspect
+
+        for name in dir(cards_module):
+            obj = getattr(cards_module, name)
+            if inspect.isclass(obj) and issubclass(obj, Card) and obj is not Card:
+                with self.subTest(name=name):
+                    self.assertIs(get_card_class(name), obj)
+
+    def test_base_card_in_registry(self):
+        """The base Card class is accessible by name."""
+        self.assertIs(get_card_class("Card"), Card)
+
+    def test_facedown_card_in_registry(self):
+        """FacedownCard is accessible by name."""
+        self.assertIs(get_card_class("FacedownCard"), FacedownCard)
+
+    def test_non_card_classes_excluded(self):
+        """Non-Card names from the cards module don't pollute the registry."""
+        with self.assertRaises(ValueError):
+            get_card_class("__builtins__")
+        with self.assertRaises(ValueError):
+            get_card_class("NonexistentCard")
+
+
+class WeatherAndMissionResolutionTests(unittest.TestCase):
+    """Tests that weather and mission card objects resolve correctly after load."""
+
+    def setUp(self):
+        self.temp_dir = tempfile.mkdtemp()
+        self.save_path = os.path.join(self.temp_dir, "test_save.json")
+
+    def tearDown(self):
+        if os.path.exists(self.save_path):
+            os.remove(self.save_path)
+        os.rmdir(self.temp_dir)
+
+    def test_weather_card_resolves_after_load(self):
+        """state.weather is a real APerfectDay instance after load, not a bare Card."""
+        from ebr.cards import APerfectDay
+        state = make_test_state()
+        engine = GameEngine(state)
+
+        save_game(engine, self.save_path)
+        loaded = load_game(self.save_path)
+
+        self.assertIsInstance(loaded.state.weather, APerfectDay)
+        self.assertEqual(loaded.state.weather.title, "A Perfect Day")
+
+    def test_mission_cards_resolve_after_load(self):
+        """state.missions contains the correct card objects after load."""
+        from ebr.cards import HelpingHand
+        state = make_test_state()
+        mission_card = HelpingHand()
+        state.missions = [mission_card]
+        state.areas[Area.SURROUNDINGS].append(mission_card)
+        engine = GameEngine(state)
+
+        save_game(engine, self.save_path)
+        loaded = load_game(self.save_path)
+
+        self.assertEqual(len(loaded.state.missions), 1)
+        self.assertIsInstance(loaded.state.missions[0], HelpingHand)
+        self.assertEqual(loaded.state.missions[0].id, mission_card.id)
+
+    def test_weather_id_matches_card_in_surroundings(self):
+        """The loaded weather object is the same instance as the one in Surroundings."""
+        state = make_test_state()
+        engine = GameEngine(state)
+
+        save_game(engine, self.save_path)
+        loaded = load_game(self.save_path)
+
+        surr = loaded.state.areas[Area.SURROUNDINGS]
+        weather_in_surr = [c for c in surr if c.id == loaded.state.weather.id]
+        self.assertEqual(len(weather_in_surr), 1)
+        self.assertIs(loaded.state.weather, weather_in_surr[0])
 
 
 if __name__ == '__main__':
