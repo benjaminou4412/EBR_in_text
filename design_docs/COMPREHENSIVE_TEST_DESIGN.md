@@ -235,9 +235,10 @@ fails loudly on missing data instead of silently fabricating defaults. Changes:
 - `day_registry`: now required (removed `_default_day_registry()` fallback)
 - Removed unused `_generate_campaign_id` import
 
-Added `LoadGameFailLoudTests` (6 tests) verifying `KeyError`/`ValueError` on missing
+Added `LoadGameFailLoudTests` (6 tests) verifying `ValueError` on missing
 `weather_id`, `mission_ids`, `campaign_id`, `injury`, `current_location_id`, and version
 mismatch. Updated existing `test_day_registry_backwards_compatibility` → `test_missing_day_registry_raises`.
+(Originally expected `KeyError`; updated to `ValueError` after Theme 6 validator fix.)
 
 **Theme 5: Generic Card from JSON not tested (~15 survived in `instantiate_card`) — RESOLVED**
 Removed dead code: the generic Card branch in both `serialize_card` and `instantiate_card` was
@@ -248,14 +249,16 @@ branch was deleted. Added `BareCardSerializationTests` (1 test) verifying the fa
 behavior. Also fixed `test_ranger_deck_and_hand_preserved` which was using bare `Card`
 instances — switched to real explorer card subclasses.
 
-**Theme 6: `_validate_save_structure` not directly tested (~25 survived)**
-The validation function checks for required keys at multiple nesting levels. Tests always
-provide well-formed saves, so mutations to the required key lists and the nested validation
-branches mostly survive. The function IS called during loads (some mutations are killed), but
-the granular checks aren't exercised.
-
-**FIX:** Test loading a save with missing top-level keys, missing ranger keys, and missing
-challenge_deck keys — verify each raises ValueError with a descriptive message.
+**Theme 6: `_validate_save_structure` not directly tested (~25 survived) — RESOLVED**
+Added `ValidateSaveStructureTests` (12 tests) that systematically corrupt save dicts and verify
+descriptive `ValueError` messages. **Also found and fixed 14 missing keys** in the validator:
+`weather_id` and `mission_ids` at top level, `injury` in ranger, and 11 campaign_tracker keys
+(`campaign_id`, `campaign_name`, `notable_events`, `unlocked_rewards`, `active_missions`,
+`cleared_missions`, `ranger_deck_card_ids`, `ranger_name`, `ranger_aspects`,
+`current_location_id`, `current_terrain_type`, `day_registry`). All were accessed with `[]`
+in `load_game` but not checked by the validator — corrupted saves would produce raw `KeyError`
+instead of descriptive `ValueError`. Updated `LoadGameFailLoudTests` and
+`test_missing_day_registry_raises` from `KeyError` to `ValueError` to match.
 
 **Theme 7: `_build_card_class_registry` filter conditions (~24 survived)**
 The auto-discovery loop filters with `inspect.isclass`, `issubclass(obj, Card)`,
@@ -277,7 +280,7 @@ High value / easy fixes:
 - [x] Fail-loud on missing keys + tests (replaced backwards-compat defaults)
 
 Medium value:
-- [ ] Direct `_validate_save_structure` tests with malformed saves
+- [x] Direct `_validate_save_structure` tests with malformed saves (+ fixed 14 missing keys)
 - [ ] Verify weather and mission IDs resolve correctly after load
 
 Lower priority:

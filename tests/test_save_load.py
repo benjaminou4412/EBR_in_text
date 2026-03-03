@@ -587,7 +587,7 @@ class DayRegistryTests(unittest.TestCase):
         with open(self.save_path, 'w') as f:
             json.dump(save_data, f)
 
-        with self.assertRaises(KeyError):
+        with self.assertRaises(ValueError):
             load_game(self.save_path)
 
     def test_day_registry_instances_are_independent(self):
@@ -627,27 +627,27 @@ class LoadGameFailLoudTests(unittest.TestCase):
 
     def test_missing_weather_id_raises(self):
         del self.save_data['weather_id']
-        with self.assertRaises(KeyError):
+        with self.assertRaises(ValueError):
             self._write_and_load(self.save_data)
 
     def test_missing_mission_ids_raises(self):
         del self.save_data['mission_ids']
-        with self.assertRaises(KeyError):
+        with self.assertRaises(ValueError):
             self._write_and_load(self.save_data)
 
     def test_missing_campaign_id_raises(self):
         del self.save_data['campaign_tracker']['campaign_id']
-        with self.assertRaises(KeyError):
+        with self.assertRaises(ValueError):
             self._write_and_load(self.save_data)
 
     def test_missing_ranger_injury_raises(self):
         del self.save_data['ranger']['injury']
-        with self.assertRaises(KeyError):
+        with self.assertRaises(ValueError):
             self._write_and_load(self.save_data)
 
     def test_missing_current_location_id_raises(self):
         del self.save_data['campaign_tracker']['current_location_id']
-        with self.assertRaises(KeyError):
+        with self.assertRaises(ValueError):
             self._write_and_load(self.save_data)
 
     def test_version_mismatch_raises(self):
@@ -666,6 +666,143 @@ class BareCardSerializationTests(unittest.TestCase):
         with self.assertRaises(ValueError) as ctx:
             serialize_card(card)
         self.assertIn("bare Card", str(ctx.exception))
+
+
+class ValidateSaveStructureTests(unittest.TestCase):
+    """Tests for _validate_save_structure catching corrupted/incomplete saves.
+
+    The validator should catch all required keys and produce descriptive
+    ValueErrors, rather than letting load_game hit a raw KeyError later.
+    """
+
+    def setUp(self):
+        """Create a valid save dict by round-tripping through save_game."""
+        self.temp_dir = tempfile.mkdtemp()
+        self.save_path = os.path.join(self.temp_dir, "test_save.json")
+        state = make_test_state()
+        engine = GameEngine(state)
+        save_game(engine, self.save_path)
+
+        with open(self.save_path, 'r') as f:
+            self.valid_save = json.load(f)
+
+    def tearDown(self):
+        if os.path.exists(self.save_path):
+            os.remove(self.save_path)
+        os.rmdir(self.temp_dir)
+
+    def _write_and_load(self, data):
+        with open(self.save_path, 'w') as f:
+            json.dump(data, f)
+        return load_game(self.save_path)
+
+    # -- Top-level keys --
+
+    def test_empty_save_dict_raises(self):
+        """Completely empty save dict raises ValueError listing missing keys."""
+        with self.assertRaises(ValueError) as ctx:
+            self._write_and_load({})
+        msg = str(ctx.exception)
+        self.assertIn("version", msg)
+        self.assertIn("ranger", msg)
+
+    def test_missing_top_level_areas_raises(self):
+        """Missing 'areas' gives a descriptive ValueError."""
+        data = {k: v for k, v in self.valid_save.items() if k != 'areas'}
+        with self.assertRaises(ValueError) as ctx:
+            self._write_and_load(data)
+        self.assertIn("areas", str(ctx.exception))
+
+    def test_missing_top_level_weather_id_raises(self):
+        """Missing 'weather_id' should give a descriptive ValueError, not KeyError."""
+        data = {k: v for k, v in self.valid_save.items() if k != 'weather_id'}
+        with self.assertRaises(ValueError) as ctx:
+            self._write_and_load(data)
+        self.assertIn("weather_id", str(ctx.exception))
+
+    def test_missing_top_level_mission_ids_raises(self):
+        """Missing 'mission_ids' should give a descriptive ValueError, not KeyError."""
+        data = {k: v for k, v in self.valid_save.items() if k != 'mission_ids'}
+        with self.assertRaises(ValueError) as ctx:
+            self._write_and_load(data)
+        self.assertIn("mission_ids", str(ctx.exception))
+
+    # -- Ranger sub-keys --
+
+    def test_missing_ranger_name_raises(self):
+        """Missing ranger 'name' gives a descriptive ValueError."""
+        data = json.loads(json.dumps(self.valid_save))
+        del data['ranger']['name']
+        with self.assertRaises(ValueError) as ctx:
+            self._write_and_load(data)
+        self.assertIn("name", str(ctx.exception))
+
+    def test_missing_ranger_injury_raises_valueerror(self):
+        """Missing ranger 'injury' should give descriptive ValueError, not KeyError."""
+        data = json.loads(json.dumps(self.valid_save))
+        del data['ranger']['injury']
+        with self.assertRaises(ValueError) as ctx:
+            self._write_and_load(data)
+        self.assertIn("injury", str(ctx.exception))
+
+    # -- Campaign tracker sub-keys --
+
+    def test_missing_ct_day_number_raises(self):
+        """Missing campaign_tracker 'day_number' gives a descriptive ValueError."""
+        data = json.loads(json.dumps(self.valid_save))
+        del data['campaign_tracker']['day_number']
+        with self.assertRaises(ValueError) as ctx:
+            self._write_and_load(data)
+        self.assertIn("day_number", str(ctx.exception))
+
+    def test_missing_ct_campaign_id_raises_valueerror(self):
+        """Missing campaign_tracker 'campaign_id' should give descriptive ValueError."""
+        data = json.loads(json.dumps(self.valid_save))
+        del data['campaign_tracker']['campaign_id']
+        with self.assertRaises(ValueError) as ctx:
+            self._write_and_load(data)
+        self.assertIn("campaign_id", str(ctx.exception))
+
+    def test_missing_ct_day_registry_raises_valueerror(self):
+        """Missing campaign_tracker 'day_registry' should give descriptive ValueError."""
+        data = json.loads(json.dumps(self.valid_save))
+        del data['campaign_tracker']['day_registry']
+        with self.assertRaises(ValueError) as ctx:
+            self._write_and_load(data)
+        self.assertIn("day_registry", str(ctx.exception))
+
+    def test_missing_ct_current_location_id_raises_valueerror(self):
+        """Missing campaign_tracker 'current_location_id' should give descriptive ValueError."""
+        data = json.loads(json.dumps(self.valid_save))
+        del data['campaign_tracker']['current_location_id']
+        with self.assertRaises(ValueError) as ctx:
+            self._write_and_load(data)
+        self.assertIn("current_location_id", str(ctx.exception))
+
+    # -- Challenge deck sub-keys --
+
+    def test_missing_challenge_deck_deck_raises(self):
+        """Missing challenge_deck 'deck' gives a descriptive ValueError."""
+        data = json.loads(json.dumps(self.valid_save))
+        del data['challenge_deck']['deck']
+        with self.assertRaises(ValueError) as ctx:
+            self._write_and_load(data)
+        self.assertIn("deck", str(ctx.exception))
+
+    # -- Multiple missing keys --
+
+    def test_multiple_missing_keys_all_listed(self):
+        """When multiple keys are missing, all are listed in the error message."""
+        data = json.loads(json.dumps(self.valid_save))
+        del data['ranger']['name']
+        del data['ranger']['aspects']
+        del data['ranger']['energy']
+        with self.assertRaises(ValueError) as ctx:
+            self._write_and_load(data)
+        msg = str(ctx.exception)
+        self.assertIn("name", msg)
+        self.assertIn("aspects", msg)
+        self.assertIn("energy", msg)
 
 
 class MissionBubbleTests(unittest.TestCase):

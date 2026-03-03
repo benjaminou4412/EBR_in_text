@@ -468,8 +468,8 @@ def _validate_save_structure(save_dict: dict[str, Any]) -> None:
     Raises ValueError with a descriptive message if validation fails.
     """
     required_top_level = ['version', 'round_number', 'ranger', 'campaign_tracker',
-                          'role_card_id', 'location_id', 'areas', 'path_deck',
-                          'path_discard', 'challenge_deck']
+                          'role_card_id', 'location_id', 'weather_id', 'mission_ids',
+                          'areas', 'path_deck', 'path_discard', 'challenge_deck']
 
     missing_top = [key for key in required_top_level if key not in save_dict]
     if missing_top:
@@ -478,14 +478,18 @@ def _validate_save_structure(save_dict: dict[str, Any]) -> None:
     # Validate ranger structure
     if 'ranger' in save_dict:
         ranger_required = ['name', 'aspects', 'energy', 'ranger_token_location',
-                          'deck', 'hand', 'discard', 'fatigue_stack']
+                          'deck', 'hand', 'discard', 'fatigue_stack', 'injury']
         missing_ranger = [key for key in ranger_required if key not in save_dict['ranger']]
         if missing_ranger:
             raise ValueError(f"Save file 'ranger' missing required keys: {', '.join(missing_ranger)}")
 
     # Validate campaign_tracker structure
     if 'campaign_tracker' in save_dict:
-        ct_required = ['day_number']
+        ct_required = ['day_number', 'campaign_id', 'campaign_name',
+                       'notable_events', 'unlocked_rewards', 'active_missions',
+                       'cleared_missions', 'ranger_deck_card_ids', 'ranger_name',
+                       'ranger_aspects', 'current_location_id', 'current_terrain_type',
+                       'day_registry']
         missing_ct = [key for key in ct_required if key not in save_dict['campaign_tracker']]
         if missing_ct:
             raise ValueError(f"Save file 'campaign_tracker' missing required keys: {', '.join(missing_ct)}")
