@@ -224,20 +224,20 @@ Added `MissionBubbleTests` (2 tests): direct `serialize_mission` field check, an
 with both active and cleared missions having distinct bubble patterns. All three bubble fields
 now verified on both serialization and deserialization paths.
 
-**Theme 4: `load_game` fallback/default paths untested (~50+ survived)**
-`load_game` has many `.get('key', default)` calls for backwards compatibility. Since tests
-always save with the current version, the defaults are never exercised:
-- `weather_id = None` when weather absent (mutmut_150 survives)
-- `ct_data.get('campaign_id', '')` fallback → `_generate_campaign_id()` path
-- `ranger_data.get('injury', 0)` default
-- `ct_data.get('ranger_aspects', {})` default
-- Version migration branch (currently a no-op `pass`)
+**Theme 4: `load_game` fallback/default paths untested (~50+ survived) — RESOLVED**
+Replaced all Category B silent fallback defaults with direct key access (`[]`) so `load_game`
+fails loudly on missing data instead of silently fabricating defaults. Changes:
+- All campaign tracker fields: `.get('key', default)` → `['key']`
+- `weather_id`, `mission_ids`: now required (weather is always present in saveable state)
+- `ranger.injury`: now required
+- `deserialize_mission` bubble fields: now required
+- Version mismatch: raises `ValueError` instead of silent `pass`
+- `day_registry`: now required (removed `_default_day_registry()` fallback)
+- Removed unused `_generate_campaign_id` import
 
-These are genuinely defensive code. Many mutations are equivalent (changing a never-hit
-default). A targeted backwards-compat test loading a stripped-down save would catch the
-important ones.
-
-**FIX:** Create a minimal/legacy save dict missing optional keys, load it, and verify defaults.
+Added `LoadGameFailLoudTests` (6 tests) verifying `KeyError`/`ValueError` on missing
+`weather_id`, `mission_ids`, `campaign_id`, `injury`, `current_location_id`, and version
+mismatch. Updated existing `test_day_registry_backwards_compatibility` → `test_missing_day_registry_raises`.
 
 **Theme 5: Generic Card from JSON not tested (~15 survived in `instantiate_card`)**
 When `class_name == "Card"`, the loader checks `json_source_title` and `json_source_set` to
@@ -272,7 +272,7 @@ High value / easy fixes:
 - [ ] Round-trip test with card that has ValueModifiers
 - [x] Round-trip test with mission bubble states (left/middle/right)
 - [ ] Round-trip test with generic JSON-loaded Card
-- [ ] Backwards-compat test: load save with missing optional keys
+- [x] Fail-loud on missing keys + tests (replaced backwards-compat defaults)
 
 Medium value:
 - [ ] Direct `_validate_save_structure` tests with malformed saves

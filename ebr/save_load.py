@@ -388,9 +388,9 @@ def deserialize_mission(data: dict[str, Any]) -> Mission:
     """Convert serialized mission back to Mission"""
     return Mission(
         name=data['name'],
-        left_bubble=data.get('left_bubble', False),
-        middle_bubble=data.get('middle_bubble', False),
-        right_bubble=data.get('right_bubble', False)
+        left_bubble=data['left_bubble'],
+        middle_bubble=data['middle_bubble'],
+        right_bubble=data['right_bubble']
     )
 
 
@@ -531,11 +531,10 @@ def load_game(filepath: str | Path) -> GameEngine:
     # Validate save file structure
     _validate_save_structure(save_dict)
 
-    # Version check (for future migrations)
-    version = save_dict.get('version', '1.0')
+    # Version check
+    version = save_dict['version']
     if version != SAVE_VERSION:
-        # Future: run migration functions here
-        pass
+        raise ValueError(f"Unsupported save version: {version} (expected {SAVE_VERSION})")
 
     # Step 1 & 2: Instantiate all cards and build registry
     card_registry: dict[str, Card] = {}
@@ -626,50 +625,44 @@ def load_game(filepath: str | Path) -> GameEngine:
     # Find special cards by ID
     role_card_id = save_dict['role_card_id']
     location_id = save_dict['location_id']
-    weather_id = save_dict.get('weather_id')
-    mission_ids = save_dict.get('mission_ids', [])
+    weather_id = save_dict['weather_id']
+    mission_ids = save_dict['mission_ids']
 
     role_card = card_registry.get(role_card_id)
     location = card_registry.get(location_id)
-    weather = card_registry.get(weather_id) if weather_id else None
+    weather = card_registry.get(weather_id)
     missions = [card_registry[mid] for mid in mission_ids if mid in card_registry]
 
     if role_card is None:
         raise ValueError(f"Role card not found: {role_card_id}")
     if location is None:
         raise ValueError(f"Location not found: {location_id}")
+    if weather is None:
+        raise ValueError(f"Weather card not found: {weather_id}")
 
     # Deserialize campaign tracker
     ct_data = save_dict['campaign_tracker']
 
-    # Deserialize day_registry if present, otherwise use default
-    from .models import DayContent, _default_day_registry, _generate_campaign_id
-    if 'day_registry' in ct_data and ct_data['day_registry']:
-        day_registry = {
-            int(day_str): DayContent(weather=content['weather'], entries=list(content.get('entries', [])))
-            for day_str, content in ct_data['day_registry'].items()
-        }
-    else:
-        day_registry = _default_day_registry()
-
-    # Handle campaign_id - generate one for old saves that don't have it
-    campaign_id = ct_data.get('campaign_id', '')
-    if not campaign_id:
-        campaign_id = _generate_campaign_id()
+    # Deserialize day_registry
+    from .models import DayContent
+    day_registry = {
+        int(day_str): DayContent(weather=content['weather'], entries=list(content['entries']))
+        for day_str, content in ct_data['day_registry'].items()
+    }
 
     campaign_tracker = CampaignTracker(
         day_number=ct_data['day_number'],
-        campaign_id=campaign_id,
-        campaign_name=ct_data.get('campaign_name', ''),
-        notable_events=list(ct_data.get('notable_events', [])),
-        unlocked_rewards=list(ct_data.get('unlocked_rewards', [])),
-        active_missions=[deserialize_mission(m) for m in ct_data.get('active_missions', [])],
-        cleared_missions=[deserialize_mission(m) for m in ct_data.get('cleared_missions', [])],
-        ranger_deck_card_ids=list(ct_data.get('ranger_deck_card_ids', [])),
-        ranger_name=ct_data.get('ranger_name', ''),
-        ranger_aspects={Aspect(k): v for k, v in ct_data.get('ranger_aspects', {}).items()},
-        current_location_id=ct_data.get('current_location_id', 'Lone Tree Station'),
-        current_terrain_type=ct_data.get('current_terrain_type', 'Woods'),
+        campaign_id=ct_data['campaign_id'],
+        campaign_name=ct_data['campaign_name'],
+        notable_events=list(ct_data['notable_events']),
+        unlocked_rewards=list(ct_data['unlocked_rewards']),
+        active_missions=[deserialize_mission(m) for m in ct_data['active_missions']],
+        cleared_missions=[deserialize_mission(m) for m in ct_data['cleared_missions']],
+        ranger_deck_card_ids=list(ct_data['ranger_deck_card_ids']),
+        ranger_name=ct_data['ranger_name'],
+        ranger_aspects={Aspect(k): v for k, v in ct_data['ranger_aspects'].items()},
+        current_location_id=ct_data['current_location_id'],
+        current_terrain_type=ct_data['current_terrain_type'],
         day_registry=day_registry
     )
 
@@ -682,7 +675,7 @@ def load_game(filepath: str | Path) -> GameEngine:
         hand=ranger_hand,
         discard=ranger_discard,
         fatigue_stack=ranger_fatigue,
-        injury=ranger_data.get('injury', 0),
+        injury=ranger_data['injury'],
         ranger_token_location=ranger_data['ranger_token_location']
     )
     # Override energy (RangerState.__post_init__ sets it to aspects)
@@ -701,7 +694,7 @@ def load_game(filepath: str | Path) -> GameEngine:
     state.campaign_tracker = campaign_tracker
     state.role_card = role_card
     state.location = location
-    state.weather = weather if weather else Card()  # Placeholder if no weather
+    state.weather = weather
     state.missions = missions
     state.challenge_deck = challenge_deck
     state.areas = areas

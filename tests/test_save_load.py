@@ -578,15 +578,13 @@ class DayRegistryTests(unittest.TestCase):
             self.assertEqual(loaded_registry[day].weather, original_registry[day][0])
             self.assertEqual(loaded_registry[day].entries, original_registry[day][1])
 
-    def test_day_registry_backwards_compatibility(self):
-        """Test that loading an old save without day_registry uses defaults."""
+    def test_missing_day_registry_raises(self):
+        """Loading a save with missing day_registry fails loudly."""
         state = make_test_state()
         engine = GameEngine(state)
 
-        # Save normally
         save_game(engine, self.save_path)
 
-        # Manually remove day_registry from the save file
         with open(self.save_path, 'r') as f:
             save_data = json.load(f)
 
@@ -595,14 +593,8 @@ class DayRegistryTests(unittest.TestCase):
         with open(self.save_path, 'w') as f:
             json.dump(save_data, f)
 
-        # Load should work and use default registry
-        loaded_engine = load_game(self.save_path)
-
-        # Should have default day_registry
-        loaded_registry = loaded_engine.state.campaign_tracker.day_registry
-        self.assertEqual(len(loaded_registry), 30)
-        self.assertEqual(loaded_registry[1].weather, "A Perfect Day")
-        self.assertEqual(loaded_registry[4].weather, "Downpour")
+        with self.assertRaises(KeyError):
+            load_game(self.save_path)
 
     def test_day_registry_instances_are_independent(self):
         """Test that each CampaignTracker has its own day_registry instance."""
@@ -614,6 +606,61 @@ class DayRegistryTests(unittest.TestCase):
 
         # tracker2 should not be affected
         self.assertNotIn("only_in_tracker1", tracker2.day_registry[5].entries)
+
+
+class LoadGameFailLoudTests(unittest.TestCase):
+    """Tests that load_game raises on missing or invalid fields."""
+
+    def setUp(self):
+        self.temp_dir = tempfile.mkdtemp()
+        self.save_path = os.path.join(self.temp_dir, "test_save.json")
+        state = make_test_state()
+        engine = GameEngine(state)
+        save_game(engine, self.save_path)
+
+        with open(self.save_path, 'r') as f:
+            self.save_data = json.load(f)
+
+    def tearDown(self):
+        if os.path.exists(self.save_path):
+            os.remove(self.save_path)
+        os.rmdir(self.temp_dir)
+
+    def _write_and_load(self, data):
+        with open(self.save_path, 'w') as f:
+            json.dump(data, f)
+        return load_game(self.save_path)
+
+    def test_missing_weather_id_raises(self):
+        del self.save_data['weather_id']
+        with self.assertRaises(KeyError):
+            self._write_and_load(self.save_data)
+
+    def test_missing_mission_ids_raises(self):
+        del self.save_data['mission_ids']
+        with self.assertRaises(KeyError):
+            self._write_and_load(self.save_data)
+
+    def test_missing_campaign_id_raises(self):
+        del self.save_data['campaign_tracker']['campaign_id']
+        with self.assertRaises(KeyError):
+            self._write_and_load(self.save_data)
+
+    def test_missing_ranger_injury_raises(self):
+        del self.save_data['ranger']['injury']
+        with self.assertRaises(KeyError):
+            self._write_and_load(self.save_data)
+
+    def test_missing_current_location_id_raises(self):
+        del self.save_data['campaign_tracker']['current_location_id']
+        with self.assertRaises(KeyError):
+            self._write_and_load(self.save_data)
+
+    def test_version_mismatch_raises(self):
+        self.save_data['version'] = '99.0'
+        with self.assertRaises(ValueError) as ctx:
+            self._write_and_load(self.save_data)
+        self.assertIn('99.0', str(ctx.exception))
 
 
 class MissionBubbleTests(unittest.TestCase):
