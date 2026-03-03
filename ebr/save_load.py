@@ -578,15 +578,35 @@ def load_game(filepath: str | Path) -> GameEngine:
         for card_data in cards_data:
             if card_data.get('is_facedown', False):
                 frontside_id = card_data.get('frontside_id')
-                if frontside_id and frontside_id in card_registry:
+                if not frontside_id:
+                    continue
+
+                if frontside_id in card_registry:
                     frontside = card_registry[frontside_id]
-                    # The facedown card IS the frontside's backside
-                    facedown = frontside.backside
-                    if facedown:
-                        facedown.id = card_data['id']
-                        _apply_mutable_state(facedown, card_data)
-                        card_registry[facedown.id] = facedown
-                        card_list.append(facedown)
+                else:
+                    # Frontside not in registry — the card was flipped facedown
+                    # so only the FacedownCard is in an area.  Instantiate the
+                    # frontside from its class name (stored in backside_class).
+                    frontside_class_name = card_data.get('backside_class')
+                    if not frontside_class_name:
+                        continue
+                    frontside_class = get_card_class(frontside_class_name)
+                    import inspect
+                    sig = inspect.signature(frontside_class.__init__)
+                    if 'fresh' in sig.parameters:
+                        frontside = frontside_class(fresh=False)
+                    else:
+                        frontside = frontside_class()
+                    frontside.id = frontside_id
+                    card_registry[frontside_id] = frontside
+
+                # The facedown card IS the frontside's backside
+                facedown = frontside.backside
+                if facedown:
+                    facedown.id = card_data['id']
+                    _apply_mutable_state(facedown, card_data)
+                    card_registry[facedown.id] = facedown
+                    card_list.append(facedown)
 
     # Process facedown cards in each location
     process_facedown_cards(ranger_data['deck'], ranger_deck)

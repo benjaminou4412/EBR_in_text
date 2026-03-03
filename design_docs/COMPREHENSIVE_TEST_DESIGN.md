@@ -173,3 +173,113 @@ Lower priority (complex setup, lower ROI):
 - [x] Test execute_travel (multi-step, needs full state setup)
 - [x] Test phase3_travel eligibility and blockers
 - [ ] Test arrival_setup path deck construction
+
+---
+
+### save_load.py
+
+**Total mutants**: 915 | **Killed**: 496 (54.2%) | **Survived**: 395 (43.2%) | **No tests**: 24 (2.6%)
+
+The existing tests are all round-trip (save→load→spot-check a few fields). This catches gross
+breakage but misses most field-level mutations because assertions are shallow and many code
+paths (facedown cards, modifiers, generic JSON cards, mission bubbles) have zero coverage.
+
+Per-function breakdown:
+
+| Function | Survived | No tests | Notes |
+|----------|----------|----------|-------|
+| `load_game` | 178 | 0 | Mega-function; many `.get()` defaults, facedown branch, weather/mission ID lookup |
+| `instantiate_card` | 36 | 0 | Generic Card from JSON, facedown guard, `fresh` param inspection |
+| `_apply_mutable_state` | 33 | 0 | `.get()` default values (`False`, `0`, `{}`) never tested with missing keys |
+| `serialize_card` | 27 | 0 | Facedown detection, JSON source info, backside class |
+| `deserialize_mission` | 27 | 0 | Bubble fields (`left_bubble`, etc.) never checked after load |
+| `_validate_save_structure` | 25 | 0 | Tests always provide well-formed saves |
+| `_build_card_class_registry` | 24 | 0 | Auto-discovery loop filter conditions never tested |
+| `serialize_game_state` | 23 | 0 | Individual field mappings (weather_id, mission_ids, etc.) |
+| `serialize_modifier` | 0 | 16 | Completely untested — no test card has modifiers |
+| `save_game` | 9 | 0 | File I/O (encoding, mkdir) |
+| `serialize_mission` | 6 | 0 | Bubble field serialization |
+| Other | 7 | 8 | `get_card_class`, `deserialize_challenge_card`, etc. |
+
+#### What's surviving and why — categorized by theme
+
+**Theme 1: Facedown card round-trip completely untested (~30+ mutations) — RESOLVED**
+Added `FacedownCardTests` (5 tests): serialize facedown fields, serialize non-facedown fields,
+round-trip in area, frontside link preservation, mutable state preservation. **Also found and
+fixed a bug:** `process_facedown_cards` silently dropped facedown cards whose frontside wasn't
+separately in an area (which is the normal case after a card is flipped facedown). Fixed by
+instantiating the frontside from its class name (stored in the `backside_class` field) when it's
+not already in the card registry.
+
+**Theme 2: Modifier serialization has zero coverage (16 no-tests + ~15 survived)**
+`serialize_modifier` has 16 mutants with no tests at all. `deserialize_modifier` is exercised
+only via `_apply_mutable_state` during round-trips, but no test card has modifiers, so the
+`card_data.get('modifiers', [])` always gets an empty list and the loop body never runs.
+
+**FIX:** Add a round-trip test with a card that has ValueModifiers. Verify all four fields
+(`target`, `amount`, `source_id`, `minimum_result`) survive the trip.
+
+**Theme 3: Mission bubble fields never verified (~27 survived in `deserialize_mission`)**
+The existing test saves a `Mission("Test Mission")` and checks the name loads correctly, but
+never sets or checks `left_bubble`, `middle_bubble`, or `right_bubble`. All three `.get()`
+calls survive mutations to key names and default values.
+
+**FIX:** Save a mission with specific bubble states, load it, and assert each bubble field.
+
+**Theme 4: `load_game` fallback/default paths untested (~50+ survived)**
+`load_game` has many `.get('key', default)` calls for backwards compatibility. Since tests
+always save with the current version, the defaults are never exercised:
+- `weather_id = None` when weather absent (mutmut_150 survives)
+- `ct_data.get('campaign_id', '')` fallback → `_generate_campaign_id()` path
+- `ranger_data.get('injury', 0)` default
+- `ct_data.get('ranger_aspects', {})` default
+- Version migration branch (currently a no-op `pass`)
+
+These are genuinely defensive code. Many mutations are equivalent (changing a never-hit
+default). A targeted backwards-compat test loading a stripped-down save would catch the
+important ones.
+
+**FIX:** Create a minimal/legacy save dict missing optional keys, load it, and verify defaults.
+
+**Theme 5: Generic Card from JSON not tested (~15 survived in `instantiate_card`)**
+When `class_name == "Card"`, the loader checks `json_source_title` and `json_source_set` to
+reconstruct the card via `load_card_fields`. No test round-trips a plain `Card(title=...,
+card_set=...)`, so this entire branch survives.
+
+**FIX:** Add a round-trip with a generic JSON-loaded Card in an area.
+
+**Theme 6: `_validate_save_structure` not directly tested (~25 survived)**
+The validation function checks for required keys at multiple nesting levels. Tests always
+provide well-formed saves, so mutations to the required key lists and the nested validation
+branches mostly survive. The function IS called during loads (some mutations are killed), but
+the granular checks aren't exercised.
+
+**FIX:** Test loading a save with missing top-level keys, missing ranger keys, and missing
+challenge_deck keys — verify each raises ValueError with a descriptive message.
+
+**Theme 7: `_build_card_class_registry` filter conditions (~24 survived)**
+The auto-discovery loop filters with `inspect.isclass`, `issubclass(obj, Card)`,
+`obj is not Card`, and `obj is not FacedownCard`. Since `get_card_class` works in other tests
+(implicitly building the registry), the registry IS constructed, but the filter mutations
+survive because no test checks what's in the registry vs. what's excluded.
+
+**FIX:** Low priority — these are mostly equivalent mutations (the filters work correctly and
+changing them would either break other tests or produce the same result). Could add a direct
+test verifying known classes are present and non-Card classes are absent.
+
+#### Recommendations (prioritized)
+
+High value / easy fixes:
+- [x] Round-trip test with FacedownCard attachment (+ bugfix in `process_facedown_cards`)
+- [ ] Round-trip test with card that has ValueModifiers
+- [ ] Round-trip test with mission bubble states (left/middle/right)
+- [ ] Round-trip test with generic JSON-loaded Card
+- [ ] Backwards-compat test: load save with missing optional keys
+
+Medium value:
+- [ ] Direct `_validate_save_structure` tests with malformed saves
+- [ ] Verify weather and mission IDs resolve correctly after load
+
+Lower priority:
+- [ ] Direct `_build_card_class_registry` contents test
+- [ ] `serialize_card` field-level assertions (separate from round-trip)

@@ -9,7 +9,7 @@ from pathlib import Path
 
 from ebr.models import (
     Card, RangerState, GameState, CampaignTracker, ChallengeDeck,
-    Aspect, Area, CardType, Mission, Keyword
+    Aspect, Area, CardType, Mission, Keyword, FacedownCard
 )
 from ebr.engine import GameEngine
 from ebr.save_load import (
@@ -614,6 +614,92 @@ class DayRegistryTests(unittest.TestCase):
 
         # tracker2 should not be affected
         self.assertNotIn("only_in_tracker1", tracker2.day_registry[5].entries)
+
+
+class FacedownCardTests(unittest.TestCase):
+    """Tests for facedown card serialization and round-trip."""
+
+    def test_serialize_facedown_card_fields(self):
+        """Serializing a FacedownCard sets is_facedown and frontside_id."""
+        doe = SitkaDoe()
+        facedown = doe.backside
+        self.assertIsInstance(facedown, FacedownCard)
+
+        card_data = serialize_card(facedown)
+
+        self.assertEqual(card_data.card_class, "FacedownCard")
+        self.assertTrue(card_data.is_facedown)
+        self.assertEqual(card_data.frontside_id, doe.id)
+
+    def test_serialize_non_facedown_card_fields(self):
+        """Serializing a normal card has is_facedown=False and no frontside_id."""
+        doe = SitkaDoe()
+        card_data = serialize_card(doe)
+
+        self.assertFalse(card_data.is_facedown)
+        self.assertIsNone(card_data.frontside_id)
+
+    def test_facedown_roundtrip_in_area(self):
+        """A facedown card placed in an area survives save/load."""
+        state = make_test_state()
+        doe = SitkaDoe()
+        facedown = doe.backside
+        state.areas[Area.SURROUNDINGS].append(facedown)
+
+        engine = GameEngine(state)
+
+        with tempfile.TemporaryDirectory() as tmp:
+            path = os.path.join(tmp, "save.json")
+            save_game(engine, path)
+            loaded = load_game(path)
+
+        surr = loaded.state.areas[Area.SURROUNDINGS]
+        facedown_cards = [c for c in surr if isinstance(c, FacedownCard)]
+        self.assertEqual(len(facedown_cards), 1, "Facedown card should be present after load")
+
+    def test_facedown_roundtrip_preserves_frontside_link(self):
+        """After round-trip the facedown card's backside points to the correct frontside."""
+        state = make_test_state()
+        doe = SitkaDoe()
+        facedown = doe.backside
+        state.areas[Area.SURROUNDINGS].append(facedown)
+
+        engine = GameEngine(state)
+
+        with tempfile.TemporaryDirectory() as tmp:
+            path = os.path.join(tmp, "save.json")
+            save_game(engine, path)
+            loaded = load_game(path)
+
+        surr = loaded.state.areas[Area.SURROUNDINGS]
+        facedown_cards = [c for c in surr if isinstance(c, FacedownCard)]
+        self.assertEqual(len(facedown_cards), 1)
+
+        restored_facedown = facedown_cards[0]
+        self.assertIsNotNone(restored_facedown.backside, "Frontside link should be restored")
+        self.assertEqual(restored_facedown.backside.title, "Sitka Doe")
+
+    def test_facedown_roundtrip_preserves_mutable_state(self):
+        """Mutable state on a facedown card survives the round-trip."""
+        state = make_test_state()
+        doe = SitkaDoe()
+        facedown = doe.backside
+        facedown.progress = 2
+        facedown.exhausted = True
+        state.areas[Area.SURROUNDINGS].append(facedown)
+
+        engine = GameEngine(state)
+
+        with tempfile.TemporaryDirectory() as tmp:
+            path = os.path.join(tmp, "save.json")
+            save_game(engine, path)
+            loaded = load_game(path)
+
+        surr = loaded.state.areas[Area.SURROUNDINGS]
+        facedown_cards = [c for c in surr if isinstance(c, FacedownCard)]
+        self.assertEqual(len(facedown_cards), 1)
+        self.assertEqual(facedown_cards[0].progress, 2)
+        self.assertTrue(facedown_cards[0].exhausted)
 
 
 if __name__ == '__main__':
