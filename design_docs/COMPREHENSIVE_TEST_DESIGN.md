@@ -219,12 +219,10 @@ only via `_apply_mutable_state` during round-trips, but no test card has modifie
 **FIX:** Add a round-trip test with a card that has ValueModifiers. Verify all four fields
 (`target`, `amount`, `source_id`, `minimum_result`) survive the trip.
 
-**Theme 3: Mission bubble fields never verified (~27 survived in `deserialize_mission`)**
-The existing test saves a `Mission("Test Mission")` and checks the name loads correctly, but
-never sets or checks `left_bubble`, `middle_bubble`, or `right_bubble`. All three `.get()`
-calls survive mutations to key names and default values.
-
-**FIX:** Save a mission with specific bubble states, load it, and assert each bubble field.
+**Theme 3: Mission bubble fields never verified (~27 survived in `deserialize_mission`) — RESOLVED**
+Added `MissionBubbleTests` (2 tests): direct `serialize_mission` field check, and full round-trip
+with both active and cleared missions having distinct bubble patterns. All three bubble fields
+now verified on both serialization and deserialization paths.
 
 **Theme 4: `load_game` fallback/default paths untested (~50+ survived)**
 `load_game` has many `.get('key', default)` calls for backwards compatibility. Since tests
@@ -272,7 +270,7 @@ test verifying known classes are present and non-Card classes are absent.
 High value / easy fixes:
 - [x] Round-trip test with FacedownCard attachment (+ bugfix in `process_facedown_cards`)
 - [ ] Round-trip test with card that has ValueModifiers
-- [ ] Round-trip test with mission bubble states (left/middle/right)
+- [x] Round-trip test with mission bubble states (left/middle/right)
 - [ ] Round-trip test with generic JSON-loaded Card
 - [ ] Backwards-compat test: load save with missing optional keys
 

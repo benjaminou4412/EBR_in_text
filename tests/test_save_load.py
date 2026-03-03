@@ -616,6 +616,49 @@ class DayRegistryTests(unittest.TestCase):
         self.assertNotIn("only_in_tracker1", tracker2.day_registry[5].entries)
 
 
+class MissionBubbleTests(unittest.TestCase):
+    """Tests for mission bubble field serialization and round-trip."""
+
+    def test_serialize_mission_captures_bubbles(self):
+        """serialize_mission preserves each bubble field."""
+        from ebr.save_load import serialize_mission
+        mission = Mission("Test", left_bubble=True, middle_bubble=False, right_bubble=True)
+        data = serialize_mission(mission)
+
+        self.assertEqual(data.name, "Test")
+        self.assertTrue(data.left_bubble)
+        self.assertFalse(data.middle_bubble)
+        self.assertTrue(data.right_bubble)
+
+    def test_mission_bubbles_roundtrip(self):
+        """Mission bubble states survive a full save/load cycle."""
+        state = make_test_state()
+        state.campaign_tracker.active_missions.append(
+            Mission("Active Quest", left_bubble=True, middle_bubble=True, right_bubble=False)
+        )
+        state.campaign_tracker.cleared_missions.append(
+            Mission("Done Quest", left_bubble=False, middle_bubble=True, right_bubble=True)
+        )
+        engine = GameEngine(state)
+
+        with tempfile.TemporaryDirectory() as tmp:
+            path = os.path.join(tmp, "save.json")
+            save_game(engine, path)
+            loaded = load_game(path)
+
+        active = {m.name: m for m in loaded.state.campaign_tracker.active_missions}
+        self.assertIn("Active Quest", active)
+        self.assertTrue(active["Active Quest"].left_bubble)
+        self.assertTrue(active["Active Quest"].middle_bubble)
+        self.assertFalse(active["Active Quest"].right_bubble)
+
+        cleared = {m.name: m for m in loaded.state.campaign_tracker.cleared_missions}
+        self.assertIn("Done Quest", cleared)
+        self.assertFalse(cleared["Done Quest"].left_bubble)
+        self.assertTrue(cleared["Done Quest"].middle_bubble)
+        self.assertTrue(cleared["Done Quest"].right_bubble)
+
+
 class FacedownCardTests(unittest.TestCase):
     """Tests for facedown card serialization and round-trip."""
 
