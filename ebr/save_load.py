@@ -41,7 +41,7 @@ class ModifierData:
 @dataclass
 class CardData:
     """Serializable representation of a Card's mutable state"""
-    card_class: str  # e.g., "BiscuitBasket", "SitkaDoe", "Card"
+    card_class: str  # e.g., "BiscuitBasket", "SitkaDoe"
     id: str  # Unique instance ID
 
     # Mutable state
@@ -59,10 +59,6 @@ class CardData:
     # For facedown cards
     is_facedown: bool = False
     frontside_id: str | None = None  # If facedown, the ID of the face-up side
-
-    # For generic Card instances loaded from JSON
-    json_source_title: str | None = None
-    json_source_set: str | None = None
 
 
 @dataclass
@@ -226,12 +222,13 @@ def serialize_card(card: Card) -> CardData:
     if card.backside and not isinstance(card.backside, FacedownCard):
         backside_class = card.backside.__class__.__name__
 
-    # For generic Card instances, save JSON source info
-    json_source_title = None
-    json_source_set = None
-    if class_name == "Card" and card.title:
-        json_source_title = card.title
-        json_source_set = card.card_set if card.card_set else None
+    # Bare Card instances should never appear in a saveable game state —
+    # every card should have a dedicated subclass.
+    if class_name == "Card" and not is_facedown:
+        raise ValueError(
+            f"Cannot serialize bare Card '{card.title or card.id}'. "
+            "All cards in a saveable game state must have a dedicated subclass."
+        )
 
     return CardData(
         card_class=class_name,
@@ -246,8 +243,6 @@ def serialize_card(card: Card) -> CardData:
         backside_class=backside_class,
         is_facedown=is_facedown,
         frontside_id=frontside_id,
-        json_source_title=json_source_title,
-        json_source_set=json_source_set
     )
 
 
@@ -434,21 +429,6 @@ def instantiate_card(card_data: dict[str, Any]) -> Card:
         _apply_mutable_state(front, card_data)
 
         return front
-
-    # Handle generic Card loaded from JSON
-    if class_name == "Card":
-        json_title = card_data.get('json_source_title')
-        json_set = card_data.get('json_source_set')
-
-        if json_title and json_set:
-            from .json_loader import load_card_fields
-            card = Card(**load_card_fields(json_title, json_set))
-        else:
-            card = Card()
-
-        card.id = card_data['id']
-        _apply_mutable_state(card, card_data)
-        return card
 
     # Standard card class
     card_class = get_card_class(class_name)

@@ -9,7 +9,7 @@ from pathlib import Path
 
 from ebr.models import (
     Card, RangerState, GameState, CampaignTracker, ChallengeDeck,
-    Aspect, Area, CardType, Mission, Keyword, FacedownCard
+    Aspect, Area, Mission, Keyword, FacedownCard
 )
 from ebr.engine import GameEngine
 from ebr.save_load import (
@@ -18,7 +18,8 @@ from ebr.save_load import (
 )
 from ebr.cards import (
     BiscuitDelivery, BiscuitBasket, PeerlessPathfinder, SitkaDoe,
-    HyPimpotChef, LoneTreeStation, APerfectDay
+    HyPimpotChef, LoneTreeStation, APerfectDay,
+    BoundarySensor, AffordedByNature, WalkWithMe
 )
 
 
@@ -324,13 +325,9 @@ class SaveLoadRoundTripTests(unittest.TestCase):
         """Test that ranger deck, hand, and discard are preserved."""
         state = make_test_state()
 
-        # Add cards to ranger's deck and hand
-        deck_card = Card(title="Deck Card", id="deck-card-1")
-        deck_card.card_types.add(CardType.RANGER)
-        hand_card = Card(title="Hand Card", id="hand-card-1")
-        hand_card.card_types.add(CardType.RANGER)
-        discard_card = Card(title="Discard Card", id="discard-card-1")
-        discard_card.card_types.add(CardType.RANGER)
+        deck_card = BoundarySensor()
+        hand_card = AffordedByNature()
+        discard_card = WalkWithMe()
 
         state.ranger.deck.append(deck_card)
         state.ranger.hand.append(hand_card)
@@ -341,17 +338,14 @@ class SaveLoadRoundTripTests(unittest.TestCase):
         save_game(engine, self.save_path)
         loaded_engine = load_game(self.save_path)
 
-        # Check deck
         deck_ids = [c.id for c in loaded_engine.state.ranger.deck]
-        self.assertIn("deck-card-1", deck_ids)
+        self.assertIn(deck_card.id, deck_ids)
 
-        # Check hand
         hand_ids = [c.id for c in loaded_engine.state.ranger.hand]
-        self.assertIn("hand-card-1", hand_ids)
+        self.assertIn(hand_card.id, hand_ids)
 
-        # Check discard
         discard_ids = [c.id for c in loaded_engine.state.ranger.discard]
-        self.assertIn("discard-card-1", discard_ids)
+        self.assertIn(discard_card.id, discard_ids)
 
 
 class ReconstructSilentTests(unittest.TestCase):
@@ -661,6 +655,17 @@ class LoadGameFailLoudTests(unittest.TestCase):
         with self.assertRaises(ValueError) as ctx:
             self._write_and_load(self.save_data)
         self.assertIn('99.0', str(ctx.exception))
+
+
+class BareCardSerializationTests(unittest.TestCase):
+    """Tests that bare Card instances are rejected during serialization."""
+
+    def test_serialize_bare_card_raises(self):
+        """serialize_card raises ValueError for a bare Card (no dedicated subclass)."""
+        card = Card(title="Fake Card", id="fake-1")
+        with self.assertRaises(ValueError) as ctx:
+            serialize_card(card)
+        self.assertIn("bare Card", str(ctx.exception))
 
 
 class MissionBubbleTests(unittest.TestCase):

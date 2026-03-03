@@ -239,12 +239,14 @@ Added `LoadGameFailLoudTests` (6 tests) verifying `KeyError`/`ValueError` on mis
 `weather_id`, `mission_ids`, `campaign_id`, `injury`, `current_location_id`, and version
 mismatch. Updated existing `test_day_registry_backwards_compatibility` → `test_missing_day_registry_raises`.
 
-**Theme 5: Generic Card from JSON not tested (~15 survived in `instantiate_card`)**
-When `class_name == "Card"`, the loader checks `json_source_title` and `json_source_set` to
-reconstruct the card via `load_card_fields`. No test round-trips a plain `Card(title=...,
-card_set=...)`, so this entire branch survives.
-
-**FIX:** Add a round-trip with a generic JSON-loaded Card in an area.
+**Theme 5: Generic Card from JSON not tested (~15 survived in `instantiate_card`) — RESOLVED**
+Removed dead code: the generic Card branch in both `serialize_card` and `instantiate_card` was
+only reachable from save_load.py itself (all production cards have dedicated subclasses).
+`serialize_card` now raises `ValueError` on bare `Card` instances, the `json_source_title`/
+`json_source_set` fields were removed from `CardData`, and the `instantiate_card` JSON loader
+branch was deleted. Added `BareCardSerializationTests` (1 test) verifying the fail-loud
+behavior. Also fixed `test_ranger_deck_and_hand_preserved` which was using bare `Card`
+instances — switched to real explorer card subclasses.
 
 **Theme 6: `_validate_save_structure` not directly tested (~25 survived)**
 The validation function checks for required keys at multiple nesting levels. Tests always
@@ -271,7 +273,7 @@ High value / easy fixes:
 - [x] Round-trip test with FacedownCard attachment (+ bugfix in `process_facedown_cards`)
 - [ ] Round-trip test with card that has ValueModifiers
 - [x] Round-trip test with mission bubble states (left/middle/right)
-- [ ] Round-trip test with generic JSON-loaded Card
+- [x] Removed dead generic Card branch; serialize_card now rejects bare Cards
 - [x] Fail-loud on missing keys + tests (replaced backwards-compat defaults)
 
 Medium value:
