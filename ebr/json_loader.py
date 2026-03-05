@@ -151,6 +151,8 @@ def parse_starting_tokens(card_data : dict) -> tuple[str,int] | None: #type:igno
     if enters_play_with:
         token_type = enters_play_with.get("type", "").lower() #type:ignore
         token_amount = enters_play_with.get("amount", 0) #type:ignore
+        if not token_type:
+            raise ValueError(f"enters_play_with block has no 'type': {enters_play_with}")
         return (token_type, token_amount) #type:ignore
     return None
 
@@ -161,7 +163,10 @@ def parse_card_abilities(card_data : dict) -> list[str]: #type:ignore
             text = rule.get("text", "") #type:ignore
             if text:
                 if rule.get("kind", "") == "challenge": #type:ignore
-                    abilities.append(rule.get("challenge_symbol", "NO_SYMBOL_FOUND") + ": " + text) #type:ignore
+                    symbol = rule.get("challenge_symbol") #type:ignore
+                    if not symbol:
+                        raise ValueError(f"Challenge rule missing 'challenge_symbol': {rule}")
+                    abilities.append(symbol + ": " + text) #type:ignore
                 else:
                     abilities.append(text) #type:ignore
     return abilities
@@ -202,7 +207,9 @@ def parse_card_types(card_set : str, card_type: str) -> set[CardType]:
         card_types.add(CardType.MISSION)
     elif parsed_card_type == "role":
         card_types.add(CardType.ROLE)
-    
+    elif parsed_card_type:
+        raise ValueError(f"Unknown card_type '{card_type}' (normalized: '{parsed_card_type}')")
+
     return card_types
 
 def parse_energy_cost(card_data: dict) -> int | None: #type:ignore
@@ -221,10 +228,7 @@ def parse_energy_cost(card_data: dict) -> int | None: #type:ignore
     amount = int(energy_cost_data.get("amount", 0)) #type:ignore
 
     if amount:
-        try:
-            return amount
-        except ValueError:
-            return None
+        return amount
 
     return None
 
@@ -246,11 +250,8 @@ def parse_approach_icons(card_data: dict) -> dict[Approach, int]: #type:ignore
         count = icon.get("count", 0) #type:ignore
 
         if approach_str and count:
-            try:
-                approach = Approach(approach_str)
-                approach_icons[approach] = approach_icons.get(approach, 0) + count #type:ignore
-            except ValueError:
-                pass
+            approach = Approach(approach_str)  # raises ValueError on unknown approach
+            approach_icons[approach] = approach_icons.get(approach, 0) + count #type:ignore
 
     return approach_icons 
 
@@ -268,12 +269,10 @@ def parse_aspect_requirement(card_data: dict) -> tuple[Aspect | None, int]: #typ
     aspect_str = aspect_req.get("aspect") #type: ignore
     min_value = aspect_req.get("min", 0) #type: ignore
 
-    aspect = None
     if aspect_str:
-        try:
-            aspect = Aspect(aspect_str)
-        except ValueError:
-            pass
+        aspect = Aspect(aspect_str)  # raises ValueError on unknown aspect
+    else:
+        aspect = None
 
     return (aspect, min_value) #type: ignore
 
@@ -281,17 +280,6 @@ def parse_aspect_requirement(card_data: dict) -> tuple[Aspect | None, int]: #typ
 def parse_traits(card_data: dict) -> list[str]:  #type: ignore
     """Parse traits list from JSON"""
     return card_data.get("traits", []) #type: ignore
-
-
-def generate_card_id(title: str, card_set: str) -> str:
-    """
-    Generate a card ID from title and set.
-    Format: set-title (lowercase, hyphens for spaces)
-    """
-    set_part = card_set.lower().replace(" ", "-")
-    title_part = title.lower().replace(" ", "-")
-    return f"{set_part}-{title_part}"
-
 
 
 
@@ -328,7 +316,7 @@ def parse_area(enters_play: str | None, card_types: set[CardType]) -> Area | Non
 
     if CardType.WEATHER in card_types or CardType.LOCATION in card_types or CardType.MISSION in card_types:
         return Area.SURROUNDINGS
-    elif CardType.GEAR in card_types:
+    elif CardType.GEAR in card_types or CardType.ROLE in card_types:
         return Area.PLAYER_AREA
     elif CardType.MOMENT in card_types or CardType.ATTRIBUTE in card_types or CardType.ATTACHMENT in card_types:
         return None
@@ -338,8 +326,10 @@ def parse_area(enters_play: str | None, card_types: set[CardType]) -> Area | Non
             return Area.WITHIN_REACH
         elif enters_play_cleaned == "alongtheway":
             return Area.ALONG_THE_WAY
+        elif enters_play_cleaned == "surroundings":
+            return Area.SURROUNDINGS
         else:
-            return None  # Default
+            raise ValueError(f"Unknown enters_play value: '{enters_play}'")
 
 
 def parse_clear_logs(card_data: dict) -> tuple[str | None, str | None]: #type:ignore
