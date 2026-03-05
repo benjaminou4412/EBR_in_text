@@ -10,7 +10,6 @@
 
 | Module | Total | Kill % | Survived | No Tests | Priority |
 |--------|------:|-------:|---------:|---------:|----------|
-| json_loader | 602 | 69.6% | 167 | 16 | LOW |
 | woods_cards | 547 | 57.2% | 206 | 28 | HIGH |
 | models | 496 | 43.8% | 279 | 0 | HIGH |
 | explorer_cards | 320 | 51.2% | 150 | 6 | MEDIUM |
@@ -29,109 +28,57 @@
 
 ## Module-by-Module Analysis
 
-### json_loader.py — Priority: LOW
+### models.py — 496 total, 43.8% killed, 279 survived, 0 no-tests
 
-**Total mutants**: 602 | **Killed**: 419 (69.6%) | **Survived**: 167 (27.7%) | **No tests**: 16 (2.7%)
+#### Per-function survived mutation breakdown
 
-No direct test file exists (no test_json_loader.py). All kills come indirectly through card
-instantiation — creating `SitkaDoe()`, `APerfectDay()`, etc. reads JSON and populates fields.
-Survived mutations are ones where no test asserts on the specific parsed field.
+| Function | Survived | Notes |
+|----------|------:|-------|
+| `_build_challenge_deck` | 176 | 24-card data table: icons, mods, reshuffle flags |
+| `_default_day_registry` | 101 | 30-day data table: weather names, campaign log entries |
+| `draw_challenge_card` | 1 | Message string mutation |
+| `_generate_campaign_id` | 1 | `hex[:8]` slice boundary |
 
-Per-function breakdown:
+#### Theme Analysis
 
-| Function | Survived | No tests | Notes |
-|----------|:--------:|:--------:|-------|
-| `parse_card_types` | 62 | 0 | Huge elif chain mapping strings → CardType enums + two large set literals |
-| `load_card_fields` | 20 | 0 | Return dict: swapping which local maps to which key survives |
-| `generate_card_id` | 0 | 16 | Dead code — defined but never called anywhere |
-| `load_card_json_by_title` | 14 | 0 | File I/O, isinstance branch, card search loop |
-| `parse_threshold_value` | 13 | 0 | 5 branches (None/-1/-2/int/str/"Ranger Token"/digits) |
-| `parse_card_abilities` | 12 | 0 | "rules" array parsing, "challenge" kind formatting |
-| `parse_starting_tokens` | 8 | 0 | Token type/amount from "enters_play_with" |
-| `parse_clear_logs` | 8 | 0 | Regex-based "[Campaign Log Entry] N" extraction |
-| `parse_area` | 8 | 0 | CardType → Area mapping with string cleaning |
-| `parse_approach_icons` | 5 | 0 | Approach dict accumulation |
-| `parse_mission_objective_log` | 4 | 0 | Regex-based log entry from mission objective text |
-| `parse_aspect_requirement` | 4 | 0 | Aspect enum + min_value extraction |
-| `get_project_root` | 4 | 0 | Path traversal up to README.md |
-| `parse_energy_cost` | 3 | 0 | Energy cost amount extraction |
-| `parse_traits` | 2 | 0 | Simple `.get("traits", [])` |
+**Theme 1: Challenge deck data integrity (176 survived)**
+`_build_challenge_deck` is a 24-row lookup table. Each ChallengeCard has an icon (sun/mountain/crest), 4 aspect modifiers (AWA/FIT/SPI/FOC), and a reshuffle flag. Mutations survive because no test verifies the actual card data — only that the deck exists and can be drawn from. Mutmut is swapping modifier values (0→1, -1→0), flipping reshuffle bools, and changing icons, all undetected.
 
-#### What's surviving and why — categorized by theme
+Key properties to verify:
+- Exactly 24 cards
+- Icon distribution: 8 sun, 8 mountain, 8 crest
+- Each card's 4 mods sum to 0 (zero-sum property — need to verify this holds)
+- Exactly 4 reshuffle cards (cards 0, 4, 11, 13)
+- Specific mod values on specific cards (spot-check a few)
 
-**Theme 1: `parse_card_types` string matching (~62 survived)**
-Two large string sets (`ranger_sets` with 9 entries, `path_sets` with 19 entries) plus a 10-branch
-`if/elif` chain mapping card_type strings to `CardType` enums. Mutmut generates mutations on
-every string literal ("explorer"→"XXXX"), every `==` comparison, every `.add()` call, and the
-normalization chain (`.lower().replace()`). This is structurally identical to campaign_guide.py's
-string-heavy inflation.
+**Theme 2: Day registry data integrity (101 survived)**
+`_default_day_registry` is a 30-day lookup mapping day numbers to `DayContent(weather_name, entries_list)`. Mutations survive because no test checks the actual weather assignments or campaign log entries per day. Mutmut is swapping weather names between days, changing day numbers, and mutating the entry lists.
 
-Most of these are **equivalent mutations** — changing one string in a 19-entry set doesn't break
-anything because the other 18 still work for the production cards that use those sets. The elif
-chain mutations survive because tests only exercise the card types used by test cards (Being,
-Moment, Gear, Weather, Location, Mission) — not every branch.
+Key properties to verify:
+- Exactly 30 days (1–30)
+- Weather distribution matches game rules
+- Days with campaign log entries (day 3 has "94.1", day 4 has "1.04")
+- Specific day→weather mappings (spot-check representative days)
 
-**Theme 2: `load_card_fields` return dict (~20 survived)**
-The return dict on lines 78-106 maps 22 local variables to dict keys. Mutations swap which
-variable maps to which key (e.g., `"harm_threshold": harm_value` → `"harm_threshold":
-progress_value`). These survive because existing tests don't assert every parsed field on
-cards — they test behavior, not data fidelity.
+**Theme 3: draw_challenge_card message (1 survived)**
+A message string mutation in `draw_challenge_card`. Low value — message text is cosmetic.
 
-**FIX:** Test a few representative cards and assert on their parsed fields: card_types, traits,
-thresholds, presence, approach_icons, aspect, energy_cost, starting_area, abilities_text, etc.
-This catches the field-swap mutations in `load_card_fields` AND validates the individual parsers.
-
-**Theme 3: `load_card_json_by_title` file loading (~14 survived)**
-Mutations on encoding parameter, `isinstance(data, list)` branch, `.get("cards", [])` fallback,
-and the title-matching loop. Tests only exercise the happy path (card found). No test for
-unknown set, missing file, or dict-format JSON files.
-
-**Theme 4: `parse_threshold_value` edge cases (~13 survived)**
-Five distinct return branches: `None`/`-1` → missing, `-2` → nulled, `int` → direct value,
-`"Ranger Token"` → ranger-token threshold, string like `"2R"` → digit extraction. Tests only
-exercise the int and None paths through production cards.
-
-**Theme 5: `parse_card_abilities` rules formatting (~12 survived)**
-Iterates "rules" array, formats challenge abilities with `symbol + ": " + text`. Mutations on
-the "challenge" kind check, the "NO_SYMBOL_FOUND" default, and the text concatenation survive
-because no test asserts on `abilities_text` content.
-
-**Theme 6: Smaller parsers (parse_starting_tokens, parse_area, parse_clear_logs, parse_approach_icons, parse_aspect_requirement, parse_mission_objective_log) — ~37 survived total**
-Each has a few surviving mutations on edge cases, string comparisons, or default values. Most
-are caught indirectly but not exhaustively.
-
-**Theme 7: `generate_card_id` — dead code (16 no-tests)**
-Defined on line 286 but never called anywhere in the codebase. Can be deleted.
+**Theme 4: _generate_campaign_id slice (1 survived)**
+`uuid.uuid4().hex[:8]` — mutmut changes the slice to `[:9]` or similar. Low value — the ID just needs to be unique and short.
 
 #### Recommendations (prioritized)
 
-High value / easy fixes:
-- [x] Delete dead `generate_card_id` function — DONE (deleted)
-- [x] Field-level assertions on representative cards (kills Theme 2 + validates parsers) — DONE (12 tests in `FieldLevelAssertionTests`)
-- [x] Test `parse_threshold_value` edge cases: -1, -2, "Ranger Token", "2R" — DONE (9 tests in `ParseThresholdValueTests`)
-- [x] Test `parse_area` with different card types (Gear→PLAYER_AREA, Being→enters_play, Weather→SURROUNDINGS) — DONE (14 tests in `ParseAreaFailLoudTests`)
+High value:
+- [x] Challenge deck structural assertions — DONE (10 tests + 168 subtests in `ChallengeDeckStructureTests`)
+- [x] Challenge deck spot-check — DONE (8 tests in `ChallengeDeckSpotCheckTests`, covers all 4 reshuffle + 4 non-reshuffle)
+- [x] Day registry structural assertions — DONE (7 tests + 70 subtests in `DayRegistryStructureTests`)
+- [x] Day registry spot-check — DONE (8 tests in `DayRegistrySpotCheckTests`)
 
-Medium value:
-- [x] Test `parse_card_types` for each CardType enum member (verifies the elif chain) — DONE (8 tests + 10 subtests in `ParseCardTypesTests`)
-- [x] Test `parse_card_abilities` challenge formatting vs regular text — DONE (5 tests in `ParseCardAbilitiesTests`)
-- [x] Test `parse_clear_logs` and `parse_mission_objective_log` regex patterns — DONE (7 tests total)
-- [x] Test `load_card_json_by_title` error paths (unknown set, missing card) — DONE (2 tests in `LoadCardJsonErrorTests`)
+Lower priority:
+- [ ] `draw_challenge_card` message string — cosmetic, low ROI
+- [ ] `_generate_campaign_id` slice boundary — functional, low ROI
 
-Lower priority (string-set inflation):
-- [ ] `parse_card_types` string set membership — mostly equivalent mutations, low ROI
-- [ ] `get_project_root` path traversal — works or the whole project breaks
+All 564 tests pass (278 subtests). No bugs found in data tables.
 
-#### Code changes made
 
-Fail-loud improvements applied to `json_loader.py`:
-- Deleted dead `generate_card_id` function (16 no-test mutations eliminated)
-- `parse_card_types`: added `role` branch + raises `ValueError` on unknown card_type
-- `parse_approach_icons`: removed try/except, now raises directly on unknown `Approach`
-- `parse_aspect_requirement`: removed try/except, now raises directly on unknown `Aspect`
-- `parse_area`: added `surroundings` branch, added `ROLE` to PLAYER_AREA routing, raises on unknown enters_play
-- `parse_starting_tokens`: raises if `enters_play_with` block has no `type`
-- `parse_card_abilities`: raises on challenge rule missing `challenge_symbol` (was "NO_SYMBOL_FOUND" sentinel)
-- `parse_energy_cost`: removed dead try/except around `return amount` (returning an int can't raise ValueError)
-
-All 532 existing tests + 69 new tests pass (40 subtests). No bugs found in production JSON data.
 
