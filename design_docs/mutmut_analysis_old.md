@@ -354,3 +354,118 @@ Fail-loud improvements applied to `json_loader.py`:
 - `parse_energy_cost`: removed dead try/except around `return amount` (returning an int can't raise ValueError)
 
 All 532 existing tests + 69 new tests pass (40 subtests). No bugs found in production JSON data.
+
+
+## Module-by-Module Analysis
+
+### models.py — 496 total, 43.8% killed, 279 survived, 0 no-tests
+
+#### Per-function survived mutation breakdown
+
+| Function | Survived | Notes |
+|----------|------:|-------|
+| `_build_challenge_deck` | 176 | 24-card data table: icons, mods, reshuffle flags |
+| `_default_day_registry` | 101 | 30-day data table: weather names, campaign log entries |
+| `draw_challenge_card` | 1 | Message string mutation |
+| `_generate_campaign_id` | 1 | `hex[:8]` slice boundary |
+
+#### Theme Analysis
+
+**Theme 1: Challenge deck data integrity (176 survived)**
+`_build_challenge_deck` is a 24-row lookup table. Each ChallengeCard has an icon (sun/mountain/crest), 4 aspect modifiers (AWA/FIT/SPI/FOC), and a reshuffle flag. Mutations survive because no test verifies the actual card data — only that the deck exists and can be drawn from. Mutmut is swapping modifier values (0→1, -1→0), flipping reshuffle bools, and changing icons, all undetected.
+
+Key properties to verify:
+- Exactly 24 cards
+- Icon distribution: 8 sun, 8 mountain, 8 crest
+- Each card's 4 mods sum to 0 (zero-sum property — need to verify this holds)
+- Exactly 4 reshuffle cards (cards 0, 4, 11, 13)
+- Specific mod values on specific cards (spot-check a few)
+
+**Theme 2: Day registry data integrity (101 survived)**
+`_default_day_registry` is a 30-day lookup mapping day numbers to `DayContent(weather_name, entries_list)`. Mutations survive because no test checks the actual weather assignments or campaign log entries per day. Mutmut is swapping weather names between days, changing day numbers, and mutating the entry lists.
+
+Key properties to verify:
+- Exactly 30 days (1–30)
+- Weather distribution matches game rules
+- Days with campaign log entries (day 3 has "94.1", day 4 has "1.04")
+- Specific day→weather mappings (spot-check representative days)
+
+**Theme 3: draw_challenge_card message (1 survived)**
+A message string mutation in `draw_challenge_card`. Low value — message text is cosmetic.
+
+**Theme 4: _generate_campaign_id slice (1 survived)**
+`uuid.uuid4().hex[:8]` — mutmut changes the slice to `[:9]` or similar. Low value — the ID just needs to be unique and short.
+
+#### Recommendations (prioritized)
+
+High value:
+- [x] Challenge deck structural assertions — DONE (10 tests + 168 subtests in `ChallengeDeckStructureTests`)
+- [x] Challenge deck spot-check — DONE (8 tests in `ChallengeDeckSpotCheckTests`, covers all 4 reshuffle + 4 non-reshuffle)
+- [x] Day registry structural assertions — DONE (7 tests + 70 subtests in `DayRegistryStructureTests`)
+- [x] Day registry spot-check — DONE (8 tests in `DayRegistrySpotCheckTests`)
+
+Lower priority:
+- [ ] `draw_challenge_card` message string — cosmetic, low ROI
+- [ ] `_generate_campaign_id` slice boundary — functional, low ROI
+
+All 564 tests pass (278 subtests). No bugs found in data tables.
+
+
+
+### registry.py — 269 total, 43.1% killed, 117 survived, 36 no-tests
+
+#### Per-function survived mutation breakdown
+
+| Function | Survived | No Tests | Notes |
+|----------|------:|------:|-------|
+| `provide_common_tests` | 102 | 0 | 4 common tests: Traverse, Connect, Avoid, Remember — Action wiring + callbacks |
+| `get_search_test` | 0 | 29 | Helper for "scout path + draw 1" test pattern — completely untested |
+| `filter_tests_by_targets` | 9 | 0 | Filters tests by valid targets — edge cases not verified |
+| `_search_test_success` | 0 | 7 | Search test success callback — completely untested |
+| `provide_play_options` | 6 | 0 | Collects play actions from hand — field-level mutations survive |
+
+#### Theme Analysis
+
+**Theme 1: Common test Action wiring (102 survived)**
+`provide_common_tests` builds 4 Action objects (Traverse, Connect, Avoid, Remember), each with specific field values (id, name, aspect, approach, verb, source_id/title), a difficulty function, success/fail callbacks, and a target provider. Tests exercise these through the engine's test-resolution flow, but don't directly verify the Action field values or that the correct callback is wired to the correct test. Mutmut is swapping aspects between tests, changing verbs, flipping difficulty calculations, and mutating callback wiring — all undetected.
+
+Key properties to verify per common test:
+- Action fields: id, aspect, approach, verb
+- Target provider returns correct card types
+- Difficulty function uses presence with min-1 floor
+- Success effect (add_progress / exhaust / scout+draw)
+- Fail effect (injure for Traverse, default no-op for others)
+
+**Theme 2: Search test helper — untested (36 no-tests)**
+`get_search_test` and `_search_test_success` form a reusable pattern for cards that offer a "scout path cards equal to effort, then draw 1 path card" test. No test exercises this code at all. Used by several cards (e.g. Overgrown Thicket, Sunberry Bramble based on naming pattern).
+
+Key properties to verify:
+- Action fields: id built from source_card.id, aspect=AWA, approach=CONNECTION
+- Success effect: scouts path deck by effort, then draws 1 path card
+
+**Theme 3: filter_tests_by_targets edge cases (9 survived)**
+Filters a list of Actions to only include tests that can be initiated. Mutations in the filtering logic survive because tests don't cover:
+- Non-test Actions (is_test=False) always pass through
+- Tests with target_provider=None always included
+- Tests with empty target list excluded
+
+**Theme 4: provide_play_options (6 survived)**
+Iterates hand cards, checks `can_be_played`, collects play Actions. Mutations survive in the filtering/appending logic. Likely low-value field swaps.
+
+#### Recommendations (prioritized)
+
+High value:
+- [x] Common test Action field assertions — DONE (5 tests in `CommonTestActionFieldTests`)
+- [x] Common test target providers — DONE (4 tests in `CommonTestTargetProviderTests`)
+- [x] Common test difficulty functions — DONE (7 tests + 3 subtests in `CommonTestDifficultyTests`)
+- [x] Common test success effects — DONE (5 tests in `CommonTestSuccessEffectTests`)
+- [x] Common test fail effects — DONE (3 tests in `CommonTestFailEffectTests`)
+
+Medium value:
+- [x] Search test helper — DONE (10 field tests + 1 success effect test in `SearchTest*Tests`)
+- [x] filter_tests_by_targets — DONE (5 tests in `FilterTestsByTargetsTests`, all 3 branches + mixed)
+
+Lower priority:
+- [ ] provide_play_options field-level mutations — largely cosmetic
+
+All 604 tests pass (281 subtests). No bugs found.
