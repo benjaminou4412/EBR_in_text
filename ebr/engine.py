@@ -769,9 +769,9 @@ class GameEngine:
             self.add_message(f"Total equip value is now {total_equip}/{MAX_EQUIP}.")
 
     def draw_starting_hand_and_mulligan(self) -> None:
-        """Draw a 5-card starting hand and offer a mulligan.
+        """Draw a 6-card starting hand and offer a mulligan.
 
-        Draws 5 cards, then lets the player set aside any number of cards,
+        Draws 6 cards, then lets the player set aside any number of cards,
         draw that many replacements, and shuffle the set-aside cards back in.
         """
         # TODO: Cards that trigger "when you draw this card" can fire during the
