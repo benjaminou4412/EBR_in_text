@@ -3,7 +3,7 @@ import random
 from dataclasses import dataclass
 from typing import Callable, Optional, Any, cast
 from .models import (
-    GameState, Action, CommitDecision, RangerState, Card, ChallengeIcon,
+    GameState, Action, CommitDecision, RangerState, Card, FacedownCard, ChallengeIcon,
     Aspect, Approach, Area, CardType, EventType, TimingType, EventListener,
     MessageEvent, Keyword, ConstantAbility, ConstantAbilityType, CampaignTracker
 )
@@ -224,7 +224,7 @@ class GameEngine:
             raise RuntimeError(f"Something went horribly wrong, this target has no area.")
 
         all_cards = self.state.all_cards_in_play()
-        fatiguing_cards = [card for card in cards_between if card.is_ready() and not card.has_keyword(Keyword.FRIENDLY)]
+        fatiguing_cards = [card for card in cards_between if not isinstance(card, FacedownCard) and card.is_ready() and not card.has_keyword(Keyword.FRIENDLY)]
         target_display_id = get_display_id(all_cards, target)
         self.add_message(f"Target: {target_display_id} in {target_area.value}. Checking interaction fatigue...")
         if not fatiguing_cards:

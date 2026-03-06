@@ -2352,6 +2352,25 @@ class InteractionFatigueTests(unittest.TestCase):
         self.assertEqual(len(eng.state.ranger.fatigue_stack), 0,
                          "Cards in same area as target should not be 'between'")
 
+    def test_facedown_card_does_not_fatigue(self):
+        """A facedown card between ranger and target should NOT cause fatigue or crash."""
+        from ebr.models import FacedownCard
+        original = Card(id="orig", title="Original Being", presence=3,
+                        card_types={CardType.PATH, CardType.BEING})
+        facedown = FacedownCard(original)
+        target = Card(id="target", title="Target", presence=1,
+                      card_types={CardType.PATH, CardType.FEATURE})
+        eng = self._make_engine(areas={
+            Area.SURROUNDINGS: [],
+            Area.ALONG_THE_WAY: [target],
+            Area.WITHIN_REACH: [facedown],
+            Area.PLAYER_AREA: [],
+        })
+        eng.interaction_fatigue(eng.state.ranger, target)
+
+        self.assertEqual(len(eng.state.ranger.fatigue_stack), 0,
+                         "Facedown card should not cause fatigue")
+
     def test_no_cards_between_message(self):
         """When no cards are between ranger and target, a 'no interaction fatigue' message appears."""
         target = Card(id="target", title="Target", presence=1,
