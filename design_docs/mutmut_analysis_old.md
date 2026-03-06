@@ -1,3 +1,19 @@
+## Per-Module Breakdown
+
+| Module | Total | Kill % | Survived | No Tests | Priority |
+|--------|------:|-------:|---------:|---------:|----------|
+| woods_cards | 547 | 57.2% | 206 | 28 | HIGH |
+| explorer_cards | 320 | 51.2% | 150 | 6 | MEDIUM |
+| weather_cards | 255 | 32.2% | 47 | 126 | MEDIUM |
+| mission_cards | 254 | 71.7% | 64 | 8 | LOW |
+| valley_cards | 216 | 46.8% | 109 | 6 | MEDIUM |
+| location_cards | 184 | 34.8% | 96 | 24 | MEDIUM |
+| lone_tree_station | 91 | 69.2% | 28 | 0 | LOW |
+| conciliator_cards | 84 | 64.3% | 30 | 0 | LOW |
+| personality_cards | 41 | 80.5% | 8 | 0 | LOW |
+
+---
+
 ## Module-by-Module Analysis
 
 ### 1. campaign_guide.py — Priority: LOW
@@ -469,3 +485,137 @@ Lower priority:
 - [ ] provide_play_options field-level mutations — largely cosmetic
 
 All 604 tests pass (281 subtests). No bugs found.
+
+### decks.py — 53 total, 26.4% killed, 20 survived, 19 no-tests
+
+#### Per-function survived mutation breakdown
+
+| Function | Survived | No Tests | Notes |
+|----------|------:|------:|-------|
+| `get_available_travel_destinations` | 0 | 11 | Completely untested — returns travel destinations from location graph |
+| `get_current_missions` | 10 | 0 | Mission registry lookup — tests don't verify returned cards |
+| `get_pivotal_cards` | 0 | 8 | Completely untested — returns pivotal set for a location |
+| `get_current_weather` | 7 | 0 | Weather registry lookup — tests don't verify returned card types |
+| `get_location_by_id` | 3 | 0 | Location registry lookup — default-fallback logic not fully tested |
+
+#### Theme Analysis
+
+**Theme 1: Travel destination graph — untested (11 no-tests)**
+`get_available_travel_destinations` implements a triangle graph of 3 locations (Lone Tree Station ↔ Boulder Field ↔ Ancestor's Grove). Returns all locations except the current one. No test exercises this at all.
+
+Key properties to verify:
+- Each location returns exactly 2 destinations
+- Returned destinations are correct Card subclass instances
+- Current location is excluded from results
+
+**Theme 2: Pivotal set lookup — untested (8 no-tests)**
+`get_pivotal_cards` returns pivotal-set cards for a given location. Currently only implements Lone Tree Station (returns HyPimpotChef). Raises for unknown locations.
+
+Key properties to verify:
+- Lone Tree Station returns [HyPimpotChef]
+- Unknown location raises RuntimeError
+
+**Theme 3: Weather/mission/location registry lookups (20 survived)**
+`get_current_weather`, `get_current_missions`, and `get_location_by_id` are registry lookups mapping string names to Card subclass constructors. Tests exercise them but don't verify the returned card types or titles.
+
+Key properties to verify:
+- Each weather name maps to the correct Weather card subclass
+- Unknown weather raises RuntimeError
+- Each mission name maps to the correct Mission card
+- Unknown mission raises RuntimeError
+- Each location ID maps to the correct Location card
+- Unknown location defaults to Lone Tree Station (not a raise)
+
+#### Recommendations (prioritized)
+
+High value:
+- [x] Travel destinations — DONE (8 tests + 3 subtests in `TravelDestinationTests`)
+- [x] Pivotal cards — DONE (2 tests in `PivotalCardsTests`)
+- [x] Weather registry — DONE (4 tests in `WeatherRegistryTests`)
+- [x] Mission registry — DONE (3 tests in `MissionRegistryTests`)
+- [x] Location registry — DONE (4 tests in `LocationRegistryTests`)
+
+Code change: `get_location_by_id` now raises `ValueError` on unknown IDs instead of silently defaulting to Lone Tree Station.
+
+Lower priority (already tested indirectly):
+- [ ] `build_woods_path_deck` / `select_three_random_valley_cards` — deck builders, already killed by existing tests
+
+All 631 tests pass (286 subtests). No bugs found in registry data.
+
+---
+
+### utils.py — 17 total, 76.5% killed, 4 survived, 0 no-tests
+
+#### Per-function survived mutation breakdown
+
+| Function | Survived | Notes |
+|----------|------:|-------|
+| `get_display_id` | 4 | Duplicate-title disambiguation (A/B/C suffix logic) |
+
+#### Theme Analysis
+
+**Theme 1: Display ID disambiguation (4 survived)**
+`get_display_id` returns just the title when unique, or appends " A"/" B"/" C" when multiple cards share a title. The 4 surviving mutations are in the disambiguation branch: sorting by id, indexing, chr(65 + index), and the f-string formatting. Tests exercise the unique-title path but don't test the multi-card disambiguation.
+
+Key properties to verify:
+- Single card → just title
+- Two cards with same title → title + " A" / " B" (sorted by id)
+- Card not in context list → should raise (or handle gracefully)
+
+#### Recommendations (prioritized)
+
+Medium value:
+- [x] get_display_id — DONE (6 tests in `GetDisplayIdTests`: unique title, 2 duplicates, 3 duplicates, sort order, mixed titles)
+
+
+
+
+## Card Set Cross-Cutting Analysis — COMPLETED
+
+All 9 remaining modules are Card subclass implementations. Survived mutations clustered by **method type** across all card sets.
+
+### Tests Written (Themes A–F)
+
+**Theme A: Constructor wiring** — `tests/test_card_constructors.py`
+- [x] Keyword assertions: 11 cards verified against JSON source-of-truth keywords
+- [x] Trait assertions: 18 cards verified against JSON traits
+- [x] Backside wiring: 8 tests covering weather card A↔B backside classes and flip round-trips
+
+**Theme B: Card-specific test Actions** — `tests/test_card_tests.py`
+- [x] Action field assertions (aspect/approach/verb) for SitkaDoe, CausticMulcher, SunberryBramble, OvergrownThicket, MiddaySun, BiscuitBasket, LoneTreeStation
+- [x] Success/fail effect tests for SunberryBramble (scout+draw), OvergrownThicket (add progress), MiddaySun (flip weather)
+
+**Theme C: Challenge effect outcomes** — `tests/test_card_effects.py`
+- [x] APerfectDay Mountain (conditional progress), MiddaySun Sun (fatigue)
+- [x] ProwlingWolhund Sun (ready another) + Crest (exhaust+injure at 3+ fatigue)
+- [x] OvergrownThicket Mountain (remove progress + fatigue by presence)
+- [x] AncestorsGrove Sun (discard→fatigue stack)
+
+**Theme D: Location arrival setup** — `tests/test_card_effects.py`
+- [x] LoneTreeStation: discard first predator, then draw 1
+- [x] AncestorsGrove: discard presence-3 card, put prey into play
+- [x] BoulderField: challenge-dependent draw (Sun/Mountain/Crest)
+- [x] BoulderField constant ability: reduces being presence by 1
+
+**Theme E: Weather flip mechanics** — `tests/test_card_effects.py`
+- [x] APerfectDay↔MiddaySun flip transitions
+- [x] Cloud token ticking (refresh removes/adds clouds)
+- [x] Auto-flip at threshold (0 clouds → Midday Sun, 3 clouds → A Perfect Day)
+
+**Theme F: Moment resolve effects** — `tests/test_card_effects.py`
+- [x] ShareintheValleysSecrets: exhaust obstacles + fatigue equal to count
+- [x] AffordedByNature: transfer trail progress to being harm
+- [x] WalkWithMe: add progress to being equal to effort
+- [x] CradledbytheEarth: soothe fatigue equal to trail progress
+
+### Remaining (lower priority — skipped)
+- [ ] Art descriptions — purely cosmetic
+- [ ] Message string mutations — cosmetic
+- [ ] get_listeners / enters_play registration — largely verified through integration tests
+- [ ] Additional challenge effects for remaining cards (SitkaBuck, SitkaDoe, CausticMulcher, SunberryBramble, CalypsaRangerMentor, QuisiVosRascal, TheFundamentalist)
+- [ ] get_constant_abilities for non-BoulderField cards
+
+### Test Count Summary
+- **Pre-audit**: 463 tests
+- **Post-audit**: 734 tests + 286 subtests
+- **New tests added**: 271 tests + 286 subtests across 7 new test files

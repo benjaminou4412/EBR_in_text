@@ -62,8 +62,7 @@ def get_location_by_id(location_id: str) -> Card:
     if location_id in location_registry:
         return location_registry[location_id]()
     else:
-        # Default to Lone Tree Station for unknown locations (campaign start)
-        return LoneTreeStation()
+        raise ValueError(f"Unknown location ID: '{location_id}'")
 
 def get_current_weather(weather_title: str) -> Card:
     from .cards import APerfectDay, Downpour, HowlingWinds
