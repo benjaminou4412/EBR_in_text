@@ -65,19 +65,20 @@ PHASE 1 — PATH CARDS
 
 PHASE 2 — RANGER TURNS
 • This phase is the bulk of the game, and represents you equipping your gear, actively interacting with the environment, and using your abilities to accomplish your goal.
-• Rangers take turns in any order. There’s no fixed limit to turns per Ranger per round, so a solo ranger can take as many turns as they want in a row until they choose to rest. Generally taking turns costs energy, and energy is reset each round, so you'll want to figure out ways to use your energy.
+• Rangers take turns in any order. There’s no fixed limit to turns per Ranger per round, so a solo ranger can take as many turns as they want in a row until they choose to rest. Generally taking turns costs energy, and energy is reset each round, so you'll want to figure out ways to use your energy proactively and then rest when you run out to recharge energy in the later Refresh phase. 
 1) On your turn, choose exactly one:
-  • [Perform] a Test (details below).
+  • [Perform] a Test (details below, under "PERFORMING A TEST").
   • [Play] a Ranger card from hand (pay its energy cost; if it's a Gear, Feature, or Being, it comes into play in the appropriate zone; if it's a Moment, resolve its effects immediately. Attributes cannot be played, only committed). 
   • [Exhaust] a card you control with an "Exhaust:" ability with no specific timing. These exhaust abilities are typically found on your role card and on ranger cards in play. You cannot use the "Exhaust:" abilities of exhausted cards. You can use as many or few exhaust "Exhaust:" abilities as you want at any given window where you're allowed to use them. If an "Exhaust:" ability has a specified timing (usually of the form "When..."), it can only be used at the specified timing point, and you will be prompted on whether or not to exhaust the card at that timing point.
   • [Discard gear] to discard equipped gear you no longer want
-  • [Rest] to end your participation this round; resolve any “when you rest” effects; you cannot take further turns this round.
+  • [Rest] to end your participation this round; resolve any “when you rest” effects and proceed to the Travel and Refresh phases if all rangers have rested.
   • [End Day] to end the day and proceed to the next day; this will reset all game state except that recorded on the campaign tracker.
+  • [View Map] to check what locations are adjacent to your current location, meaning you can Travel to them in the Travel phase once there is Progress greater than or equal to the Progress Threshold on your current location. Also displays a list of "Pivotal Locations", which are locations of interest whose path decks contain unique cards; these are often human settlements. You can also optionally plan a route by inputting the exact name of a target farther location; the game will then provide you a list of viable routes consisting of the locations and accompanying terrain types you would have to travel through to reach your target from your current location, along with the distance (in number of Travels) for each route, sorted by distance.
 2) If there are still Rangers who haven't rested, one of them can take another turn.
 3) When all Rangers have rested, proceed to Phase 3: Travel.
 
 PHASE 3 — TRAVEL
-You may travel from the current location to a nearby location if either (a) the Location has progress greater than or equal to its progress threshold, or (b) a rule instructs you to travel now (such rules will generally specify to skip to Phase 3). If you cannot travel, skip this phase and proceed to Phase 4: Refresh.
+You may travel from the current location to a nearby location if either (a) the Location has progress greater than or equal to its progress threshold, or (b) a card or game text instructs you to travel now (such rules will generally specify to skip to Phase 3). If you cannot travel, skip this phase and proceed to Phase 4: Refresh.
 Travel steps:
   1) Clear Play Area: discard all path cards in play (except cards with the Persistent keyword) and Ranger cards in the play area Within Reach, Along the Way, or in the Surroundings. Ranger cards in your play area stay in play. All cards now in the path discard and path deck are removed from the game in preparation for setting up the new location's path deck.
   2) Choose a new destination: pick a Nearby location directly connected on the Valley map; you must move to the next node along the chosen path (no skipping). Put the new Location in the surroundings.

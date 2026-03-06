@@ -15,6 +15,7 @@ from ebr.view import (
     choose_order, choose_option, choose_amount
 )
 from ebr.decks import build_woods_path_deck
+from ebr.valley_map import get_neighbors, format_routes
 from ebr.save_load import save_game, load_game
 from ebr.cards import (
     OvergrownThicket, SunberryBramble, SitkaDoe, WalkWithMe, ADearFriend,
@@ -429,6 +430,15 @@ def _build_phase2_actions(engine: GameEngine) -> list[Action]:
         on_success=lambda s, _e, _t: None,
     ))
     actions.append(Action(
+        id="system-view-map",
+        name="[View Map]",
+        verb="View Map",
+        aspect="",
+        approach="",
+        is_test=False,
+        on_success=lambda s, _e, _t: None,
+    ))
+    actions.append(Action(
         id="system-menu",
         name="[Menu] (save/load/quit)",
         verb="Menu",
@@ -439,6 +449,55 @@ def _build_phase2_actions(engine: GameEngine) -> list[Action]:
     ))
 
     return actions
+
+
+def _can_cross_river(engine: GameEngine) -> bool:
+    """Check if any card in the player area grants river crossing."""
+    river_text = "You may travel on river paths."
+    for card in engine.state.areas[Area.PLAYER_AREA]:
+        if card.abilities_text and river_text in card.abilities_text:
+            return True
+    return False
+
+
+def _handle_view_map(engine: GameEngine) -> None:
+    """Display the valley map view: current location, neighbors, and optional route planning."""
+    location_name = engine.state.location.title
+    neighbors = get_neighbors(location_name)
+    river_ok = _can_cross_river(engine)
+
+    print(f"\n=== Valley Map ===")
+    print(f"Current location: {location_name}")
+    if river_ok:
+        print(f"(You can cross rivers.)")
+    print(f"\nAdjacent locations:")
+    for neighbor in neighbors:
+        terrain = neighbor['terrain']
+        blocked = terrain == "River" and not river_ok
+        suffix = " [BLOCKED - no river crossing]" if blocked else ""
+        print(f"  - {neighbor['to']} ({terrain}){suffix}")
+    print(f"\n Pivotal locations: Lone Tree Station, White Sky, Northern Outpost, Spire, Branch, The Fractured Wall, Meadow, Tumbledown, Marsh of Rebirth")
+
+    print()
+    plan = input("Would you like to plan a route to a further location? (Y/N) > ").strip().casefold()
+    if plan not in ("y", "yes"):
+        return
+
+    destination = input("Enter destination name: ").strip()
+    if not destination:
+        print("No destination entered.")
+        input("Press Enter to continue...")
+        return
+
+    try:
+        output = format_routes(location_name, destination, can_cross_river=river_ok)
+    except ValueError as e:
+        print(f"\n{e}")
+        input("Press Enter to continue...")
+        return
+
+    print(f"\n{output}")
+    input("Press Enter to continue...")
 
 
 def _handle_phase2_action(engine: GameEngine, act: Action, with_ui: bool) -> str | None:
@@ -581,6 +640,12 @@ def run_game_loop(engine: GameEngine, with_ui: bool = True, resume_phase2: bool 
                         return 'normal'
                     else:
                         act = None
+
+                if act is not None and act.id == "system-view-map":
+                    if with_ui:
+                        _handle_view_map(engine)
+                    act = None
+                    continue
 
                 if act is not None and act.id == "system-menu":
                     if with_ui:
