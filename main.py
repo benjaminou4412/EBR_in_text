@@ -15,7 +15,7 @@ from ebr.view import (
     set_show_art_descriptions, choose_order, choose_option, choose_amount
 )
 from ebr.decks import build_woods_path_deck
-from ebr.valley_map import get_neighbors, format_routes
+from ebr.valley_map import get_neighbors, get_all_locations, format_routes, PIVOTAL_LOCATIONS
 from ebr.save_load import save_game, load_game
 from ebr.cards import (
     OvergrownThicket, SunberryBramble, SitkaDoe, WalkWithMe, ADearFriend,
@@ -464,22 +464,31 @@ def _handle_view_map(engine: GameEngine) -> None:
     """Display the valley map view: current location, neighbors, and optional route planning."""
     location_name = engine.state.location.title
     neighbors = get_neighbors(location_name)
+    neighbor_names = {n['to'] for n in neighbors}
     river_ok = _can_cross_river(engine)
 
     print(f"\n=== Valley Map ===")
-    print(f"Current location: {location_name}")
     if river_ok:
         print(f"(You can cross rivers.)")
-    print(f"\nAdjacent locations:")
-    for neighbor in neighbors:
-        terrain = neighbor['terrain']
-        blocked = terrain == "River" and not river_ok
-        suffix = " [BLOCKED - no river crossing]" if blocked else ""
-        print(f"  - {neighbor['to']} ({terrain}){suffix}")
-    print(f"\n Pivotal locations: Lone Tree Station, White Sky, Northern Outpost, Spire, Branch, The Fractured Wall, Meadow, Tumbledown, Marsh of Rebirth")
+    print(f"\nAll locations:")
+    for loc in get_all_locations():
+        if loc == location_name:
+            label = " [CURRENT]"
+        elif loc in neighbor_names:
+            terrain = next(n['terrain'] for n in neighbors if n['to'] == loc)
+            blocked = terrain == "River" and not river_ok
+            if blocked:
+                label = f" [Adjacent - {terrain}, BLOCKED]"
+            else:
+                label = f" [Adjacent - {terrain}]"
+        elif loc in PIVOTAL_LOCATIONS:
+            label = " [Pivotal]"
+        else:
+            label = ""
+        print(f"  - {loc}{label}")
 
     print()
-    plan = input("Would you like to plan a route to a further location? (Y/N) > ").strip().casefold()
+    plan = input("Would you like to plan a route to a location? (Y/N) > ").strip().casefold()
     if plan not in ("y", "yes"):
         return
 

@@ -28,6 +28,17 @@ def _get_map() -> dict[str, list[dict[str, str]]]:
     return _MAP
 
 
+PIVOTAL_LOCATIONS = frozenset({
+    "Lone Tree Station", "White Sky", "Northern Outpost", "Spire",
+    "Branch", "The Fractured Wall", "Meadow", "Tumbledown", "Marsh of Rebirth",
+})
+
+
+def get_all_locations() -> list[str]:
+    """Return all location names in the valley map, sorted alphabetically."""
+    return sorted(_get_map().keys())
+
+
 def get_neighbors(location: str) -> list[dict[str, str]]:
     """Return the adjacent locations and their terrains for a given location."""
     graph = _get_map()
