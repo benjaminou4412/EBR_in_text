@@ -19,7 +19,7 @@ class CampaignGuide:
             "47.1": self.resolve_entry_47_1,
             "47.2": self.resolve_entry_47_2,
             "47.3": self.resolve_entry_47_3,
-            "47.4": self.resolve_entry_47_4,
+            "47.4": self.resolve_entry_47_4, #three facedown flora attached
             "47.5": self.resolve_entry_47_5,
             "47.6": self.resolve_entry_47_6,
             "80": self.resolve_entry_80, #Quisi Vos, Rascal
@@ -50,11 +50,12 @@ class CampaignGuide:
     def resolve_entry(self, entry_number: str, source_card: 'Card | None', engine: 'GameEngine', clear_type: str | None) -> bool:
         from .models import ConstantAbilityType
         actual_entry_number = entry_number
-        for ability in engine.get_constant_abilities_by_type(ConstantAbilityType.OVERRIDE_CAMPAIGN_ENTRY):
-            if ability.condition_fn(engine.state, source_card):
-                actual_entry_number = ability.override_entry
-                break
-                #TODO: Handle multiple overrides. 
+        if "." not in entry_number:
+            for ability in engine.get_constant_abilities_by_type(ConstantAbilityType.OVERRIDE_CAMPAIGN_ENTRY):
+                if ability.condition_fn(engine.state, source_card):
+                    actual_entry_number = ability.override_entry
+                    break
+                    #TODO: Handle multiple overrides.
         return self.entries[actual_entry_number](source_card, engine, clear_type)
     
     def resolve_entry_1(self, source_card: 'Card | None', engine: 'GameEngine', clear_type: str | None) -> bool:

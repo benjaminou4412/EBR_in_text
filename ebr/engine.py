@@ -980,8 +980,7 @@ class GameEngine:
         """
         if to_attach.id == attachment_target.id:
             raise RuntimeError(f"Cannot attach a card to itself!")
-        attachment_target.attached_card_ids.append(to_attach.id)
-        to_attach.attached_to_id = attachment_target.id
+        
         attachment_target_area = self.state.get_card_area_by_id(attachment_target.id)
         to_attach_area = self.state.get_card_area_by_id(to_attach.id)
         if attachment_target_area is None:
@@ -995,6 +994,8 @@ class GameEngine:
             elif to_attach_area is None:
                 #attachment in hand in the process of being played, needs to be added to its attachee's area
                 self.state.areas[attachment_target_area].append(to_attach)
+        attachment_target.attached_card_ids.append(to_attach.id)
+        to_attach.attached_to_id = attachment_target.id
         to_attach_display = get_display_id(self.state.all_cards_in_play(), to_attach)
         attachment_target_display = get_display_id(self.state.all_cards_in_play(), attachment_target)
         self.add_message(f"{to_attach_display} becomes attached to {attachment_target_display}.")
