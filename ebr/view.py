@@ -401,6 +401,55 @@ def choose_target(engine: GameEngine, targets: list[Card]) -> Card:
             print("Invalid input. Please enter a number.")
 
 
+def choose_targets(engine: GameEngine, targets: list[Card], prompt: str | None = None) -> list[Card]:
+    """Prompt player to choose zero or more cards via comma-separated indices.
+
+    Args:
+        engine: GameEngine for context and message display
+        targets: List of Card objects to choose from
+        prompt: Optional prompt text to display
+
+    Returns:
+        List of chosen Card objects (may be empty)
+    """
+    display_and_clear_messages(engine)
+
+    if not targets:
+        return []
+
+    all_cards = engine.state.all_cards_in_play()
+
+    while True:
+        if prompt:
+            print(f"\n{prompt}")
+        for i, card in enumerate(targets, start=1):
+            display_name = get_display_id(all_cards, card)
+            print(f" {i}. {display_name}")
+
+        raw = input("Choose cards (comma-separated numbers, blank=none): ").strip()
+        if not raw:
+            return []
+
+        try:
+            picks = [int(x) - 1 for x in raw.split(",") if x.strip()]
+        except ValueError:
+            print("Invalid input. Enter numbers separated by commas (e.g., '1,3').")
+            continue
+
+        # Filter to valid indices, dedupe preserving order
+        selected: list[Card] = []
+        seen: set[int] = set()
+        for p in picks:
+            if 0 <= p < len(targets) and p not in seen:
+                selected.append(targets[p])
+                seen.add(p)
+
+        if len(seen) < len(picks):
+            print("Note: Some invalid or duplicate indices were filtered out.")
+
+        return selected
+
+
 def choose_order(engine: GameEngine, items: list[Any], prompt: str) -> list[Any]:
     """Prompt player to arrange items in a specific order.
 

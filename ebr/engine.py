@@ -32,6 +32,7 @@ class GameEngine:
     def __init__(self,
                   state: GameState,
                   card_chooser: Callable[[GameEngine, list[Card]], Card] | None = None,
+                  cards_chooser: Callable[[GameEngine, list[Card], str | None], list[Card]] | None = None,
                   response_decider: Callable[[GameEngine, str],bool] | None = None,
                   order_decider: Callable[[GameEngine, Any, str], Any] | None = None,
                   option_chooser: Callable[[GameEngine, list[str], str | None], str] | None = None,
@@ -39,6 +40,7 @@ class GameEngine:
                   skip_reconstruct: bool = False):
         self.state = state
         self.card_chooser = card_chooser if card_chooser is not None else self._default_chooser
+        self.cards_chooser = cards_chooser if cards_chooser is not None else self._default_cards_chooser
         self.response_decider = response_decider if response_decider is not None else self._default_decider
         self.order_decider = order_decider if order_decider is not None else self._default_order_decider
         self.option_chooser = option_chooser if option_chooser is not None else self._default_option_chooser
@@ -62,6 +64,10 @@ class GameEngine:
     def _default_chooser(self, _engine: 'GameEngine', choices: list[Card]) -> Card:  # noqa: ARG002
         """Placeholder default; tests should pass in more sophisticated choosers, runtime should prompt player"""
         return choices[0]
+
+    def _default_cards_chooser(self, _engine: 'GameEngine', choices: list[Card], _prompt: str | None) -> list[Card]:  # noqa: ARG002
+        """Default multi-select: return nothing (for tests)."""
+        return []
 
     def _default_decider(self, _engine: 'GameEngine', _prompt: str) -> bool:  # noqa: ARG002
         """Default: always play responses (for tests)"""
@@ -109,6 +115,7 @@ class GameEngine:
         # Replace all user interaction callbacks with deterministic defaults
         # This prevents prompting the player during the dry run
         dry_run_engine.card_chooser = dry_run_engine._default_chooser
+        dry_run_engine.cards_chooser = dry_run_engine._default_cards_chooser
         dry_run_engine.response_decider = dry_run_engine._default_decider
         dry_run_engine.order_decider = dry_run_engine._default_order_decider
         dry_run_engine.option_chooser = dry_run_engine._default_option_chooser
@@ -760,6 +767,50 @@ class GameEngine:
 
         if total_equip <= MAX_EQUIP:
             self.add_message(f"Total equip value is now {total_equip}/{MAX_EQUIP}.")
+
+    def draw_starting_hand_and_mulligan(self) -> None:
+        """Draw a 5-card starting hand and offer a mulligan.
+
+        Draws 5 cards, then lets the player set aside any number of cards,
+        draw that many replacements, and shuffle the set-aside cards back in.
+        """
+        # TODO: Cards that trigger "when you draw this card" can fire during the
+        # initial draw, potentially shrinking the hand. If so, the player still only
+        # redraws the number of cards they set aside. No such cards exist yet.
+
+        for _ in range(6):
+            card, _ = self.state.ranger.draw_card(self)
+            if card is None:
+                raise RuntimeError("Deck should not run out during setup!")
+
+        if not self.state.ranger.hand:
+            return
+
+        want_mulligan = self.response_decider(self, "Would you like to mulligan? (set aside cards and redraw)")
+        if not want_mulligan:
+            self.add_message("Keeping starting hand.")
+            return
+
+        set_aside = self.cards_chooser(self, list(self.state.ranger.hand), "Choose cards to set aside (blank to keep all)")
+        if not set_aside:
+            self.add_message("No cards set aside.")
+            return
+
+        for card in set_aside:
+            self.state.ranger.hand.remove(card)
+            self.add_message(f"Set aside {card.title}.")
+
+        num_to_draw = len(set_aside)
+        self.add_message(f"Drawing {num_to_draw} replacement card(s)...")
+        for _ in range(num_to_draw):
+            card, _ = self.state.ranger.draw_card(self)
+            if card is None:
+                self.add_message("Deck ran out during mulligan.")
+                break
+
+        self.state.ranger.deck.extend(set_aside)
+        random.shuffle(self.state.ranger.deck)
+        self.add_message(f"Shuffled {len(set_aside)} card(s) back into deck.")
 
     def end_day(self, camped: bool) -> None:
         """

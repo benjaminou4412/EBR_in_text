@@ -29,15 +29,10 @@ API-ish notes:
     -return True if the associated card gets discarded; False if it stays in play
 
 
-Features with a lot of AI-written code I haven't carefully reviewed that might pop up issues in the future:
-- General game loop structure in main.py
-- Save/load/title
-- UI
-
 A living checklist. Roughly prioritized.
 
 - Add campaign log entries for all other already-implemented cards that don't already have them
-- Implement full Travel map
+- Implement all locations
 - Implement fully rules-compliant faceup/facedown cards
   - https://thelivingvalley.earthbornegames.com/docs/rules_glossary/F/facedown_cards/
   - https://thelivingvalley.earthbornegames.com/docs/rules_glossary/A/attach

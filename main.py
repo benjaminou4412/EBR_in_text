@@ -11,8 +11,8 @@ from ebr.engine import GameEngine
 from ebr.registry import provide_common_tests, provide_card_tests, provide_exhaust_abilities, provide_play_options, filter_tests_by_targets
 from ebr.view import (
     render_state, choose_action, choose_action_target, choose_commit,
-    choose_target, display_and_clear_messages, choose_response, set_show_art_descriptions,
-    choose_order, choose_option, choose_amount
+    choose_target, choose_targets, display_and_clear_messages, choose_response,
+    set_show_art_descriptions, choose_order, choose_option, choose_amount
 )
 from ebr.decks import build_woods_path_deck
 from ebr.valley_map import get_neighbors, format_routes
@@ -755,6 +755,7 @@ def start_new_day(campaign_tracker, role_card: Card) -> GameEngine:
     engine = GameEngine(
         state,
         card_chooser=choose_target,
+        cards_chooser=choose_targets,
         response_decider=choose_response,
         order_decider=choose_order,
         option_chooser=choose_option,
@@ -769,12 +770,7 @@ def start_new_day(campaign_tracker, role_card: Card) -> GameEngine:
         engine.add_message(f"Step 1: Set up player area (skipped)")
         engine.add_message(f"Step 2: Draw starting hand")
 
-        # Draw starting hand
-        for _ in range(5):
-            card, _ = state.ranger.draw_card(engine)
-            if card is None:
-                raise RuntimeError(f"Deck should not run out during setup!")
-        #TODO: implement mulligan
+        engine.draw_starting_hand_and_mulligan()
 
         engine.add_message(f"Step 3: Elect lead Ranger (only one ranger; automatically chosen)")
         engine.add_message(f"Step 4: Shuffle challenge deck")
@@ -832,6 +828,7 @@ def main() -> None:
                 engine = load_game(load_path)
                 # Set up UI decision functions
                 engine.card_chooser = choose_target
+                engine.cards_chooser = choose_targets
                 engine.response_decider = choose_response
                 engine.order_decider = choose_order
                 engine.option_chooser = choose_option

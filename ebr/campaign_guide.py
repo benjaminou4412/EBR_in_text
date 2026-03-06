@@ -7,11 +7,11 @@ if TYPE_CHECKING:
 class CampaignGuide:
     def __init__(self):
         self.entries : dict[str, Callable[['CampaignGuide', 'Card | None', 'GameEngine', str | None], bool]] = {
-            "1": self.resolve_entry_1,
-            "1.01": self.resolve_entry_1_01,
-            "1.02": self.resolve_entry_1_02,
-            "1.02A": self.resolve_entry_1_02_A,
-            "1.03": self.resolve_entry_1_03,
+            "1": self.resolve_entry_1, #Campaign Start
+            "1.01": self.resolve_entry_1_01, #Biscuit Delivery Flip
+            "1.02": self.resolve_entry_1_02, #Biscuit Basket empty
+            "1.02A": self.resolve_entry_1_02_A, #No biscuits on role card
+            "1.03": self.resolve_entry_1_03, #Biscuit Delivery epilogue
             "2": self.resolve_entry_2, #Lone Tree Station
             "14": self.resolve_entry_14, #Boulder Field
             "15": self.resolve_entry_15, #Ancestor's Grove
@@ -22,7 +22,7 @@ class CampaignGuide:
             "47.4": self.resolve_entry_47_4,
             "47.5": self.resolve_entry_47_5,
             "47.6": self.resolve_entry_47_6,
-            "80": self.resolve_entry_80, #Quisi
+            "80": self.resolve_entry_80, #Quisi Vos, Rascal
             "80.1": self.resolve_entry_80_1,
             "80.2": self.resolve_entry_80_2,
             "80.3": self.resolve_entry_80_3,
@@ -63,19 +63,13 @@ class CampaignGuide:
         engine.add_message("== Campaign Guide Entry 1: Missions ==")
         engine.add_message("")
         engine.add_message("--- CAMPAIGN START ---")
-        engine.add_message("To start your campaign, perform the first four steps of setup on page 10 of the rulebook, " \
-        "then return here for the remainder of setup.")
         engine.add_message("")
         engine.add_message("--- Day 1 Setup (First four steps) ---")
         engine.add_message("")
         engine.add_message(f"Step 1: Set up player area (skipped)")
         engine.add_message(f"Step 2: Draw starting hand")
 
-        # Draw starting hand
-        for _ in range(5):
-            card, _ = engine.state.ranger.draw_card(engine)
-            if card is None:
-                raise RuntimeError(f"Deck should not run out during setup!")
+        engine.draw_starting_hand_and_mulligan()
 
         engine.add_message(f"Step 3: Elect lead Ranger (only one ranger; automatically chosen)")
         engine.add_message(f"Step 4: Shuffle challenge deck")
