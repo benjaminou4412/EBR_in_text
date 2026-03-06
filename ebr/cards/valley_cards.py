@@ -63,13 +63,38 @@ class QuisiVosRascal(Card):
         listeners = super().get_listeners()
         return listeners
     
+    def get_tests(self) -> list[Action]:
+        """FOC + [connection]: Ask Quisi about her adventures in the Valley to add [progress]
+        to this being equal to your effort. Then exhaust this being. [Campaign Log Entry] 80.4"""
+        return [
+            Action(
+                id=f"test-ask-{self.id}",
+                name=f"{self.title} (FOC + Connection) [1]",
+                aspect=Aspect.FOC,
+                approach=Approach.CONNECTION,
+                verb="Ask",
+                target_provider=lambda _s: [self],
+                difficulty_fn=lambda _s, _t: 1,
+                on_success=self._on_ask_success,
+                source_id=self.id,
+                source_title=self.title,
+            )
+        ]
+
+    def _on_ask_success(self, engine: GameEngine, effort: int, _card: Card | None) -> None:
+        """Add progress equal to effort, exhaust Quisi, resolve entry 80.4."""
+        msg = self.add_progress(effort)
+        engine.add_message(msg)
+        self.exhaust()
+        engine.add_message(f"{self.title} is exhausted.")
+        engine.campaign_guide.resolve_entry("80.4", self, engine, None)
+
     def get_challenge_handlers(self) -> dict[ChallengeIcon, Callable[[GameEngine], bool]] | None:
         """Returns challenge symbol effects for this card"""
         return {
             ChallengeIcon.SUN: self._sun_effect,
             ChallengeIcon.CREST: self._crest_effect
         }
-            
 
     def _sun_effect(self, engine: GameEngine) -> bool:
         """Sun effect: Discard either 1 progress or 1 token from a flora, insect, or gear."""

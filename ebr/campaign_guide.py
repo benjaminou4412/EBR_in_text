@@ -26,6 +26,7 @@ class CampaignGuide:
             "80.1": self.resolve_entry_80_1,
             "80.2": self.resolve_entry_80_2,
             "80.3": self.resolve_entry_80_3,
+            "80.4": self.resolve_entry_80_4,
             "80.5": self.resolve_entry_80_5,
             "80.6": self.resolve_entry_80_6,
             "85": self.resolve_entry_85, #placeholder to prevent crashing when Calypsa enters play
@@ -667,6 +668,31 @@ class CampaignGuide:
         engine.add_message('Clear Quisi with [Progress] to satisfy her curiosity.')
         return False
     
+    def resolve_entry_80_4(self, _source_card: 'Card | None', engine: 'GameEngine', _clear_type: str | None) -> bool:
+        from .models import ChallengeIcon
+        engine.add_message("== Campaign Guide Entry 80.4 ==")
+        engine.add_message("")
+        engine.add_message("--- Story ---")
+        engine.add_message('You quickly find Quisi\'s questions to be as constant and regular as the sunrise, '
+                           'though far more frequent. Answering one buys you only a few moments before she thinks '
+                           'of another. However, among her constant and endearing patter, you notice she says '
+                           'something of particular interest.')
+        engine.add_message("")
+        engine.add_message("--- Draw a challenge card ---")
+        drawn = engine.state.challenge_deck.draw_challenge_card(engine)
+        icon = drawn.icon
+        if icon == ChallengeIcon.SUN:
+            engine.add_message('"Did you know that up at Headwaters Station, in the big pool, there\'s ruins? '
+                               'All the way at the bottom, and I even heard there\'s treasure down there!"')
+        elif icon == ChallengeIcon.MOUNTAIN:
+            engine.add_message('"Mama said never go inside the Terravore... but one time, I went just to the edge... '
+                               'and I peaked inside... and I saw something weird, and glowy, all the way at the back! '
+                               'I think it\'s treasure!"')
+        elif icon == ChallengeIcon.CREST:
+            engine.add_message('"The Heart of the Swamp is gross, stinky, and full of giant worms. But I bet that '
+                               'if you get all the way to the very, very middle, there\'s stuff there... like treasure!"')
+        return False
+
     def resolve_entry_80_5(self, source_card: 'Card | None', engine: 'GameEngine', _clear_type: str | None) -> bool:
         engine.add_message("== Campaign Guide Entry 80.5 ==")
         engine.add_message("")
