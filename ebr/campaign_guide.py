@@ -29,7 +29,11 @@ class CampaignGuide:
             "80.4": self.resolve_entry_80_4,
             "80.5": self.resolve_entry_80_5,
             "80.6": self.resolve_entry_80_6,
-            "85": self.resolve_entry_85, #placeholder to prevent crashing when Calypsa enters play
+            "85": self.resolve_entry_85, #Calypsa, Ranger Mentor
+            "85.1": self.resolve_entry_85_1,
+            "85.2": self.resolve_entry_85_2,
+            "85.3": self.resolve_entry_85_3,
+            "85.4": self.resolve_entry_85_4,
             "86": self.resolve_entry_86, #placeholder to prevent crashing when The Fundamentalist enters play
             "91": self.resolve_entry_91, #Biscuit Delivery
             "91.1": self.resolve_entry_91_1,
@@ -728,9 +732,187 @@ class CampaignGuide:
     def resolve_entry_85(self, source_card: 'Card | None', engine: 'GameEngine', clear_type: str | None) -> bool:
         engine.add_message("")
         engine.add_message("")
-        engine.add_message("=== Campaign Guide Entry 85: Calypsa, Ranger Mentor (PLACEHOLDER) ===")
+        engine.add_message("=== Campaign Guide Entry 85: Calypsa, Ranger Mentor ===")
+        engine.add_message("")
+        engine.add_message("--- Checking conditionals ---")
+        if clear_type is None:
+            engine.add_message("Calypsa entered play:")
+            engine.add_message("    Go to 85.1")
+            engine.add_message("")
+            engine.add_message("")
+            return self.resolve_entry("85.1", source_card, engine, clear_type)
+        elif clear_type.casefold() == "progress".casefold():
+            engine.add_message("Calypsa was cleared by Progress:")
+            # Check if Helping Hand is attached
+            has_helping_hand = False
+            for attached_id in source_card.attached_card_ids:
+                attached_card = engine.state.get_card_by_id(attached_id)
+                if attached_card and attached_card.title == "Helping Hand":
+                    has_helping_hand = True
+                    break
+            if has_helping_hand:
+                engine.add_message("    Helping Hand is attached. Go to 85.2")
+                engine.add_message("")
+                engine.add_message("")
+                return self.resolve_entry("85.2", source_card, engine, clear_type)
+            else:
+                engine.add_message("    Helping Hand is not attached. Go to 85.3")
+                engine.add_message("")
+                engine.add_message("")
+                return self.resolve_entry("85.3", source_card, engine, clear_type)
+        elif clear_type.casefold() == "harm".casefold():
+            engine.add_message("Calypsa was cleared by Harm:")
+            engine.add_message("    Go to 85.4")
+            engine.add_message("")
+            engine.add_message("")
+            return self.resolve_entry("85.4", source_card, engine, clear_type)
+        else:
+            raise RuntimeError("Campaign guide entry resolving with invalid clear type!")
+
+    def resolve_entry_85_1(self, _source_card: 'Card | None', engine: 'GameEngine', _clear_type: str | None) -> bool:
+        engine.add_message("== Campaign Guide Entry 85.1 ==")
+        engine.add_message("")
+        engine.add_message("--- Story ---")
+        engine.add_message('You come across Calypsa in the middle of a field as she is teaching something to '
+                           'Kal Iver. She waves you over. "I\'ve just been discussing some lessons with Kal," '
+                           'she says. "Care to sit in?"')
+        engine.add_message("")
+        engine.add_message("--- Guidance ---")
+        engine.add_message('Clear Calypsa with [Progress] to learn from the wise Ranger.')
         return False
-    
+
+    def resolve_entry_85_2(self, source_card: 'Card | None', engine: 'GameEngine', _clear_type: str | None) -> bool:
+        engine.add_message("== Campaign Guide Entry 85.2 ==")
+        engine.add_message("")
+        engine.add_message("--- Story ---")
+        engine.add_message('You come panting back into the field, and Calypsa looks at you expectantly. '
+                           '"So, how did you do?"')
+        engine.add_message("")
+        engine.add_message("--- Checking conditionals ---")
+        fatigue_count = len(engine.state.ranger.fatigue_stack)
+        engine.add_message('COUNT THE TOTAL FATIGUE BETWEEN ALL RANGERS, AND READ THE CORRESPONDING ENTRY.')
+        engine.add_message(f"Current fatigue: {fatigue_count}")
+
+        if fatigue_count == 0:
+            engine.add_message('Fatigue is exactly 0:')
+            engine.add_message("")
+            engine.add_message("--- Story ---")
+            engine.add_message('"Did you even bother to try?"')
+        elif fatigue_count <= 4:
+            engine.add_message('Fatigue is between 1 and 4-per-ranger:')
+            engine.add_message("")
+            engine.add_message("--- Story ---")
+            engine.add_message('"A good effort. But I\'m afraid Kal pushed himself further than you did. '
+                               'He\'ll win this competition for today."')
+        else:
+            engine.add_message('Fatigue is greater than 4-per-ranger:')
+            engine.add_message("")
+            engine.add_message("--- Story ---")
+            engine.add_message('"Oh my. Very well done! You win the competition."')
+            engine.add_message('"Now, just remember to not push yourself harder than you need to. '
+                               'As with so many things, we should try and find balance in our actions."')
+            engine.add_message("")
+            engine.add_message("--- Results ---")
+            engine.add_message("Gain the Ranger Badge reward card.")
+            engine.state.unlock_reward("Ranger Badge")
+
+        engine.add_message("")
+        engine.add_message("Discard Calypsa and return HELPING HAND to the collection.")
+        source_card.discard_from_play(engine)
+        return True
+
+    def resolve_entry_85_3(self, source_card: 'Card | None', engine: 'GameEngine', _clear_type: str | None) -> bool:
+        engine.add_message("== Campaign Guide Entry 85.3 ==")
+        engine.add_message("")
+        engine.add_message("--- Story ---")
+        engine.add_message('Calypsa gestures to the field around you. "As Rangers, we have a responsibility to the Valley. ' \
+        'Not only to our friends '
+                           'and neighbors, but to the Valley and every living being within it."')
+        engine.add_message('"Look around us," she says, and you dutifully study the meadow. "The grasses, '
+                           'the bushes, the insects, the birds... the Valley is full of life. When we move through ' \
+                           'it, we cannot help but affect it." She takes a few steps then gestures behind her to ' \
+                           'the grass crushed beneath her boots.')
+        engine.add_message('"That\'s why we should think before we act. It can often be better to observe '
+                           'and otherwise avoid the living things in the Valley. And then when we can\'t observe..."')
+        engine.add_message('She reaches into her pocket and pulls out a small chunk of meat. She tosses it into the ' \
+        'middle of a field, and you hear a screech. An eagle swoops down, pouncing on the morsel. Calypsa smiles.')
+        engine.add_message('"It can be better to distract."')
+        
+        engine.add_message("")
+        engine.add_message("--- Action ---")
+        engine.add_message("Exhaust one non-human being in play.")
+        from .models import CardType
+        non_human_beings = [c for c in engine.state.all_cards_in_play()
+                            if c.has_type(CardType.BEING) and not c.has_trait("Human") and c.is_ready()]
+        if non_human_beings:
+            target = engine.card_chooser(engine, non_human_beings)
+            target.exhaust()
+            engine.add_message(f"{target.title} is exhausted.")
+        else:
+            engine.add_message("(No non-human beings in play to exhaust.)")
+
+        engine.add_message("")
+        engine.add_message('"Of course," Calypsa says, "there are a lot of beings in this Valley. Sometimes, ' \
+        'you have to press on, even when it\'s dangerous or tiring. '
+                           'Exhaustion, fatigue; these can be worthwhile trade-offs for accomplishing '
+                           'important tasks. You need to be willing to push yourself, and tire yourself, if you\'re ' \
+                           'going to get everything done in a day that you need to do."')
+        engine.add_message('She looks at you and Kal. "Perhaps a competition will teach you what I mean. Which of you can push '
+                           'yourselves more? Shall we find out?"')
+        engine.add_message("")
+        engine.add_message("--- Guidance ---")
+        engine.add_message("If you take on this challenge, it will discard your current fatigue stack.")
+        engine.add_message("--- RANGERS CHOOSE: ---")
+        engine.add_message('A) Agree to the test.')
+        engine.add_message('B) Not today. (This will discard Calypsa and soothe 2 fatigue).')
+        is_A = engine.response_decider(engine, "Input 'y' for option A, 'n' for option B:")
+        if is_A:
+            engine.add_message("")
+            engine.add_message("--- Results (A) ---")
+            engine.add_message("")
+            engine.add_message("--- Story ---")
+            engine.add_message('Calypsa smiles. "Very good! Alright, go and suffer as much fatigue ' \
+            'as you can, then come check back in with me. Whoever pushes themselves further will get a reward."')
+            engine.add_message('Kal grins at you. "I\'d wish you good luck, but all the luck in the world isn\'t going to help you beat me.')
+            engine.add_message("")
+            engine.add_message("--- Results ---")
+            engine.add_message('Discard all fatigue. Discard all progress and attach HELPING HAND to Calypsa.')
+            # Discard fatigue stack
+            fatigue_count = len(engine.state.ranger.fatigue_stack)
+            engine.state.ranger.discard.extend(engine.state.ranger.fatigue_stack)
+            engine.state.ranger.fatigue_stack.clear()
+            engine.add_message(f"Discarded {fatigue_count} card(s) from fatigue stack.")
+            # Discard all progress
+            _, msg = source_card.remove_progress(source_card.progress)
+            engine.add_message(msg)
+            # Attach Helping Hand
+            from .cards import HelpingHand
+            from .models import Area
+            helping_hand = HelpingHand()
+            engine.state.areas[Area.SURROUNDINGS].append(helping_hand)
+            helping_hand.enters_play(engine, Area.SURROUNDINGS, source_card)
+            return False
+        else:
+            engine.add_message("")
+            engine.add_message("--- Results (B) ---")
+            engine.add_message('Discard Calypsa. Each Ranger soothes 2 fatigue.')
+            source_card.discard_from_play(engine)
+            engine.state.ranger.soothe(engine, 2)
+            return True
+
+    def resolve_entry_85_4(self, _source_card: 'Card | None', engine: 'GameEngine', _clear_type: str | None) -> bool:
+        engine.add_message("== Campaign Guide Entry 85.4 ==")
+        engine.add_message("")
+        engine.add_message("--- Story ---")
+        engine.add_message('Calypsa gasps and drops down on one knee. As you move over to her, she looks up. '
+                           '"I\'ll admit it," she says. "I\'m hurt." She winces as you get out some medical '
+                           'supplies and get to work treating her injuries.')
+        engine.add_message("")
+        engine.add_message("--- Results ---")
+        engine.add_message("End the day.")
+        engine.end_day(False)
+        return True
+
     def resolve_entry_86(self, source_card: 'Card | None', engine: 'GameEngine', clear_type: str | None) -> bool:
         engine.add_message("")
         engine.add_message("")

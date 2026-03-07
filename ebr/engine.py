@@ -448,8 +448,6 @@ class GameEngine:
                     clear_type = card.clear_if_threshold(self.state)
                     discarded = False
                     if clear_type == "progress":
-                        # TODO: Check for clear-by-progress entry (on_progress_clear_log)
-                        # Some cards might have special effects or stay in play
                         self.add_message(f"{card.title} cleared by progress!")
                         if card.on_progress_clear_log is not None:
                             discarded = self.campaign_guide.resolve_entry(
@@ -458,11 +456,10 @@ class GameEngine:
                                 engine=self,
                                 clear_type=clear_type
                             )
-                        if not discarded:
+                        # Re-check threshold: the entry may have removed progress/harm
+                        if not discarded and card.clear_if_threshold(self.state) is not None:
                             to_clear.append(card)
                     elif clear_type == "harm":
-                        # TODO: Check for clear-by-harm entry (on_harm_clear_log)
-                        # Some cards might have special effects or stay in play
                         self.add_message(f"{card.title} cleared by harm!")
                         if card.on_harm_clear_log is not None:
                             discarded = self.campaign_guide.resolve_entry(
@@ -471,7 +468,8 @@ class GameEngine:
                                 engine=self,
                                 clear_type=clear_type
                             )
-                        if not discarded:
+                        # Re-check threshold: the entry may have removed progress/harm
+                        if not discarded and card.clear_if_threshold(self.state) is not None:
                             to_clear.append(card)
 
         # Discard all cleared cards (this removes them from areas)
