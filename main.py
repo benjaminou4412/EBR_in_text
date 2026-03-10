@@ -262,8 +262,9 @@ def handle_menu(engine: GameEngine) -> str:
         print(" 1. Save Game")
         print(" 2. Load Game")
         print(" 3. Campaign Tracker")
-        print(" 4. Return to Title")
-        print(" 5. Back to Game")
+        print(" 4. View Map")
+        print(" 5. Return to Title")
+        print(" 6. Back to Game")
 
         choice = input("> ").strip()
 
@@ -329,12 +330,16 @@ def handle_menu(engine: GameEngine) -> str:
             display_campaign_tracker(engine)
 
         elif choice == "4":
+            # View Map
+            _handle_view_map(engine)
+
+        elif choice == "5":
             # Return to Title
             confirm = input("\nReturn to title? Unsaved progress will be lost. (y/n): ").strip().lower()
             if confirm in ('y', 'yes'):
                 return 'quit'
 
-        elif choice == "5" or choice == "":
+        elif choice == "6" or choice == "":
             # Back to Game
             return 'continue'
 
@@ -434,17 +439,8 @@ def _build_phase2_actions(engine: GameEngine) -> list[Action]:
         on_success=lambda s, _e, _t: None,
     ))
     actions.append(Action(
-        id="system-view-map",
-        name="[View Map]",
-        verb="View Map",
-        aspect="",
-        approach="",
-        is_test=False,
-        on_success=lambda s, _e, _t: None,
-    ))
-    actions.append(Action(
         id="system-menu",
-        name="[Menu] (save/load/quit)",
+        name="[Menu] (save/load/quit/view map/view campaign tracker)",
         verb="Menu",
         aspect="",
         approach="",
@@ -655,12 +651,6 @@ def run_game_loop(engine: GameEngine, with_ui: bool = True, resume_phase2: bool 
                         return 'normal'
                     else:
                         act = None
-
-                if act is not None and act.id == "system-view-map":
-                    if with_ui:
-                        _handle_view_map(engine)
-                    act = None
-                    continue
 
                 if act is not None and act.id == "system-menu":
                     if with_ui:

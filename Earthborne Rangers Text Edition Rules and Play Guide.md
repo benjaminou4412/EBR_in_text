@@ -73,7 +73,9 @@ PHASE 2 — RANGER TURNS
   • [Discard gear] to discard equipped gear you no longer want
   • [Rest] to end your participation this round; resolve any “when you rest” effects and proceed to the Travel and Refresh phases if all rangers have rested.
   • [End Day] to end the day and proceed to the next day; this will reset all game state except that recorded on the campaign tracker.
-  • [View Map] to view an alphabetical list of all locations, with your current and adjacent locations labeled. Also labels "Pivotal Locations", which are locations of interest whose path decks contain unique cards; these are often human settlements. You can also optionally plan a route by inputting the exact name of a target location; the game will then provide you a list of viable routes consisting of the locations and accompanying terrain types you would have to travel through to reach your target from your current location, along with the distance (in number of Travels) for each route, sorted by distance.
+  • [Menu] for several suboptions:
+   - [View Map] to view an alphabetical list of all locations, with your current and adjacent locations labeled. Also labels "Pivotal Locations", which are locations of interest whose path decks contain unique cards; these are often human settlements. You can also optionally plan a route by inputting the exact name of a target location; the game will then provide you a list of viable routes consisting of the locations and accompanying terrain types you would have to travel through to reach your target from your current location, along with the distance (in number of Travels) for each route, sorted by distance.
+   - [View Campaign Tracker] to view upcoming weather, recorded Notable Events, and Unlocked Rewards, as well as active and completed Missions.
 2) If there are still Rangers who haven't rested, one of them can take another turn.
 3) When all Rangers have rested, proceed to Phase 3: Travel.
 
