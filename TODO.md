@@ -32,17 +32,22 @@ API-ish notes:
 A living checklist. Roughly prioritized.
 
 - Add campaign log entries for all other already-implemented cards that don't already have them
+- automatic keyword loading from JSON
+- implement remaining weather
+- Implement the rest of the cards in the Valley set
 - Implement all locations
+- Implement all remaining path sets
+- Implement all remaining pivotal set cards, implementing accompanying Missions as necessary
 - Implement fully rules-compliant faceup/facedown cards
   - https://thelivingvalley.earthbornegames.com/docs/rules_glossary/F/facedown_cards/
   - https://thelivingvalley.earthbornegames.com/docs/rules_glossary/A/attach
   - Ruling: Cards that flip face-up are not considered to enter play, but if it's the first time they've been face-up in-play, they get their starting tokens and Campaign Guide Entries as if they've just entered play
-- automatic keyword loading from JSON
 - implement multi-target tests
   - need to have interaction/obstacle rules consider multiple interaction targets
     (the farthest target is the one true interaction target)
-- "LLM mode" that autosaves but disallows loading saves
+- implement all remaining player cards
+- implement all remaining reward cards
 - Implement deck editing menu used at start of campaign and when camping
-- Implement...the entire rest of the game.
+- Implement remaining Missions and Main Story campaign log entries
 - "AI Mode" (saves, but no loading available to player; metrics tracked)
 
