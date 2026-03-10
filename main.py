@@ -27,6 +27,10 @@ from ebr.cards import (
 # Default save directory
 SAVE_DIR = Path("saves")
 
+# Set to True when --graphics-mode is active; suppresses plaintext headers
+# that would appear below the Rich dashboard.
+_graphics_mode = False
+
 
 def autosave(engine: GameEngine) -> None:
     """
@@ -611,8 +615,9 @@ def run_game_loop(engine: GameEngine, with_ui: bool = True, resume_phase2: bool 
             engine.phase1_draw_paths(count=1)
             if with_ui:
                 render_state(engine, phase_header=f"Day {engine.state.campaign_tracker.day_number} — Round {engine.state.round_number} — Phase 1: Draw Path Cards")
-                print("")
-                print("==== Event log ====")
+                if not _graphics_mode:
+                    print("")
+                    print("==== Event log ====")
                 display_and_clear_messages(engine)
                 input("Press Enter to proceed to Phase 2...")
 
@@ -626,8 +631,9 @@ def run_game_loop(engine: GameEngine, with_ui: bool = True, resume_phase2: bool 
             if with_ui:
                 clear_screen()
                 render_state(engine, phase_header=f"Day {engine.state.campaign_tracker.day_number} — Round {engine.state.round_number} — Phase 2: Ranger Turns")
-                print("")
-                print("==== Event log and choices ====")
+                if not _graphics_mode:
+                    print("")
+                    print("==== Event log and choices ====")
 
             actions = _build_phase2_actions(engine)
 
@@ -685,8 +691,9 @@ def run_game_loop(engine: GameEngine, with_ui: bool = True, resume_phase2: bool 
         if with_ui:
             clear_screen()
             render_state(engine, phase_header=f"Day {engine.state.campaign_tracker.day_number} — Round {engine.state.round_number} — Phase 3: Travel")
-            print("")
-            print("==== Event log ====")
+            if not _graphics_mode:
+                print("")
+                print("==== Event log ====")
         camped = engine.phase3_travel()
         if with_ui:
             display_and_clear_messages(engine)
@@ -711,8 +718,9 @@ def run_game_loop(engine: GameEngine, with_ui: bool = True, resume_phase2: bool 
         engine.phase4_refresh()
         if with_ui:
             render_state(engine, phase_header=f"Day {engine.state.campaign_tracker.day_number} — Round {engine.state.round_number} — Phase 4: Refresh")
-            print("")
-            print("==== Event log ====")
+            if not _graphics_mode:
+                print("")
+                print("==== Event log ====")
             display_and_clear_messages(engine)
 
         # Check if day ended during Phase 4 (e.g., drawing from empty deck)
@@ -804,10 +812,35 @@ def main() -> None:
         type=str,
         help="Load a saved game file directly (skip title screen)"
     )
+    parser.add_argument(
+        "--graphics-mode",
+        action="store_true",
+        help="Use rich TUI dashboard for persistent game state display"
+    )
     args = parser.parse_args()
 
     # Configure display options
     set_show_art_descriptions(args.show_art)
+
+    # Swap to rich view if requested
+    if args.graphics_mode:
+        import ebr.rich_view as _rv
+        global _graphics_mode, render_state, display_and_clear_messages
+        _graphics_mode = True
+        global choose_action, choose_action_target, choose_commit
+        global choose_target, choose_targets, choose_response
+        global choose_order, choose_option, choose_amount
+        render_state = _rv.render_state
+        display_and_clear_messages = _rv.display_and_clear_messages
+        choose_action = _rv.choose_action
+        choose_action_target = _rv.choose_action_target
+        choose_commit = _rv.choose_commit
+        choose_target = _rv.choose_target
+        choose_targets = _rv.choose_targets
+        choose_response = _rv.choose_response
+        choose_order = _rv.choose_order
+        choose_option = _rv.choose_option
+        choose_amount = _rv.choose_amount
 
     # Check for command-line load argument
     load_path = args.load

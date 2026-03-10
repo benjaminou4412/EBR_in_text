@@ -241,6 +241,47 @@ def render_state(engine: GameEngine, phase_header: str = "") -> None:
         print("[Empty hand]")
 
 
+def format_action_line(a: Action, index: int, state: GameState) -> str:
+    """Format a single action as a numbered display string.
+
+    Shared by both text and rich view implementations.
+    """
+    all_cards = state.all_cards_in_play()
+
+    if a.source_id and a.source_id != "common":
+        card = state.get_card_by_id(a.source_id)
+        display_name = get_display_id(all_cards, card) if card else a.source_title
+        if a.is_test:
+            approach, aspect = a.approach, a.aspect
+            if not isinstance(approach, Approach) or not isinstance(aspect, Aspect):
+                raise RuntimeError("A test should always have an approach and aspect!")
+            src = get_display_id(all_cards, card) if card else a.source_title
+            display = f"[Test] {aspect.value} + [{approach.value}]: {a.verb} ({src})"
+        elif a.is_exhaust:
+            display = f"[Exhaust] ({display_name})"
+        elif a.is_play:
+            if card:
+                cost = card.get_current_energy_cost()
+                aspect = card.aspect
+                if cost is not None and cost > 0 and aspect:
+                    display = f"[Play] ({display_name}) - {cost} {aspect.value}"
+                else:
+                    display = f"[Play] ({display_name})"
+            else:
+                display = f"[Play] ({display_name})"
+        else:
+            raise RuntimeError("All actions right now should be Test, Exhaust, or Play!")
+    elif a.verb and a.source_title:
+        approach, aspect = a.approach, a.aspect
+        if not isinstance(approach, Approach) or not isinstance(aspect, Aspect):
+            raise RuntimeError("A test should always have an approach and aspect!")
+        display = f"[Test] {aspect.value} + [{approach.value}]: {a.verb} ({a.source_title})"
+    else:
+        display = a.name
+
+    return f" {index}. {display}"
+
+
 def choose_action(actions: list[Action], state: GameState, engine: GameEngine) -> Optional[Action]:
     """Prompt player to choose from available actions"""
     display_and_clear_messages(engine)
@@ -250,52 +291,8 @@ def choose_action(actions: list[Action], state: GameState, engine: GameEngine) -
         return None
     print("\nChoose an action:")
 
-    all_cards = state.all_cards_in_play()
-
     for i, a in enumerate(actions, start=1):
-        # Use verb for condensed display
-        if a.source_id and a.source_id != "common":
-            # Card-based action - find the card and get display ID
-            card = state.get_card_by_id(a.source_id)
-            if card:
-                display_name = get_display_id(all_cards, card)
-            else:
-                display_name = a.source_title
-            if a.is_test:
-                approach = a.approach
-                aspect = a.aspect
-                if not isinstance(approach, Approach) or not isinstance(aspect, Aspect):
-                    raise RuntimeError(f"A test should always have an approach and aspect!")
-                if card:
-                    display = f"[Test] {aspect.value} + [{approach.value}]: {a.verb} ({display_name})"
-                else:
-                    display = f"[Test] {aspect.value} + [{approach.value}]: {a.verb} ({a.source_title})"
-            elif a.is_exhaust:
-                display = f"[Exhaust] ({display_name})"
-            elif a.is_play:
-                # Show energy cost for play actions
-                if card:
-                    cost = card.get_current_energy_cost()
-                    aspect = card.aspect
-                    if cost is not None and cost > 0 and aspect:
-                        display = f"[Play] ({display_name}) - {cost} {aspect.value}"
-                    else:
-                        display = f"[Play] ({display_name})"
-                else:
-                    display = f"[Play] ({display_name})"
-            else:
-                raise RuntimeError(f"All actions right now should be Test, Exhaust, or Play!")
-        elif a.verb and a.source_title:
-            #Common tests
-            approach = a.approach
-            aspect = a.aspect
-            if not isinstance(approach, Approach) or not isinstance(aspect, Aspect):
-                raise RuntimeError(f"A test should always have an approach and aspect!")
-            display = f"[Test] {aspect.value} + [{approach.value}]: {a.verb} ({a.source_title})"
-        else:
-            # Fallback to full name
-            display = a.name
-        print(f" {i}. {display}")
+        print(format_action_line(a, i, state))
 
     raw = input("> ").strip().casefold()
     if raw in ("q", "quit"):
