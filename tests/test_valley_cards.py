@@ -1110,5 +1110,129 @@ class QuisiCampaignGuideTests(unittest.TestCase):
                         "Quisi should have harm clear entry 80")
 
 
+class TestFundamentalistCampaignGuide(unittest.TestCase):
+    """Tests for The Fundamentalist's campaign guide entries (86 series),
+    exercised through perform_test → clear flow."""
+
+    def _setup_fundamentalist(self, choose_A: bool, area_choice: str = "Surroundings",
+                               invasion: bool = False, location_name: str = "Lone Tree Station"):
+        """Create a game state with The Fundamentalist at progress 2 (threshold 3),
+        set up a Connect test that will add enough progress to clear him."""
+        fund = TheFundamentalist()
+        fund.progress = 2  # One more progress will clear (threshold is 3)
+
+        # Hand card with a Connection icon so we can commit it for effort
+        hand_card = Card(id="hand0", title="Hand Card 0",
+                         approach_icons={Approach.CONNECTION: 1})
+
+        ranger = make_test_ranger()
+        ranger.hand = [hand_card]
+        ranger.energy = {Aspect.AWA: 5, Aspect.FIT: 5, Aspect.SPI: 5, Aspect.FOC: 5}
+        # Give ranger some fatigue to test soothe
+        fatigue_cards = [Card(id=f"fatigue-{i}", title=f"Fatigue {i}") for i in range(4)]
+        ranger.fatigue_stack = fatigue_cards
+
+        state = GameState(
+            ranger=ranger,
+            areas={
+                Area.SURROUNDINGS: [],
+                Area.ALONG_THE_WAY: [],
+                Area.WITHIN_REACH: [fund],
+                Area.PLAYER_AREA: []
+            }
+        )
+        state.campaign_tracker.current_location_id = location_name
+
+        if invasion:
+            state.campaign_tracker.active_missions.append(Mission("Invasion - Stage I"))
+
+        # Stack challenge deck: SPI +0 so effort = energy(1) + icon(1) = 2 >= presence(2) → success
+        # The Fundamentalist has presence 2, so difficulty = 2
+        # With energy=1 and 1 Connection icon, base effort = 1+1 = 2, plus mod 0 = 2 >= 2 → success
+        # on_success adds effort(2) progress → fund goes from 2 to 4 >= threshold 3 → clears!
+        stack_deck(state, Aspect.SPI, 0, ChallengeIcon.SUN)
+
+        eng = GameEngine(
+            state,
+            response_decider=lambda _e, _p: choose_A,
+            option_chooser=lambda _e, _opts, _p: area_choice,
+        )
+
+        # Get the Connect action
+        from ebr.registry import provide_common_tests
+        actions = provide_common_tests(state)
+        connect = next(a for a in actions if a.id == "common-connect")
+
+        return fund, eng, state, connect
+
+    def test_clear_option_A_keeps_fundamentalist_and_moves(self):
+        """Option A: discard all tokens, move Fundamentalist, he stays in play."""
+        fund, eng, state, connect = self._setup_fundamentalist(
+            choose_A=True, area_choice="Surroundings")
+
+        decision = CommitDecision(energy=1, hand_indices=[0])
+        eng.perform_test(connect, decision, fund.id)
+
+        # Fundamentalist should still be in play (not discarded)
+        all_in_play = state.all_cards_in_play()
+        self.assertIn(fund, all_in_play,
+                       "Option A: Fundamentalist should remain in play")
+
+        # All tokens should be removed
+        self.assertEqual(fund.progress, 0, "Progress should be 0 after option A")
+        self.assertEqual(fund.harm, 0, "Harm should be 0 after option A")
+
+        # Should have moved to Surroundings
+        self.assertIn(fund, state.areas[Area.SURROUNDINGS],
+                       "Fundamentalist should have moved to Surroundings")
+        self.assertNotIn(fund, state.areas[Area.WITHIN_REACH],
+                          "Fundamentalist should no longer be in Within Reach")
+
+    def test_clear_option_B_discards_and_soothes(self):
+        """Option B: discard Fundamentalist, soothe 2 fatigue."""
+        fund, eng, state, connect = self._setup_fundamentalist(choose_A=False)
+        initial_fatigue = len(state.ranger.fatigue_stack)
+
+        decision = CommitDecision(energy=1, hand_indices=[0])
+        eng.perform_test(connect, decision, fund.id)
+
+        # Fundamentalist should be discarded (not in any area)
+        all_in_play = state.all_cards_in_play()
+        self.assertNotIn(fund, all_in_play,
+                          "Option B: Fundamentalist should be discarded")
+
+        # Should have soothed 2 fatigue
+        self.assertEqual(len(state.ranger.fatigue_stack), initial_fatigue - 2,
+                          "Option B: Should soothe 2 fatigue")
+
+    def test_invasion_routes_to_86_3(self):
+        """When Invasion mission is active, progress clear should route to 86.3."""
+        fund, eng, state, connect = self._setup_fundamentalist(
+            choose_A=False, invasion=True)
+
+        decision = CommitDecision(energy=1, hand_indices=[0])
+        eng.perform_test(connect, decision, fund.id)
+
+        messages = " ".join([m.message for m in eng.message_queue])
+        self.assertIn("86.3", messages,
+                       "Should route to entry 86.3 during Invasion")
+        self.assertIn("reclaimers", messages,
+                       "86.3 story should mention reclaimers")
+
+    def test_non_invasion_routes_to_86_4(self):
+        """When no Invasion mission is active, progress clear should route to 86.4."""
+        fund, eng, state, connect = self._setup_fundamentalist(
+            choose_A=False, invasion=False)
+
+        decision = CommitDecision(energy=1, hand_indices=[0])
+        eng.perform_test(connect, decision, fund.id)
+
+        messages = " ".join([m.message for m in eng.message_queue])
+        self.assertIn("86.4", messages,
+                       "Should route to entry 86.4 when not on Invasion")
+        self.assertIn("Fundamentalist", messages,
+                       "86.4 story should mention why he's called the Fundamentalist")
+
+
 if __name__ == '__main__':
     unittest.main()

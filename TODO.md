@@ -31,13 +31,12 @@ API-ish notes:
 
 A living checklist. Roughly prioritized.
 
-- Add campaign log entries for all other already-implemented cards that don't already have them
 - automatic keyword loading from JSON
-- implement remaining weather
-- Implement the rest of the cards in the Valley set
-- Implement all locations
-- Implement all remaining path sets
-- Implement all remaining pivotal set cards, implementing accompanying Missions as necessary
+- implement remaining weather (6 cards)
+- Implement the rest of the cards in the Valley (11 cards) and General sets (9 cards)
+- Implement all locations (34 left)
+- Implement all remaining path sets (84 cards)
+- Implement all remaining pivotal set cards (~36 cards), implementing accompanying Missions as necessary 
 - Implement fully rules-compliant faceup/facedown cards
   - https://thelivingvalley.earthbornegames.com/docs/rules_glossary/F/facedown_cards/
   - https://thelivingvalley.earthbornegames.com/docs/rules_glossary/A/attach
@@ -45,8 +44,8 @@ A living checklist. Roughly prioritized.
 - implement multi-target tests
   - need to have interaction/obstacle rules consider multiple interaction targets
     (the farthest target is the one true interaction target)
-- implement all remaining player cards
-- implement all remaining reward cards
+- implement all remaining player cards (~98 cards)
+- implement all remaining reward cards (~40 cards)
 - Implement deck editing menu used at start of campaign and when camping
 - Implement remaining Missions and Main Story campaign log entries
 - "AI Mode" (saves, but no loading available to player; metrics tracked)
