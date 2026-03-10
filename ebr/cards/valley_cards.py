@@ -14,7 +14,6 @@ class CalypsaRangerMentor(Card):
     def __init__(self):
         # Load all common PathCard fields from JSON
         super().__init__(**load_card_fields("Calypsa, Ranger Mentor", "Valley")) #type:ignore
-        self.keywords = {Keyword.FRIENDLY}
         self.art_description = "A mature woman with determined eyes, wearing a form-fitting " \
         "suit of what almost looks like padded armor, a hooded cloak, a backpack, and a " \
         "Ranger Badge. The suit is clearly thick enough to offer substantial protection, but her " \
@@ -49,7 +48,6 @@ class QuisiVosRascal(Card):
     def __init__(self):
         # Load all common PathCard fields from JSON
         super().__init__(**load_card_fields("Quisi Vos, Rascal", "Valley")) #type:ignore
-        self.keywords = {Keyword.FATIGUING, Keyword.FRIENDLY, Keyword.PERSISTENT}
         self.art_description = "A young girl with a bright smile frolics among several butterfly-like " \
         "beings, her right arm bouncing happily and her left arm outstretched towards one of the beings, " \
         "her wide eyes fixed on it with awe. She wears a simple green cloak with some reinforcement around " \
@@ -142,7 +140,6 @@ class TheFundamentalist(Card):
     def __init__(self):
         # Load all common PathCard fields from JSON
         super().__init__(**load_card_fields("The Fundamentalist", "Valley")) #type:ignore
-        self.keywords = {Keyword.FRIENDLY}
         self.art_description = "A tensed-up man turns to look at you, his shoulders slightly hunched and his right arm " \
         "clenched upwards. His face is almost entirely obscured by a heavy-duty set of goggles over his eyes and nose and " \
         "the enormous collar of his coat covering his mouth, cheeks, and chin. He wears a wide-brimmed conical hat in teal, " \

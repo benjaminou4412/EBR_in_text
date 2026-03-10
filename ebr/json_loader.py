@@ -4,7 +4,7 @@ Utility functions for loading card data from JSON files
 
 import json
 from pathlib import Path
-from .models import Aspect, Approach, Area, CardType
+from .models import Aspect, Approach, Area, CardType, Keyword
 
 #Gonna be a lot of type-ignore in this file because JSON's wonky
 
@@ -69,6 +69,7 @@ def load_card_fields(title: str, card_set: str) -> dict: # type: ignore
     on_progress_clear_log = logs[0]
     on_harm_clear_log = logs[1]
 
+    keywords = parse_keywords(data)
     description = data.get("description") #type: ignore
     locations = data.get("mission_locations") #type: ignore
     objective = data.get("mission_objective") #type: ignore
@@ -102,7 +103,8 @@ def load_card_fields(title: str, card_set: str) -> dict: # type: ignore
         "mission_description": description,
         "mission_locations": locations,
         "mission_objective": objective,
-        "mission_clear_log": mission_clear_log
+        "mission_clear_log": mission_clear_log,
+        "keywords": keywords
     }
 
 
@@ -359,6 +361,30 @@ def parse_clear_logs(card_data: dict) -> tuple[str | None, str | None]: #type:ig
             harm_log = log_number
     
     return (progress_log, harm_log)
+
+
+# Build a lookup from lowercase keyword value to Keyword enum member
+_KEYWORD_LOOKUP: dict[str, Keyword] = {kw.value.lower(): kw for kw in Keyword}
+
+
+def parse_keywords(card_data: dict) -> set[Keyword]:  # type: ignore
+    """Extract keywords from rules text.
+
+    Keywords appear as period-delimited words in static rules entries,
+    e.g. "Fatiguing. Friendly. Persistent." or "Obstacle."
+    """
+    keywords: set[Keyword] = set()
+    for rule in card_data.get("rules", []):  # type: ignore
+        text: str = rule.get("text", "")  # type: ignore
+        if not text:
+            continue
+        # Split on periods and check each segment
+        for segment in text.split("."):
+            word = segment.strip()
+            kw = _KEYWORD_LOOKUP.get(word.lower())
+            if kw is not None:
+                keywords.add(kw)
+    return keywords
 
 
 def parse_mission_objective_log(card_data: dict) -> str | None:#type:ignore

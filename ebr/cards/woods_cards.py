@@ -399,7 +399,6 @@ class OvergrownThicket(Card):
     def __init__(self):
         # Load all common PathCard fields from JSON
         super().__init__(**load_card_fields("Overgrown Thicket", "woods")) #type:ignore
-        self.keywords = {Keyword.OBSTACLE}
         self.art_description = "The trees before you have grown thick and tangled, forming " \
         "a nearly impenetrable barrier in your path."
 
