@@ -34,7 +34,12 @@ class CampaignGuide:
             "85.2": self.resolve_entry_85_2,
             "85.3": self.resolve_entry_85_3,
             "85.4": self.resolve_entry_85_4,
-            "86": self.resolve_entry_86, #placeholder to prevent crashing when The Fundamentalist enters play
+            "86": self.resolve_entry_86, #The Fundamentalist
+            "86.1": self.resolve_entry_86_1,
+            "86.2": self.resolve_entry_86_2,
+            "86.3": self.resolve_entry_86_3,
+            "86.4": self.resolve_entry_86_4,
+            "86.5": self.resolve_entry_86_5,
             "91": self.resolve_entry_91, #Biscuit Delivery
             "91.1": self.resolve_entry_91_1,
             "91.2": self.resolve_entry_91_2,
@@ -916,8 +921,178 @@ class CampaignGuide:
     def resolve_entry_86(self, source_card: 'Card | None', engine: 'GameEngine', clear_type: str | None) -> bool:
         engine.add_message("")
         engine.add_message("")
-        engine.add_message("=== Campaign Guide Entry 86: The Fundamentalist (PLACEHOLDER) ===")
+        engine.add_message("=== Campaign Guide Entry 86: The Fundamentalist ===")
+        engine.add_message("")
+        engine.add_message("--- Checking conditionals ---")
+        if clear_type is None:
+            # Enters play
+            if engine.state.campaign_tracker.current_location_id == "Bowl of the Sun":
+                engine.add_message("At the Bowl of the Sun. Go to 86.1")
+                engine.add_message("")
+                engine.add_message("")
+                return self.resolve_entry("86.1", source_card, engine, clear_type)
+            else:
+                engine.add_message("Not at the Bowl of the Sun. Go to 86.2")
+                engine.add_message("")
+                engine.add_message("")
+                return self.resolve_entry("86.2", source_card, engine, clear_type)
+        elif clear_type.casefold() == "progress".casefold():
+            engine.add_message("The Fundamentalist was cleared by Progress:")
+            # Check if on Invasion (either stage)
+            is_invasion = any(m.name in ("Invasion - Stage I", "Invasion - Stage II")
+                              for m in engine.state.campaign_tracker.active_missions)
+            if is_invasion:
+                engine.add_message("    On Invasion (either stage). Go to 86.3")
+                engine.add_message("")
+                engine.add_message("")
+                return self.resolve_entry("86.3", source_card, engine, clear_type)
+            else:
+                engine.add_message("    Not on Invasion. Go to 86.4")
+                engine.add_message("")
+                engine.add_message("")
+                return self.resolve_entry("86.4", source_card, engine, clear_type)
+        elif clear_type.casefold() == "harm".casefold():
+            engine.add_message("The Fundamentalist was cleared by Harm:")
+            engine.add_message("    Go to 86.5")
+            engine.add_message("")
+            engine.add_message("")
+            return self.resolve_entry("86.5", source_card, engine, clear_type)
+        else:
+            raise RuntimeError("Campaign guide entry resolving with invalid clear type!")
+
+    def resolve_entry_86_1(self, _source_card: 'Card | None', engine: 'GameEngine', _clear_type: str | None) -> bool:
+        engine.add_message("== Campaign Guide Entry 86.1 ==")
+        engine.add_message("")
+        engine.add_message("--- Story ---")
+        engine.add_message('As you descend into a warm patch of sun, you see Tykor Hum, the so-called '
+                           'Fundamentalist of the Valley. You\'ve heard Tykor lives alone and often wanders '
+                           'the Valley, but here in the verdant stone bowl, he seems to have set up a quiet '
+                           'meditation spot in the greenery. Tykor himself is sitting cross-legged on a large '
+                           'boulder with what appears to be an offering of fruits, flowers, and fragrant tea '
+                           'set out before him. His eyes are closed, and you can hear him mumbling to himself.')
+        engine.add_message('When you get close, he seems to hear you because he opens his eyes. You ask him what ' \
+                            'he’s doing, and he stares back at you for a long moment. "Speaking with my parents," he says finally. ' \
+                            '"What brings you to the Bowl of the Sun?"')
+        engine.add_message("")
+        engine.add_message("--- Guidance ---")
+        engine.add_message('Clear the Fundamentalist with [Progress] to ask him about his way of life.')
         return False
+
+    def resolve_entry_86_2(self, _source_card: 'Card | None', engine: 'GameEngine', _clear_type: str | None) -> bool:
+        engine.add_message("== Campaign Guide Entry 86.2 ==")
+        engine.add_message("")
+        engine.add_message("--- Story ---")
+        engine.add_message('You see a man quietly picking plums from a small, fragrant-smelling tree. '
+                           'You\'ve heard of the so-called Fundamentalist, and you watch with interest as '
+                           'he carefully lifts and inspects each plum in turn. Occasionally, one comes off '
+                           'the tree, and he tucks it into a rucksack.')
+        engine.add_message('When you see him notice you, you call out and ask what he\'s doing. He frowns '
+                           'at you. "What does it look like? I\'m taking plums. Only the ones that are just '
+                           'about ready to fall off the tree, obviously. What are you doing?"')
+        engine.add_message("")
+        engine.add_message("--- Guidance ---")
+        engine.add_message('Clear the Fundamentalist with [Progress] to ask him about his way of life.')
+        return False
+
+    def _resolve_entry_86_clear_choice(self, source_card: 'Card | None', engine: 'GameEngine') -> bool:
+        """Shared A/B choice logic for 86.3 and 86.4."""
+        from .models import Area
+        engine.add_message("")
+        engine.add_message("--- RANGERS CHOOSE: ---")
+        engine.add_message('A) Have him stay and continue helping you. Discard all [tokens] from the Fundamentalist, and move him.')
+        engine.add_message('B) Say goodbye. Discard the Fundamentalist. Each Ranger soothes 2 fatigue.')
+        is_A = engine.response_decider(engine, "Input 'y' for option A, 'n' for option B:")
+        if is_A:
+            engine.add_message("")
+            engine.add_message("--- Results (A) ---")
+            # Discard all tokens (progress, harm, unique tokens)
+            if source_card.progress > 0:
+                _, msg = source_card.remove_progress(source_card.progress)
+                engine.add_message(msg)
+            if source_card.harm > 0:
+                _, msg = source_card.remove_harm(source_card.harm)
+                engine.add_message(msg)
+            if source_card.has_unique_tokens():
+                for token_type in list(source_card.unique_tokens.keys()):
+                    if source_card.unique_tokens[token_type] > 0:
+                        source_card.remove_unique_tokens(engine, token_type, source_card.unique_tokens[token_type])
+            # Move him — let the player choose which area
+            areas = [Area.SURROUNDINGS, Area.ALONG_THE_WAY, Area.WITHIN_REACH, Area.PLAYER_AREA]
+            current_area = engine.state.get_card_area_by_id(source_card.id)
+            other_areas = [a for a in areas if a != current_area]
+            area_names = [a.value for a in other_areas]
+            chosen_name = engine.option_chooser(engine, area_names, "Choose an area to move the Fundamentalist to:")
+            target_area = next(a for a in other_areas if a.value == chosen_name)
+            engine.move_card(source_card.id, target_area)
+            return False
+        else:
+            engine.add_message("")
+            engine.add_message("--- Results (B) ---")
+            engine.add_message('Discard the Fundamentalist. Each Ranger soothes 2 fatigue.')
+            source_card.discard_from_play(engine)
+            engine.state.ranger.soothe(engine, 2)
+            return True
+
+    def resolve_entry_86_3(self, source_card: 'Card | None', engine: 'GameEngine', _clear_type: str | None) -> bool:
+        engine.add_message("== Campaign Guide Entry 86.3 ==")
+        engine.add_message("")
+        engine.add_message("--- Story ---")
+        engine.add_message('You tell Tykor about the reclaimers, and how they are surging into the Valley. '
+                           'Tykor listens intently. Then you ask the question on your mind; are the reclaimers '
+                           'a natural part of the environment that should be left alone, or a human creation '
+                           'that should be removed?')
+        engine.add_message('Tykor strokes his grizzled chin and stares into space for a while. "That\'s a good '
+                           'question," he says finally. "On the one hand, these reclaimers of yours are clearly '
+                           'biomelds, created by our ancestors for Guide knows what reason. You could argue that '
+                           'removing them is no different than disassembling one of your villages so that everyone '
+                           'can live a hunter-gatherer lifestyle. In fact, you could even argue that removing them '
+                           'is just cleaning up our ancestors\' mess."')
+        engine.add_message('"But," he continues, raising a finger, "Humans have been a part of the ecosystem for '
+                           'hundreds of thousands of years. This whole ecosystem," he gestures to the Valley and '
+                           'the world beyond with wild sweeps of his hands, "is created by humans. First we changed '
+                           'it with our actions thousands of years ago, then we changed it again with the Generational '
+                           'Projects trying to change the first change!"')
+        engine.add_message('He laughs for a moment, then grows serious. "Perhaps the only thing we can do is to '
+                           'resolve to step back from this point forward, and stop meddling. That\'s what I\'d suggest, '
+                           'at any rate. Stop meddling, because it always leads to more meddling." But then you hear '
+                           'his voice quiver just a tiny bit. "But ... I suppose that\'s a cold comfort to all the '
+                           'people those reclaimers might hurt. That it\'s ... natural."')
+        engine.add_message('Tykor suddenly stands and begins to pack his bags without another word. In a minute, he '
+                           'is ready to leave with his rucksack. Unless you ask him to stay, he is clearly going to '
+                           'head out.')
+        return self._resolve_entry_86_clear_choice(source_card, engine)
+
+    def resolve_entry_86_4(self, source_card: 'Card | None', engine: 'GameEngine', _clear_type: str | None) -> bool:
+        engine.add_message("== Campaign Guide Entry 86.4 ==")
+        engine.add_message("")
+        engine.add_message("--- Story ---")
+        engine.add_message('You ask Tykor why the others in the Valley call him the Fundamentalist, and he cocks '
+                           'his head for a moment. "Do they?" he asks. "I suppose I haven\'t been into any of your '
+                           'villages in a while."')
+        engine.add_message('He thinks for another moment, then abruptly speaks. "I guess it\'s because of how I '
+                           'live," he says. "I don\'t see us having any right to build houses and lay down roads '
+                           'across this Valley. That\'s just us imposing our will on the rest of the world, which '
+                           'we have no more right to do than any other animal."')
+        engine.add_message('You ask if human\'s sapience changes the situation at all, and he waves his hands as '
+                           'if driving off a fly. "You sound like all the rest. No, no, our sapience just means we '
+                           'should recognize our capacity to change the world, and then make the conscious choice '
+                           'to reject that."')
+        engine.add_message('As he talks, he starts to pack his things. In a minute, he is ready to leave. Unless '
+                           'you ask him to stay, he is clearly going to head out.')
+        return self._resolve_entry_86_clear_choice(source_card, engine)
+
+    def resolve_entry_86_5(self, _source_card: 'Card | None', engine: 'GameEngine', _clear_type: str | None) -> bool:
+        engine.add_message("== Campaign Guide Entry 86.5 ==")
+        engine.add_message("")
+        engine.add_message("--- Story ---")
+        engine.add_message('Tykor collapses silently from his injuries. When you get to him, he\'s seems barely '
+                           'conscious. "Is it my time?" he whispers. "Do I go now to join the ancestors?" His eyes '
+                           'close. Despite his words, you see his injuries are treatable, though it will take some time.')
+        engine.add_message("")
+        engine.add_message("--- Results ---")
+        engine.add_message("End the day.")
+        engine.end_day(False)
+        return True
     
     def resolve_entry_91(self, source_card: 'Card | None', engine: 'GameEngine', clear_type: str | None) -> bool: #clear_type of None indicates non-clear resolution
         engine.add_message("")
