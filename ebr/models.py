@@ -69,6 +69,7 @@ class EventType(str, Enum):
     COMMIT_EFFORT = "commit-effort"
     AFTER_TEST = "after-test"
     TEST_SUCCEED = "test-succeed"
+    TEST_FAIL = "test-fail"
     PLAY_CARD = "play-card"
     USE_TOKEN = "use-token"
     REST = "rest"
@@ -115,6 +116,7 @@ class ConstantAbilityType(Enum):
     # Modifications (change values during calculation)
     MODIFY_EFFORT = "modify_effort" #ranger tokens, tenebrae
     MODIFY_PRESENCE = "modify_presence" #boulder field, the fundamentalist, reclaimer mucus
+    MODIFY_DIFFICULTY = "modify_difficulty" #clinging mist
 
     # Preventions (block actions from happening)
     PREVENT_INTERACTION = "prevent_interaction" #topside mast
@@ -759,6 +761,12 @@ class Card:
     def do_arrival_setup(self, engine:GameEngine) -> None:
         """Implemented by locations and executed during Step 5 of Travel or Step 10 of Setup"""
         return None
+
+    #weather only methods
+    def get_arrival_setup_cards(self, engine: GameEngine) -> list['Card']:
+        """Return cards to shuffle into the path deck during path deck assembly.
+        Overridden by cards (usually weather/mission/location) with Arrival Setup effects."""
+        return []
 
 
     #ranger card only methods

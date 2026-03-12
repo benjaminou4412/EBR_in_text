@@ -10,7 +10,7 @@ from .personality_cards import Passionate
 from .woods_cards import SitkaBuck, OvergrownThicket, SunberryBramble, SitkaDoe, ProwlingWolhund, CausticMulcher
 from .valley_cards import CalypsaRangerMentor, QuisiVosRascal, TheFundamentalist
 from .location_cards import BoulderField, AncestorsGrove, LoneTreeStation
-from .weather_cards import APerfectDay, MiddaySun, Downpour, GatheringStorm, HowlingWinds, Thunderhead
+from .weather_cards import APerfectDay, MiddaySun, Downpour, GatheringStorm, HowlingWinds, Thunderhead, ElectricFog, ClingingMist
 from .mission_cards import BiscuitBasket, BiscuitDelivery, HelpingHand
 from .lone_tree_station_cards import HyPimpotChef
 from .general_cards import CerberusianCyclone, BallLightning
@@ -47,4 +47,6 @@ __all__ = ["WalkWithMe",
             "HyPimpotChef",
             "LoneTreeStation",
             "CerberusianCyclone",
-            "BallLightning"]
+            "BallLightning",
+            "ElectricFog",
+            "ClingingMist"]

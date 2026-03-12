@@ -317,8 +317,10 @@ class GameEngine:
         mod, icon = challenge_card_drawn.mods[aspect], challenge_card_drawn.icon
         effort = max(0, base_effort + mod)
         difficulty = action.difficulty_fn(self, target_card)
-
-
+        # Apply MODIFY_DIFFICULTY constant abilities
+        for ability in self.get_constant_abilities_by_type(ConstantAbilityType.MODIFY_DIFFICULTY):
+            if ability.modifier is not None and ability.condition_fn(self.state, target_card):
+                difficulty = max(0, difficulty + ability.modifier.amount)
 
         # Step 4: Determine success or failure and apply results.
         self.add_message(f"Step 4: Determine success or failure and apply results.")
@@ -346,6 +348,7 @@ class GameEngine:
             self.add_message(f"Test failed!")
             if action.on_fail:
                 action.on_fail(self, effort, target_card)
+            self.trigger_listeners(EventType.TEST_FAIL, TimingType.AFTER, action, effort)
 
         cleared : list[Card]= []
         cleared.extend(self.check_and_process_clears())
@@ -1049,6 +1052,14 @@ class GameEngine:
         self.add_message(f"Begin Phase 1: Draw Path Cards")
         for _ in range(count):
             self.draw_path_card(None, None)
+        # Howling Winds: draw 1 additional path card if pending
+        # The refresh that sets the flag also flips HowlingWinds into Thunderhead,
+        # so we check if the current weather is Thunderhead and its backside has a pending draw.
+        from .cards.weather_cards import Thunderhead, HowlingWinds
+        if isinstance(self.state.weather, Thunderhead):
+            hw = self.state.weather.backside
+            if isinstance(hw, HowlingWinds):
+                hw.phase1_extra_draw(self)
 
     def phase3_travel(self) -> bool:
         """Phase 3: Check if travel conditions are met and offer the ranger the choice to travel.
@@ -1205,10 +1216,12 @@ class GameEngine:
             location_set_or_valley: list[Card] = select_three_random_valley_cards()
         
 
-        #TODO: check weather, location, and missions for additional cards from "path deck assembly"
-        #shuffle everything together
+        #check weather for additional cards from "path deck assembly"
+        arrival_setup_cards = self.state.weather.get_arrival_setup_cards(self)
+        #TODO: check location and missions for additional arrival setup cards
 
-        self.state.path_deck = woods_set + location_set_or_valley
+        #shuffle everything together
+        self.state.path_deck = woods_set + location_set_or_valley + arrival_setup_cards
         random.shuffle(self.state.path_deck)
 
         #display location's campaign log entry
