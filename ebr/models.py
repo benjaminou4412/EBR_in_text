@@ -811,8 +811,18 @@ class Card:
         else:
             return []
 
+    def on_harm_clear(self, engine: GameEngine):
+        """Optional hook called when this card is cleared by harm, before the default discard.
+        Override in subclasses for cards with special harm-clear effects."""
+        return 
+
+    def on_progress_clear(self, engine: GameEngine):
+        """Optional hook called when this card is cleared by progress, before the default discard.
+        Override in subclasses for cards with special progress-clear effects."""
+        return 
+
     def enters_play(self, engine: GameEngine, area: Area, action_target: Card | None = None) -> None:
-        """Called when card enters play. Adds narrative messages, 
+        """Called when card enters play. Adds narrative messages,
         and can be overridden for enter-play effects, listeners, and in-play ConstantAbilities."""
         """Parameter "action target" is given for cards played with the Play Action, and is otherwise None"""
 
@@ -926,6 +936,17 @@ class Card:
             engine.add_message(f"Challenge ({symbol.value}) on {self_display_id}: (no prey in play)")
             return False
         
+    def move_self(self, engine: GameEngine) -> None:
+        """Common card effect: 'Move this feature/being.' Lets the player choose a destination area."""
+        self_display = engine.get_display_id_cached(self)
+        current_area = engine.state.get_card_area_by_id(self.id)
+        areas = [Area.SURROUNDINGS, Area.ALONG_THE_WAY, Area.WITHIN_REACH, Area.PLAYER_AREA]
+        other_areas = [a for a in areas if a != current_area]
+        area_names = [a.value for a in other_areas]
+        chosen_name = engine.option_chooser(engine, area_names, f"Move {self_display} to which area?")
+        target_area = next(a for a in other_areas if a.value == chosen_name)
+        engine.move_card(self.id, target_area)
+
     def add_progress(self, amount: int) -> str:
         if amount < 0:
             raise ValueError(f"'amount' in add_progress should always be non-negative. Use remove_progress instead.")

@@ -440,7 +440,8 @@ class GameEngine:
         Returns:
             List of cleared cards (for display messages)
         """
-        to_clear: list[Card] = []
+        cleared: list[Card] = []       # all cards that hit a clear threshold
+        to_discard: list[Card] = []     # subset that still need the default discard
 
         for area in self.state.areas:
             for card in self.state.areas[area]:
@@ -456,9 +457,12 @@ class GameEngine:
                                 engine=self,
                                 clear_type=clear_type
                             )
+                        if not discarded:
+                            card.on_progress_clear(self)
+                        cleared.append(card)
                         # Re-check threshold: the entry may have removed progress/harm
                         if not discarded and card.clear_if_threshold(self.state) is not None:
-                            to_clear.append(card)
+                            to_discard.append(card)
                     elif clear_type == "harm":
                         self.add_message(f"{card.title} cleared by harm!")
                         if card.on_harm_clear_log is not None:
@@ -468,16 +472,23 @@ class GameEngine:
                                 engine=self,
                                 clear_type=clear_type
                             )
+                        if not discarded:
+                            card.on_harm_clear(self)
+                        cleared.append(card)
                         # Re-check threshold: the entry may have removed progress/harm
                         if not discarded and card.clear_if_threshold(self.state) is not None:
-                            to_clear.append(card)
+                            to_discard.append(card)
 
-        # Discard all cleared cards (this removes them from areas)
-        for card in to_clear:
-            self.trigger_listeners(EventType.CLEAR, TimingType.WHEN, None, card.progress, card) 
+        # Trigger clear listeners for ALL cards that hit a clear threshold,
+        # regardless of whether they were discarded by their campaign entry
+        for card in cleared:
+            self.trigger_listeners(EventType.CLEAR, TimingType.WHEN, None, card.progress, card)
+
+        # Discard cards that weren't already handled by their campaign/clear entry
+        for card in to_discard:
             card.discard_from_play(self)
-            
-        return to_clear
+
+        return cleared
     
     #Ranger Token manipulation
     def move_ranger_token_to_card(self, card: Card) -> bool:

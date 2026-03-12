@@ -13,6 +13,7 @@ from .location_cards import BoulderField, AncestorsGrove, LoneTreeStation
 from .weather_cards import APerfectDay, MiddaySun, Downpour, GatheringStorm, HowlingWinds, Thunderhead
 from .mission_cards import BiscuitBasket, BiscuitDelivery, HelpingHand
 from .lone_tree_station_cards import HyPimpotChef
+from .general_cards import CerberusianCyclone, BallLightning
 
 __all__ = ["WalkWithMe",
             "ADearFriend",
@@ -44,4 +45,6 @@ __all__ = ["WalkWithMe",
             "BiscuitDelivery",
             "HelpingHand",
             "HyPimpotChef",
-            "LoneTreeStation"]
+            "LoneTreeStation",
+            "CerberusianCyclone",
+            "BallLightning"]
