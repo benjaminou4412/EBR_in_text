@@ -872,9 +872,10 @@ class Card:
         if self.presence is not None:
             #first, get just the card's own presence modifiers
             presence_mods = [mod for mod in self.modifiers if mod.target == "presence"]
-            #then, we get presence modifiers from Constant Abilities
-            presence_mods.extend([ability.modifier for ability in engine.constant_abilities 
-                                  if ability.condition_fn(engine.state, self) and ability.modifier is not None])
+            #then, we get presence modifiers from Constant Abilities (only MODIFY_PRESENCE, not all abilities)
+            presence_mods.extend([ability.modifier for ability in engine.constant_abilities
+                                  if ability.ability_type == ConstantAbilityType.MODIFY_PRESENCE
+                                  and ability.condition_fn(engine.state, self) and ability.modifier is not None])
             #then, we apply modifiers in order of largest minimums first
             sorted_by_mins = sorted(presence_mods, key=lambda m: m.minimum_result, reverse=True)
             current_presence = self.presence

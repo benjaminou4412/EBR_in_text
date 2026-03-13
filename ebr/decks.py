@@ -65,12 +65,13 @@ def get_location_by_id(location_id: str) -> Card:
         raise ValueError(f"Unknown location ID: '{location_id}'")
 
 def get_current_weather(weather_title: str) -> Card:
-    from .cards import APerfectDay, Downpour, HowlingWinds
+    from .cards import APerfectDay, Downpour, HowlingWinds, ElectricFog
 
     weather_registry = {
         "A Perfect Day": APerfectDay,
         "Downpour": Downpour,
         "Howling Winds": HowlingWinds,
+        "Electric Fog": ElectricFog,
     }
     if weather_title in weather_registry:
         return weather_registry[weather_title]()
