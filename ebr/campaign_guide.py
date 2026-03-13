@@ -29,6 +29,7 @@ class CampaignGuide:
             "80.4": self.resolve_entry_80_4,
             "80.5": self.resolve_entry_80_5,
             "80.6": self.resolve_entry_80_6,
+            "84": self.resolve_entry_84, #Placeholder for Tala the Red
             "85": self.resolve_entry_85, #Calypsa, Ranger Mentor
             "85.1": self.resolve_entry_85_1,
             "85.2": self.resolve_entry_85_2,
@@ -734,6 +735,10 @@ class CampaignGuide:
         engine.end_day(False)
         return True
     
+    def resolve_entry_84(self, source_card: 'Card | None', engine: 'GameEngine', clear_type: str | None) -> bool:
+        engine.add_message("=== Campaign Guide Entry 84: Tala the Red, Exile (PLACEHOLDER) ===")
+        return False
+
     def resolve_entry_85(self, source_card: 'Card | None', engine: 'GameEngine', clear_type: str | None) -> bool:
         engine.add_message("")
         engine.add_message("")

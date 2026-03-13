@@ -8,7 +8,7 @@ from .models import (
     MessageEvent, Keyword, ConstantAbility, ConstantAbilityType, CampaignTracker
 )
 from .utils import get_display_id
-from .decks import build_woods_path_deck, select_three_random_valley_cards, get_current_weather, get_current_missions, get_pivotal_cards
+from .decks import get_current_weather, get_current_missions
 from .campaign_guide import CampaignGuide
 
 
@@ -867,6 +867,7 @@ class GameEngine:
             A fresh GameState ready for a new day
         """
         from .models import RangerState, GameState, Area
+        from .collection import build_collection_for_day
 
         # TODO: Load ranger deck from card IDs in campaign tracker
         # For now, this is a placeholder - the actual deck loading will be implemented
@@ -882,11 +883,15 @@ class GameEngine:
             aspects=campaign_tracker.ranger_aspects.copy()
         )
 
+        # Build card collection for this day, applying any permanent changes
+        collection = build_collection_for_day(campaign_tracker.collection_changes)
+
         # Create fresh game state with campaign tracker
         state = GameState(
             ranger=ranger,
             role_card=role_card,
             campaign_tracker=campaign_tracker,
+            collection=collection,
             areas={
                 Area.SURROUNDINGS: [],
                 Area.ALONG_THE_WAY: [],
@@ -1143,6 +1148,11 @@ class GameEngine:
         self.state.path_deck.clear()
         self.state.path_discard.clear()
 
+        # Check all cards back into the collection, except Persistent cards still in play
+        persistent_ids = {card.id for card in self.state.all_cards_in_play()
+                          if card.has_keyword(Keyword.PERSISTENT)}
+        self.state.collection.checkin_all(except_ids=persistent_ids)
+
         
 
         #Step 2: Travel to a new location
@@ -1205,23 +1215,15 @@ class GameEngine:
                 card.enters_play(self, Area.SURROUNDINGS, None)
             self.add_message(f"Steps 8, 9, and 10: Build path deck, resolve arrival setup, and finishing touches.")
 
-
-        #load terrain set
-        woods_set: list[Card] = build_woods_path_deck() #TODO: path set should vary based on terrain type
-        
-        
-        if self.state.location.has_trait("Pivotal"):
-            location_set_or_valley: list[Card] = get_pivotal_cards(self.state.location)
-        else:
-            location_set_or_valley: list[Card] = select_three_random_valley_cards()
-        
+        #TODO: set current_terrain_type based on the terrain of the path to the selected travel destination
+        #build path deck from collection (terrain set + valley/pivotal cards)
+        terrain_set = self.state.campaign_tracker.current_terrain_type.capitalize()
+        self.state.path_deck = self.state.collection.build_path_deck(terrain_set, self.state.location)
 
         #check weather for additional cards from "path deck assembly"
         arrival_setup_cards = self.state.weather.get_arrival_setup_cards(self)
         #TODO: check location and missions for additional arrival setup cards
-
-        #shuffle everything together
-        self.state.path_deck = woods_set + location_set_or_valley + arrival_setup_cards
+        self.state.path_deck.extend(arrival_setup_cards)
         random.shuffle(self.state.path_deck)
 
         #display location's campaign log entry

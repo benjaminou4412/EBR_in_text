@@ -1924,7 +1924,9 @@ class Phase3TravelTests(unittest.TestCase):
         if extra_cards:
             for area, cards in extra_cards.items():
                 areas[area].extend(cards)
-        state = GameState(ranger=ranger, areas=areas, location=location)
+        from ebr.collection import build_default_collection
+        state = GameState(ranger=ranger, areas=areas, location=location,
+                          collection=build_default_collection())
         stack_deck(state, Aspect.AWA, 0, ChallengeIcon.SUN)
         return GameEngine(state, response_decider=response_decider)
 
@@ -2050,9 +2052,11 @@ class ExecuteTravelTests(unittest.TestCase):
             for area, cards in extra_ranger_cards.items():
                 areas[area].extend(cards)
 
+        from ebr.collection import build_default_collection
         state = GameState(ranger=ranger, areas=areas, location=location,
                           path_deck=[Card(id="pd1", title="Deck Card")],
-                          path_discard=[Card(id="pd2", title="Discard Card")])
+                          path_discard=[Card(id="pd2", title="Discard Card")],
+                          collection=build_default_collection())
         stack_deck(state, Aspect.AWA, 0, ChallengeIcon.SUN)
         return GameEngine(state, response_decider=response_decider)
 

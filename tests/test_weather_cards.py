@@ -27,12 +27,14 @@ def make_test_ranger() -> RangerState:
 
 def make_engine(weather: Card, **engine_kwargs) -> GameEngine:
     """Build an engine with the given weather card."""
+    from ebr.collection import build_default_collection
     location = LoneTreeStation()
     role = PeerlessPathfinder()
     ranger = make_test_ranger()
     state = GameState(
         ranger=ranger, role_card=role, location=location, weather=weather,
         campaign_tracker=CampaignTracker(day_number=1),
+        collection=build_default_collection(),
         areas={
             Area.SURROUNDINGS: [weather, location],
             Area.ALONG_THE_WAY: [],

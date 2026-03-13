@@ -5,6 +5,7 @@ from enum import Enum
 from .utils import get_display_id
 import uuid
 import random
+from .collection import CollectionChange, CardCollection
 if TYPE_CHECKING:
     from .engine import GameEngine
 
@@ -222,6 +223,10 @@ class CampaignTracker:
     # Registry for each day's start-of-day campaign guide entries and weather
     # This is mutable per-instance so game effects can add entries to future days
     day_registry: dict[int, DayContent] = field(default_factory=_default_day_registry)
+
+    # Permanent changes to the card collection (set transfers, removals).
+    # Applied when rebuilding the collection at the start of each day.
+    collection_changes: list['CollectionChange'] = field(default_factory=list)
 
 
 
@@ -1332,6 +1337,9 @@ class GameState:
     )
     path_deck: list[Card] = field(default_factory=lambda: cast(list[Card], []))
     path_discard: list[Card] = field(default_factory=lambda: cast(list[Card], []))
+
+    # Card collection — tracks set membership and checked-out status of all path cards
+    collection: CardCollection = field(default_factory=lambda: CardCollection())
 
     # Per-day state (resets each day)
     round_number: int = 1

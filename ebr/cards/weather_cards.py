@@ -255,9 +255,12 @@ class HowlingWinds(Card):
 
     def get_arrival_setup_cards(self, engine: GameEngine) -> list[Card]:
         """Arrival Setup: Search the General set for a Cerberusian Cyclone and shuffle it into the path deck."""
-        from .general_cards import CerberusianCyclone
-        engine.add_message(f"Howling Winds: Shuffling a Cerberusian Cyclone into the path deck.")
-        return [CerberusianCyclone()]
+        cyclone = engine.state.collection.checkout_by_title("General", "Cerberusian Cyclone")
+        if cyclone is not None:
+            engine.add_message(f"Howling Winds: Shuffling a Cerberusian Cyclone into the path deck.")
+            return [cyclone]
+        engine.add_message(f"Howling Winds: No Cerberusian Cyclone available in the collection.")
+        return []
 
     def get_challenge_handlers(self) -> dict[ChallengeIcon, Callable[[GameEngine], bool]] | None:
         return {
@@ -398,9 +401,12 @@ class ElectricFog(Card):
 
     def get_arrival_setup_cards(self, engine: GameEngine) -> list[Card]:
         """Arrival Setup: Search the General set for a Ball Lightning and shuffle it into the path deck."""
-        from .general_cards import BallLightning
-        engine.add_message(f"Electric Fog: Shuffling a Ball Lightning into the path deck.")
-        return [BallLightning()]
+        ball = engine.state.collection.checkout_by_title("General", "Ball Lightning")
+        if ball is not None:
+            engine.add_message(f"Electric Fog: Shuffling a Ball Lightning into the path deck.")
+            return [ball]
+        engine.add_message(f"Electric Fog: No Ball Lightning available in the collection.")
+        return []
 
     def get_challenge_handlers(self) -> dict[ChallengeIcon, Callable[[GameEngine], bool]] | None:
         return {
