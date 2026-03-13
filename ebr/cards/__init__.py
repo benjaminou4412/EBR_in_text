@@ -8,7 +8,7 @@ from .explorer_cards import (WalkWithMe, PeerlessPathfinder, BoundarySensor, Sha
 from .conciliator_cards import ADearFriend
 from .personality_cards import Passionate
 from .woods_cards import SitkaBuck, OvergrownThicket, SunberryBramble, SitkaDoe, ProwlingWolhund, CausticMulcher
-from .valley_cards import CalypsaRangerMentor, QuisiVosRascal, TheFundamentalist
+from .valley_cards import CalypsaRangerMentor, QuisiVosRascal, TheFundamentalist, TalaTheRedExile
 from .location_cards import BoulderField, AncestorsGrove, LoneTreeStation
 from .weather_cards import APerfectDay, MiddaySun, Downpour, GatheringStorm, HowlingWinds, Thunderhead, ElectricFog, ClingingMist
 from .mission_cards import BiscuitBasket, BiscuitDelivery, HelpingHand
@@ -49,4 +49,5 @@ __all__ = ["WalkWithMe",
             "CerberusianCyclone",
             "BallLightning",
             "ElectricFog",
-            "ClingingMist"]
+            "ClingingMist",
+            "TalaTheRedExile"]

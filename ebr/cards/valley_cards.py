@@ -136,6 +136,71 @@ class QuisiVosRascal(Card):
         """If there is an active predator, exhaust it. »» Add [harm] to this being equal to that predator's presence."""
         return self.harm_from_predator(engine, ChallengeIcon.CREST, self)
     
+class TalaTheRedExile(Card):
+    def __init__(self):
+        super().__init__(**load_card_fields("Tala the Red, Exile", "Valley")) #type:ignore
+        self.art_description = (
+            "A woman with broad shoulders and muscles rippling through her arms and neck. " \
+            "Her hair is a dark brownish-red, tied into dense cornrows that bundle into a bushy " \
+            "ponytail. She wears a fur-trimmed parka that appears to have been cut down into a sort " \
+            "of vest, with its fluffy insulation visible around the interior of the collar. A pocketed " \
+            "belt pouch is slung around her shoulder and chest, and she rests an enormous, serrated ice-pick " \
+            "on her shoulder."
+        )
+
+    def get_tests(self) -> list[Action]:
+        """SPI + [conflict]: Prevent [2] Tala from intimidating the wildlife to exhaust this being."""
+        return [
+            Action(
+                id=f"test-prevent-{self.id}",
+                name=f"{self.title} (SPI + Conflict) [2]",
+                aspect=Aspect.SPI,
+                approach=Approach.CONFLICT,
+                verb="Prevent",
+                target_provider=lambda _s: [self],
+                difficulty_fn=lambda _s, _t: 2,
+                on_success=self._on_prevent_success,
+                on_fail=None,
+                source_id=self.id,
+                source_title=self.title,
+            )
+        ]
+
+    def _on_prevent_success(self, engine: GameEngine, effort: int, _card: Card | None) -> None:
+        """Exhaust this being."""
+        engine.add_message(self.exhaust())
+
+    def get_challenge_handlers(self) -> dict[ChallengeIcon, Callable[[GameEngine], bool]] | None:
+        return {
+            ChallengeIcon.MOUNTAIN: self._mountain_effect,
+            ChallengeIcon.CREST: self._crest_effect,
+        }
+
+    def _mountain_effect(self, engine: GameEngine) -> bool:
+        """The fauna flee before Tala the Red. Move a being."""
+        self_display = engine.get_display_id_cached(self)
+        beings = [c for c in engine.state.all_cards_in_play()
+                  if c.has_type(CardType.BEING)]
+        if not beings:
+            engine.add_message(f"Challenge (Mountain) on {self_display}: No beings in play to move.")
+            return False
+        engine.add_message(f"Challenge (Mountain) on {self_display}: The fauna flee before Tala the Red. Choose a being to move:")
+        target = engine.card_chooser(engine, beings)
+        target_display = engine.get_display_id_cached(target)
+        current_area = engine.state.get_card_area_by_id(target.id)
+        areas = [Area.SURROUNDINGS, Area.ALONG_THE_WAY, Area.WITHIN_REACH, Area.PLAYER_AREA]
+        other_areas = [a for a in areas if a != current_area]
+        area_names = [a.value for a in other_areas]
+        chosen_name = engine.option_chooser(engine, area_names, f"Move {target_display} to which area?")
+        dest_area = next(a for a in other_areas if a.value == chosen_name)
+        engine.move_card(target.id, dest_area)
+        return True
+
+    def _crest_effect(self, engine: GameEngine) -> bool:
+        """If there is an active predator, exhaust it. »» Add [harm] to this being equal to that predator's presence."""
+        return self.harm_from_predator(engine, ChallengeIcon.CREST, self)
+
+
 class TheFundamentalist(Card):
     def __init__(self):
         # Load all common PathCard fields from JSON

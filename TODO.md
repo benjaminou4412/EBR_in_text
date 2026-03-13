@@ -31,7 +31,6 @@ API-ish notes:
 
 A living checklist. Roughly prioritized.
 
-- implement remaining weather (6 cards)
 
 - Implement the rest of the cards in the Valley (11 cards) and General sets (9 cards)
 - Implement all locations (34 left)
