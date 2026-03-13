@@ -245,10 +245,14 @@ def build_collection_for_day(changes: list[CollectionChange]) -> CardCollection:
     """
     collection = build_default_collection()
 
+    # Apply changes directly to entries rather than going through
+    # move_to_set/remove_from_collection (which would re-append to a changes list).
     for change in changes:
         if change.change_type == "moved":
-            collection.move_to_set(change.stable_id, change.target_set) #type: ignore
+            entry = collection.get_entry_by_id(change.stable_id)
+            if entry is not None:
+                entry.set_name = change.target_set  # type: ignore[assignment]
         elif change.change_type == "removed":
-            collection.remove_from_collection(change.stable_id)
+            collection.removed_ids.add(change.stable_id)
 
     return collection
